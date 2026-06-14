@@ -99,7 +99,7 @@ export default async function LeaderboardPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
-      <h1 className="text-4xl font-bold tracking-tight">Leaderboard</h1>
+      <h1 className="text-4xl font-bold tracking-tight">Leaderboards</h1>
       <p className="mt-2 text-zinc-500">Most sends logged — attempts not counted.</p>
 
       {/* Period tabs */}
@@ -107,7 +107,7 @@ export default async function LeaderboardPage({
         {periods.map((p) => (
           <Link
             key={p}
-            href={`/leaderboard?period=${p}`}
+            href={`/leaderboards?period=${p}`}
             className={`rounded px-3 py-1.5 text-sm font-medium transition ${
               period === p
                 ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"

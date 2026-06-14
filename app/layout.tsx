@@ -78,10 +78,10 @@ export default async function RootLayout({
                 Forum
               </Link>
               <Link
-                href="/leaderboard"
+                href="/leaderboards"
                 className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
               >
-                Leaderboard
+                Leaderboards
               </Link>
               {session?.user ? (
                 <>
