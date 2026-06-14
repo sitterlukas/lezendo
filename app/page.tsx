@@ -1,48 +1,69 @@
 import Image from "next/image";
 import Link from "next/link";
-import db from "@/lib/db";
+import { auth } from "@/auth";
+import db, { type ClimbStyle } from "@/lib/db";
+import { resolveGrade } from "@/lib/grade-conversion";
+import { loadGradeEquivalencies } from "@/lib/grade-data";
 
 export const dynamic = "force-dynamic";
 
-const features = [
-  {
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-6 w-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
-      </svg>
-    ),
-    title: "Explore crags",
-    description:
-      "Browse a growing database of crags and routes — from local boulders to alpine walls — with grades, styles, and beta.",
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-6 w-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-      </svg>
-    ),
-    title: "Log your ascents",
-    description:
-      "Keep a tick list of everything you climb. Onsights, flashes, redpoints — your whole climbing history in one place.",
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-6 w-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-      </svg>
-    ),
-    title: "Track your progress",
-    description:
-      "See your grade pyramid grow over time and find out what to try next to push your limit.",
-  },
-];
+const typeLabel: Record<ClimbStyle, string> = {
+  sport: "Sport climb",
+  trad: "Trad",
+  boulder: "Boulder",
+};
+
+const typeBadge: Record<ClimbStyle, string> = {
+  sport: "bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300",
+  trad: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
+  boulder: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
+};
 
 export default async function LandingPage() {
-  const [routeCount, cragCount, ascentCount] = await Promise.all([
+  const session = await auth();
+  const currentUser = session?.user?.email
+    ? await db
+        .selectFrom("users")
+        .select(["preferred_rope_grading_system_id", "preferred_boulder_grading_system_id"])
+        .where("email", "=", session.user.email.toLowerCase())
+        .executeTakeFirst() ?? null
+    : null;
+
+  const [routeCount, cragCount, ascentCount, recentRoutes, topClimbers, gradingSystems, gradeEquivalencies] = await Promise.all([
     db.selectFrom("routes").select((eb) => eb.fn.countAll<number>().as("count")).where("deleted", "=", false).executeTakeFirstOrThrow().then((r) => r.count),
     db.selectFrom("crags").select((eb) => eb.fn.countAll<number>().as("count")).where("deleted", "=", false).executeTakeFirstOrThrow().then((r) => r.count),
     db.selectFrom("ascents").select((eb) => eb.fn.countAll<number>().as("count")).executeTakeFirstOrThrow().then((r) => r.count),
+    db
+      .selectFrom("routes")
+      .innerJoin("crags", "crags.id", "routes.crag_id")
+      .select(["routes.id", "routes.name", "routes.grade", "routes.grading_system_id", "routes.style", "routes.crag_id", "crags.name as crag_name"])
+      .where("routes.deleted", "=", false)
+      .orderBy("routes.created_at", "desc")
+      .limit(6)
+      .execute(),
+    db
+      .selectFrom("ascents")
+      .innerJoin("users", "users.id", "ascents.user_id")
+      .select((eb) => [
+        "users.name",
+        eb.fn.count<number>("ascents.id").as("total"),
+      ])
+      .where("ascents.tick_type", "!=", "attempt")
+      .groupBy("users.name")
+      .orderBy("total", "desc")
+      .limit(5)
+      .execute(),
+    db.selectFrom("grading_systems").select(["id", "name", "slug"]).orderBy("id").execute(),
+    loadGradeEquivalencies(),
   ]);
+
+  const resolvedRecentRoutes = recentRoutes.map((r) => ({
+    ...r,
+    ...resolveGrade(r.grade, r.grading_system_id, gradingSystems, {
+      rope: currentUser?.preferred_rope_grading_system_id,
+      boulder: currentUser?.preferred_boulder_grading_system_id,
+    }, gradeEquivalencies),
+  }));
 
   return (
     <main className="flex-1">
@@ -87,7 +108,7 @@ export default async function LandingPage() {
       </section>
 
       {/* Live stats */}
-      <section className="border-y border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+      <section className="bg-zinc-50 dark:bg-zinc-900/50">
         <div className="mx-auto grid max-w-5xl grid-cols-3 divide-x divide-zinc-200 px-6 py-8 text-center dark:divide-zinc-800">
           <div>
             <div className="text-3xl font-bold">{routeCount}</div>
@@ -106,40 +127,137 @@ export default async function LandingPage() {
 
       {/* Features */}
       <section className="mx-auto max-w-5xl px-6 py-20">
-        <h2 className="text-2xl font-bold tracking-tight">
-          Built for the crag
-        </h2>
-        <div className="mt-12 grid gap-8 sm:grid-cols-3">
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="border-t border-zinc-200 pt-6 dark:border-zinc-800"
-            >
+        <div className="grid gap-8 sm:grid-cols-3">
+          {[
+            {
+              icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-6 w-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
+                </svg>
+              ),
+              title: "Explore crags",
+              description: "Browse a growing database of crags and routes — from local boulders to alpine walls — with grades, styles, and beta.",
+            },
+            {
+              icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-6 w-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+              ),
+              title: "Log your ascents",
+              description: "Keep a tick list of everything you climb. Onsights, flashes, redpoints — your whole climbing history in one place.",
+            },
+            {
+              icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-6 w-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                </svg>
+              ),
+              title: "Track your progress",
+              description: "See your grade pyramid grow over time and find out what to try next to push your limit.",
+            },
+          ].map((feature) => (
+            <div key={feature.title}>
               <div className="text-zinc-500 dark:text-zinc-400">{feature.icon}</div>
               <h3 className="mt-4 text-base font-semibold">{feature.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                {feature.description}
-              </p>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{feature.description}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* CTA */}
+      {/* Explore routes */}
+      {recentRoutes.length > 0 && (
+        <section className="mx-auto max-w-5xl px-6 pb-20">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-2xl font-bold tracking-tight">Latest routes</h2>
+            <Link
+              href="/crags"
+              className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              All crags →
+            </Link>
+          </div>
+          <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {resolvedRecentRoutes.map((route) => (
+              <li key={route.id}>
+                <Link
+                  href={`/crags/${route.crag_id}/routes/${route.id}`}
+                  className="flex h-full flex-col rounded border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="font-semibold leading-snug">{route.name}</span>
+                    <span className="shrink-0 rounded bg-zinc-900 px-2 py-0.5 text-center font-mono text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
+                      {route.grade}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}>
+                      {typeLabel[route.style]}
+                    </span>
+                    <span className="text-xs text-zinc-500">{route.crag_name}</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Leaderboard */}
+      {topClimbers.length > 0 && (
+        <section className="mx-auto max-w-5xl px-6 pb-20">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-2xl font-bold tracking-tight">Leaderboard</h2>
+            <Link
+              href="/leaderboards"
+              className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              Full leaderboard →
+            </Link>
+          </div>
+          <div className="mt-8 overflow-hidden rounded border border-zinc-200 dark:border-zinc-800">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+                  <th className="w-12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">#</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Climber</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">Sends</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                {topClimbers.map((row, index) => (
+                  <tr key={row.name}>
+                    <td className="px-4 py-3 tabular-nums">
+                      <span className={index === 0 ? "text-base font-bold" : "text-zinc-400"}>
+                        {index + 1}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-medium">{row.name}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">{Number(row.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* Discover */}
       <section className="mx-auto max-w-5xl px-6 pb-24">
         <div className="border border-zinc-200 bg-zinc-50 px-8 py-14 dark:border-zinc-800 dark:bg-zinc-900">
           <h2 className="text-2xl font-bold tracking-tight">
-            Start building your logbook
+            Discover crags &amp; routes
           </h2>
           <p className="mt-3 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
-            Add the routes you know and build a record of your climbing,
-            session by session.
+            Browse the full database — find crags by country, filter by style,
+            and explore routes with grades and beta from the community.
           </p>
           <Link
             href="/crags"
             className="mt-8 inline-block rounded bg-zinc-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           >
-            Open the route book
+            Browse crags
           </Link>
         </div>
       </section>

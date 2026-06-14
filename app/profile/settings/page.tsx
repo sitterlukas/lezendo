@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { logout, updateName } from "@/app/auth-actions";
 import ProfileTabs from "@/app/profile/tabs";
+import GradingSystemForm from "./grading-system-form";
 import db from "@/lib/db";
+import { loadGradeEquivalencies } from "@/lib/grade-data";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -11,11 +13,23 @@ export default async function SettingsPage() {
     redirect("/login");
   }
 
-  const user = await db
-    .selectFrom("users")
-    .select(["id", "name", "email", "password_hash", "created_at"])
-    .where("email", "=", email.toLowerCase())
-    .executeTakeFirst();
+  const [user, gradingSystems, gradeEquivalencies] = await Promise.all([
+    db
+      .selectFrom("users")
+      .select([
+        "id",
+        "name",
+        "email",
+        "password_hash",
+        "preferred_rope_grading_system_id",
+        "preferred_boulder_grading_system_id",
+        "created_at",
+      ])
+      .where("email", "=", email.toLowerCase())
+      .executeTakeFirst(),
+    db.selectFrom("grading_systems").select(["id", "name", "slug"]).orderBy("id").execute(),
+    loadGradeEquivalencies(),
+  ]);
   if (!user) {
     redirect("/login");
   }
@@ -58,6 +72,12 @@ export default async function SettingsPage() {
             Save
           </button>
         </form>
+        <GradingSystemForm
+          gradingSystems={gradingSystems}
+          equivalencies={gradeEquivalencies}
+          ropeDefault={user.preferred_rope_grading_system_id}
+          boulderDefault={user.preferred_boulder_grading_system_id}
+        />
         <dl className="divide-y divide-zinc-200 dark:divide-zinc-800">
           <div className="flex items-center justify-between px-6 py-4">
             <dt className="text-sm text-zinc-500">Email</dt>

@@ -1,0 +1,186 @@
+import { Kysely, sql } from "kysely";
+
+export async function up(db: Kysely<any>): Promise<void> {
+  await sql`
+    CREATE TABLE grade_equivalencies (
+      id                SERIAL  PRIMARY KEY,
+      equivalency_id    INTEGER NOT NULL,
+      grading_system_id INTEGER NOT NULL REFERENCES grading_systems(id) ON DELETE CASCADE,
+      grade             TEXT    NOT NULL,
+      discipline        TEXT    NOT NULL CHECK (discipline IN ('rope', 'boulder')),
+      UNIQUE (grading_system_id, grade)
+    )
+  `.execute(db);
+
+  await sql`CREATE INDEX ON grade_equivalencies (grading_system_id, equivalency_id)`.execute(db);
+
+  const systems = await db
+    .selectFrom("grading_systems")
+    .select(["id", "slug"])
+    .execute() as { id: number; slug: string }[];
+
+  const id = (slug: string) => systems.find((s) => s.slug === slug)!.id;
+
+  await db.insertInto("grade_equivalencies").values([
+    // ── French (rope) ──────────────────────────────────────────────────────
+    { equivalency_id: 10,  grading_system_id: id("french"), grade: "3",   discipline: "rope" },
+    { equivalency_id: 15,  grading_system_id: id("french"), grade: "4",   discipline: "rope" },
+    { equivalency_id: 20,  grading_system_id: id("french"), grade: "4+",  discipline: "rope" },
+    { equivalency_id: 25,  grading_system_id: id("french"), grade: "5",   discipline: "rope" },
+    { equivalency_id: 30,  grading_system_id: id("french"), grade: "5+",  discipline: "rope" },
+    { equivalency_id: 38,  grading_system_id: id("french"), grade: "6a",  discipline: "rope" },
+    { equivalency_id: 43,  grading_system_id: id("french"), grade: "6a+", discipline: "rope" },
+    { equivalency_id: 48,  grading_system_id: id("french"), grade: "6b",  discipline: "rope" },
+    { equivalency_id: 53,  grading_system_id: id("french"), grade: "6b+", discipline: "rope" },
+    { equivalency_id: 58,  grading_system_id: id("french"), grade: "6c",  discipline: "rope" },
+    { equivalency_id: 63,  grading_system_id: id("french"), grade: "6c+", discipline: "rope" },
+    { equivalency_id: 68,  grading_system_id: id("french"), grade: "7a",  discipline: "rope" },
+    { equivalency_id: 73,  grading_system_id: id("french"), grade: "7a+", discipline: "rope" },
+    { equivalency_id: 78,  grading_system_id: id("french"), grade: "7b",  discipline: "rope" },
+    { equivalency_id: 83,  grading_system_id: id("french"), grade: "7b+", discipline: "rope" },
+    { equivalency_id: 88,  grading_system_id: id("french"), grade: "7c",  discipline: "rope" },
+    { equivalency_id: 93,  grading_system_id: id("french"), grade: "7c+", discipline: "rope" },
+    { equivalency_id: 98,  grading_system_id: id("french"), grade: "8a",  discipline: "rope" },
+    { equivalency_id: 103, grading_system_id: id("french"), grade: "8a+", discipline: "rope" },
+    { equivalency_id: 108, grading_system_id: id("french"), grade: "8b",  discipline: "rope" },
+    { equivalency_id: 113, grading_system_id: id("french"), grade: "8b+", discipline: "rope" },
+    { equivalency_id: 118, grading_system_id: id("french"), grade: "8c",  discipline: "rope" },
+    { equivalency_id: 123, grading_system_id: id("french"), grade: "8c+", discipline: "rope" },
+    { equivalency_id: 128, grading_system_id: id("french"), grade: "9a",  discipline: "rope" },
+    { equivalency_id: 133, grading_system_id: id("french"), grade: "9a+", discipline: "rope" },
+    { equivalency_id: 138, grading_system_id: id("french"), grade: "9b",  discipline: "rope" },
+    { equivalency_id: 143, grading_system_id: id("french"), grade: "9b+", discipline: "rope" },
+    { equivalency_id: 148, grading_system_id: id("french"), grade: "9c",  discipline: "rope" },
+
+    // ── YDS (rope) ─────────────────────────────────────────────────────────
+    { equivalency_id: 10,  grading_system_id: id("yds"), grade: "5.3",   discipline: "rope" },
+    { equivalency_id: 15,  grading_system_id: id("yds"), grade: "5.4",   discipline: "rope" },
+    { equivalency_id: 20,  grading_system_id: id("yds"), grade: "5.5",   discipline: "rope" },
+    { equivalency_id: 25,  grading_system_id: id("yds"), grade: "5.6",   discipline: "rope" },
+    { equivalency_id: 30,  grading_system_id: id("yds"), grade: "5.7",   discipline: "rope" },
+    { equivalency_id: 34,  grading_system_id: id("yds"), grade: "5.8",   discipline: "rope" },
+    { equivalency_id: 38,  grading_system_id: id("yds"), grade: "5.9",   discipline: "rope" },
+    { equivalency_id: 43,  grading_system_id: id("yds"), grade: "5.10a", discipline: "rope" },
+    { equivalency_id: 48,  grading_system_id: id("yds"), grade: "5.10b", discipline: "rope" },
+    { equivalency_id: 53,  grading_system_id: id("yds"), grade: "5.10c", discipline: "rope" },
+    { equivalency_id: 58,  grading_system_id: id("yds"), grade: "5.10d", discipline: "rope" },
+    { equivalency_id: 63,  grading_system_id: id("yds"), grade: "5.11a", discipline: "rope" },
+    { equivalency_id: 68,  grading_system_id: id("yds"), grade: "5.11b", discipline: "rope" },
+    { equivalency_id: 73,  grading_system_id: id("yds"), grade: "5.11c", discipline: "rope" },
+    { equivalency_id: 78,  grading_system_id: id("yds"), grade: "5.11d", discipline: "rope" },
+    { equivalency_id: 83,  grading_system_id: id("yds"), grade: "5.12a", discipline: "rope" },
+    { equivalency_id: 88,  grading_system_id: id("yds"), grade: "5.12b", discipline: "rope" },
+    { equivalency_id: 93,  grading_system_id: id("yds"), grade: "5.12c", discipline: "rope" },
+    { equivalency_id: 98,  grading_system_id: id("yds"), grade: "5.12d", discipline: "rope" },
+    { equivalency_id: 103, grading_system_id: id("yds"), grade: "5.13a", discipline: "rope" },
+    { equivalency_id: 108, grading_system_id: id("yds"), grade: "5.13b", discipline: "rope" },
+    { equivalency_id: 113, grading_system_id: id("yds"), grade: "5.13c", discipline: "rope" },
+    { equivalency_id: 118, grading_system_id: id("yds"), grade: "5.13d", discipline: "rope" },
+    { equivalency_id: 123, grading_system_id: id("yds"), grade: "5.14a", discipline: "rope" },
+    { equivalency_id: 128, grading_system_id: id("yds"), grade: "5.14b", discipline: "rope" },
+    { equivalency_id: 133, grading_system_id: id("yds"), grade: "5.14c", discipline: "rope" },
+    { equivalency_id: 138, grading_system_id: id("yds"), grade: "5.14d", discipline: "rope" },
+    { equivalency_id: 143, grading_system_id: id("yds"), grade: "5.15a", discipline: "rope" },
+    { equivalency_id: 148, grading_system_id: id("yds"), grade: "5.15b", discipline: "rope" },
+    { equivalency_id: 153, grading_system_id: id("yds"), grade: "5.15c", discipline: "rope" },
+    { equivalency_id: 158, grading_system_id: id("yds"), grade: "5.15d", discipline: "rope" },
+
+    // ── UIAA (rope) ────────────────────────────────────────────────────────
+    { equivalency_id: 10,  grading_system_id: id("uiaa"), grade: "III",   discipline: "rope" },
+    { equivalency_id: 15,  grading_system_id: id("uiaa"), grade: "IV",    discipline: "rope" },
+    { equivalency_id: 20,  grading_system_id: id("uiaa"), grade: "IV+",   discipline: "rope" },
+    { equivalency_id: 25,  grading_system_id: id("uiaa"), grade: "V-",    discipline: "rope" },
+    { equivalency_id: 30,  grading_system_id: id("uiaa"), grade: "V",     discipline: "rope" },
+    { equivalency_id: 34,  grading_system_id: id("uiaa"), grade: "V+",    discipline: "rope" },
+    { equivalency_id: 38,  grading_system_id: id("uiaa"), grade: "VI-",   discipline: "rope" },
+    { equivalency_id: 43,  grading_system_id: id("uiaa"), grade: "VI",    discipline: "rope" },
+    { equivalency_id: 48,  grading_system_id: id("uiaa"), grade: "VI+",   discipline: "rope" },
+    { equivalency_id: 53,  grading_system_id: id("uiaa"), grade: "VII-",  discipline: "rope" },
+    { equivalency_id: 63,  grading_system_id: id("uiaa"), grade: "VII",   discipline: "rope" },
+    { equivalency_id: 73,  grading_system_id: id("uiaa"), grade: "VII+",  discipline: "rope" },
+    { equivalency_id: 78,  grading_system_id: id("uiaa"), grade: "VIII-", discipline: "rope" },
+    { equivalency_id: 88,  grading_system_id: id("uiaa"), grade: "VIII",  discipline: "rope" },
+    { equivalency_id: 98,  grading_system_id: id("uiaa"), grade: "VIII+", discipline: "rope" },
+    { equivalency_id: 103, grading_system_id: id("uiaa"), grade: "IX-",   discipline: "rope" },
+    { equivalency_id: 108, grading_system_id: id("uiaa"), grade: "IX",    discipline: "rope" },
+    { equivalency_id: 113, grading_system_id: id("uiaa"), grade: "IX+",   discipline: "rope" },
+    { equivalency_id: 118, grading_system_id: id("uiaa"), grade: "X-",    discipline: "rope" },
+    { equivalency_id: 123, grading_system_id: id("uiaa"), grade: "X",     discipline: "rope" },
+    { equivalency_id: 128, grading_system_id: id("uiaa"), grade: "X+",    discipline: "rope" },
+    { equivalency_id: 133, grading_system_id: id("uiaa"), grade: "XI-",   discipline: "rope" },
+    { equivalency_id: 138, grading_system_id: id("uiaa"), grade: "XI",    discipline: "rope" },
+    { equivalency_id: 143, grading_system_id: id("uiaa"), grade: "XI+",   discipline: "rope" },
+    { equivalency_id: 148, grading_system_id: id("uiaa"), grade: "XII",   discipline: "rope" },
+
+    // ── British trad (rope) ────────────────────────────────────────────────
+    { equivalency_id: 5,   grading_system_id: id("british"), grade: "Mod", discipline: "rope" },
+    { equivalency_id: 12,  grading_system_id: id("british"), grade: "D",   discipline: "rope" },
+    { equivalency_id: 18,  grading_system_id: id("british"), grade: "VD",  discipline: "rope" },
+    { equivalency_id: 24,  grading_system_id: id("british"), grade: "HVD", discipline: "rope" },
+    { equivalency_id: 28,  grading_system_id: id("british"), grade: "S",   discipline: "rope" },
+    { equivalency_id: 33,  grading_system_id: id("british"), grade: "HS",  discipline: "rope" },
+    { equivalency_id: 38,  grading_system_id: id("british"), grade: "VS",  discipline: "rope" },
+    { equivalency_id: 43,  grading_system_id: id("british"), grade: "HVS", discipline: "rope" },
+    { equivalency_id: 53,  grading_system_id: id("british"), grade: "E1",  discipline: "rope" },
+    { equivalency_id: 63,  grading_system_id: id("british"), grade: "E2",  discipline: "rope" },
+    { equivalency_id: 70,  grading_system_id: id("british"), grade: "E3",  discipline: "rope" },
+    { equivalency_id: 78,  grading_system_id: id("british"), grade: "E4",  discipline: "rope" },
+    { equivalency_id: 88,  grading_system_id: id("british"), grade: "E5",  discipline: "rope" },
+    { equivalency_id: 93,  grading_system_id: id("british"), grade: "E6",  discipline: "rope" },
+    { equivalency_id: 103, grading_system_id: id("british"), grade: "E7",  discipline: "rope" },
+    { equivalency_id: 108, grading_system_id: id("british"), grade: "E8",  discipline: "rope" },
+    { equivalency_id: 113, grading_system_id: id("british"), grade: "E9",  discipline: "rope" },
+    { equivalency_id: 118, grading_system_id: id("british"), grade: "E10", discipline: "rope" },
+
+    // ── Fontainebleau (boulder) ────────────────────────────────────────────
+    { equivalency_id: 5,   grading_system_id: id("font"), grade: "3",   discipline: "boulder" },
+    { equivalency_id: 15,  grading_system_id: id("font"), grade: "4",   discipline: "boulder" },
+    { equivalency_id: 25,  grading_system_id: id("font"), grade: "4+",  discipline: "boulder" },
+    { equivalency_id: 35,  grading_system_id: id("font"), grade: "5",   discipline: "boulder" },
+    { equivalency_id: 40,  grading_system_id: id("font"), grade: "5+",  discipline: "boulder" },
+    { equivalency_id: 50,  grading_system_id: id("font"), grade: "6A",  discipline: "boulder" },
+    { equivalency_id: 58,  grading_system_id: id("font"), grade: "6A+", discipline: "boulder" },
+    { equivalency_id: 65,  grading_system_id: id("font"), grade: "6B",  discipline: "boulder" },
+    { equivalency_id: 73,  grading_system_id: id("font"), grade: "6B+", discipline: "boulder" },
+    { equivalency_id: 80,  grading_system_id: id("font"), grade: "6C",  discipline: "boulder" },
+    { equivalency_id: 88,  grading_system_id: id("font"), grade: "6C+", discipline: "boulder" },
+    { equivalency_id: 95,  grading_system_id: id("font"), grade: "7A",  discipline: "boulder" },
+    { equivalency_id: 103, grading_system_id: id("font"), grade: "7A+", discipline: "boulder" },
+    { equivalency_id: 110, grading_system_id: id("font"), grade: "7B",  discipline: "boulder" },
+    { equivalency_id: 118, grading_system_id: id("font"), grade: "7B+", discipline: "boulder" },
+    { equivalency_id: 125, grading_system_id: id("font"), grade: "7C",  discipline: "boulder" },
+    { equivalency_id: 133, grading_system_id: id("font"), grade: "7C+", discipline: "boulder" },
+    { equivalency_id: 140, grading_system_id: id("font"), grade: "8A",  discipline: "boulder" },
+    { equivalency_id: 148, grading_system_id: id("font"), grade: "8A+", discipline: "boulder" },
+    { equivalency_id: 155, grading_system_id: id("font"), grade: "8B",  discipline: "boulder" },
+    { equivalency_id: 163, grading_system_id: id("font"), grade: "8B+", discipline: "boulder" },
+    { equivalency_id: 170, grading_system_id: id("font"), grade: "8C",  discipline: "boulder" },
+    { equivalency_id: 178, grading_system_id: id("font"), grade: "8C+", discipline: "boulder" },
+
+    // ── V-scale / Hueco (boulder) ──────────────────────────────────────────
+    { equivalency_id: 5,   grading_system_id: id("v-scale"), grade: "VB",  discipline: "boulder" },
+    { equivalency_id: 20,  grading_system_id: id("v-scale"), grade: "V0",  discipline: "boulder" },
+    { equivalency_id: 30,  grading_system_id: id("v-scale"), grade: "V0+", discipline: "boulder" },
+    { equivalency_id: 40,  grading_system_id: id("v-scale"), grade: "V1",  discipline: "boulder" },
+    { equivalency_id: 50,  grading_system_id: id("v-scale"), grade: "V2",  discipline: "boulder" },
+    { equivalency_id: 58,  grading_system_id: id("v-scale"), grade: "V3",  discipline: "boulder" },
+    { equivalency_id: 73,  grading_system_id: id("v-scale"), grade: "V4",  discipline: "boulder" },
+    { equivalency_id: 84,  grading_system_id: id("v-scale"), grade: "V5",  discipline: "boulder" },
+    { equivalency_id: 95,  grading_system_id: id("v-scale"), grade: "V6",  discipline: "boulder" },
+    { equivalency_id: 103, grading_system_id: id("v-scale"), grade: "V7",  discipline: "boulder" },
+    { equivalency_id: 110, grading_system_id: id("v-scale"), grade: "V8",  discipline: "boulder" },
+    { equivalency_id: 118, grading_system_id: id("v-scale"), grade: "V9",  discipline: "boulder" },
+    { equivalency_id: 125, grading_system_id: id("v-scale"), grade: "V10", discipline: "boulder" },
+    { equivalency_id: 133, grading_system_id: id("v-scale"), grade: "V11", discipline: "boulder" },
+    { equivalency_id: 140, grading_system_id: id("v-scale"), grade: "V12", discipline: "boulder" },
+    { equivalency_id: 148, grading_system_id: id("v-scale"), grade: "V13", discipline: "boulder" },
+    { equivalency_id: 155, grading_system_id: id("v-scale"), grade: "V14", discipline: "boulder" },
+    { equivalency_id: 163, grading_system_id: id("v-scale"), grade: "V15", discipline: "boulder" },
+    { equivalency_id: 170, grading_system_id: id("v-scale"), grade: "V16", discipline: "boulder" },
+    { equivalency_id: 178, grading_system_id: id("v-scale"), grade: "V17", discipline: "boulder" },
+  ]).execute();
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await sql`DROP TABLE IF EXISTS grade_equivalencies`.execute(db);
+}

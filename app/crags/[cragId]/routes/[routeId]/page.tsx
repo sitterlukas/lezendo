@@ -7,6 +7,10 @@ import Modal from "@/app/modal";
 import ConfirmSubmit from "@/app/confirm-submit";
 import ImageGallery from "@/app/image-gallery";
 import ImageUpload from "@/app/image-upload";
+import Select from "@/app/ui/select";
+import { resolveGrade } from "@/lib/grade-conversion";
+import { loadGradeEquivalencies } from "@/lib/grade-data";
+import GradeSelect from "@/app/ui/grade-select";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +51,7 @@ export default async function RoutePage({
   const currentUser = session?.user?.email
     ? await db
         .selectFrom("users")
-        .select(["id", "role"])
+        .select(["id", "role", "preferred_rope_grading_system_id", "preferred_boulder_grading_system_id"])
         .where("email", "=", session.user.email.toLowerCase())
         .executeTakeFirst() ?? null
     : null;
@@ -57,7 +61,7 @@ export default async function RoutePage({
   const routeIdNum = Number(routeId);
   if (!Number.isInteger(cragIdNum) || !Number.isInteger(routeIdNum)) notFound();
 
-  const [crag, route, sectors] = await Promise.all([
+  const [crag, route, sectors, gradingSystems, gradeEquivalencies] = await Promise.all([
     db.selectFrom("crags").selectAll().where("id", "=", cragIdNum).where("deleted", "=", false).executeTakeFirst(),
     db
       .selectFrom("routes")
@@ -73,6 +77,8 @@ export default async function RoutePage({
       .where("deleted", "=", false)
       .orderBy("name")
       .execute(),
+    db.selectFrom("grading_systems").select(["id", "name", "slug"]).orderBy("id").execute(),
+    loadGradeEquivalencies(),
   ]);
   if (!crag || !route) notFound();
 
@@ -116,6 +122,17 @@ export default async function RoutePage({
     return currentUser.role === "admin" || currentUser.id === createdBy;
   }
 
+  const { grade: displayGrade, systemName: displaySystemName } = resolveGrade(
+    route.grade,
+    route.grading_system_id,
+    gradingSystems,
+    {
+      rope: currentUser?.preferred_rope_grading_system_id,
+      boulder: currentUser?.preferred_boulder_grading_system_id,
+    },
+    gradeEquivalencies,
+  );
+
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
       {/* Breadcrumb */}
@@ -153,6 +170,11 @@ export default async function RoutePage({
             <span className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}>
               {typeLabel[route.style]}
             </span>
+            {displaySystemName && (
+              <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                {displaySystemName}
+              </span>
+            )}
             {route.height_m !== null && (
               <span className="text-sm text-zinc-500">{route.height_m} m</span>
             )}
@@ -167,9 +189,10 @@ export default async function RoutePage({
           )}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-3">
-          <span className="rounded bg-zinc-900 px-4 py-2 font-mono text-2xl font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
-            {route.grade}
+          <span className="rounded bg-zinc-900 px-4 py-2 text-center font-mono text-2xl font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
+            {displayGrade}
           </span>
+          <div className="flex flex-wrap items-center gap-2">
           {currentUser && (
             <ImageUpload entityType="route" entityId={routeIdNum} />
           )}
@@ -207,48 +230,35 @@ export default async function RoutePage({
                       className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
                     />
                   </label>
-                  <label>
-                    <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                      Grade
-                    </span>
-                    <input
-                      name="grade"
-                      defaultValue={route.grade}
-                      required
-                      className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                  </label>
+                  <GradeSelect
+                    gradingSystems={gradingSystems}
+                    equivalencies={gradeEquivalencies}
+                    defaultSystemId={route.grading_system_id ?? currentUser?.preferred_rope_grading_system_id ?? currentUser?.preferred_boulder_grading_system_id}
+                    defaultGrade={route.grade}
+                  />
                   <label>
                     <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                       Type
                     </span>
-                    <select
-                      name="style"
-                      defaultValue={route.style}
-                      className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-                    >
+                    <Select name="style" defaultValue={route.style}>
                       <option value="sport">Sport climb</option>
                       <option value="trad">Trad</option>
                       <option value="boulder">Boulder</option>
-                    </select>
+                    </Select>
                   </label>
                   {sectors.length > 0 && (
                     <label>
                       <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                         Sector
                       </span>
-                      <select
-                        name="sector_id"
-                        defaultValue={route.sector_id ?? ""}
-                        className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-                      >
+                      <Select name="sector_id" defaultValue={route.sector_id ?? ""}>
                         <option value="">— no sector —</option>
                         {sectors.map((s) => (
                           <option key={s.id} value={s.id}>
                             {s.name}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </label>
                   )}
                   <label>
@@ -285,6 +295,7 @@ export default async function RoutePage({
               </Modal>
             </>
           )}
+          </div>
         </div>
       </div>
 
@@ -304,17 +315,13 @@ export default async function RoutePage({
             <input type="hidden" name="route_id" value={route.id} />
             <label className="flex flex-col gap-1">
               <span className="text-xs font-medium text-zinc-500">Style</span>
-              <select
-                name="tick_type"
-                defaultValue="redpoint"
-                className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              >
+              <Select name="tick_type" defaultValue="redpoint" className="w-auto">
                 <option value="onsight">Onsight</option>
                 <option value="flash">Flash</option>
                 <option value="redpoint">Redpoint</option>
                 <option value="toprope">Toprope</option>
                 <option value="attempt">Attempt</option>
-              </select>
+              </Select>
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-xs font-medium text-zinc-500">Date</span>

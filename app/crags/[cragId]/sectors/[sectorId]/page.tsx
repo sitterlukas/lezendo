@@ -7,6 +7,10 @@ import Modal from "@/app/modal";
 import ConfirmSubmit from "@/app/confirm-submit";
 import ImageGallery from "@/app/image-gallery";
 import ImageUpload from "@/app/image-upload";
+import Select from "@/app/ui/select";
+import { resolveGrade } from "@/lib/grade-conversion";
+import { loadGradeEquivalencies } from "@/lib/grade-data";
+import GradeSelect from "@/app/ui/grade-select";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +38,7 @@ export default async function SectorPage({
   const currentUser = session?.user?.email
     ? await db
         .selectFrom("users")
-        .select(["id", "role"])
+        .select(["id", "role", "preferred_rope_grading_system_id", "preferred_boulder_grading_system_id"])
         .where("email", "=", session.user.email.toLowerCase())
         .executeTakeFirst() ?? null
     : null;
@@ -43,6 +47,15 @@ export default async function SectorPage({
   const cragIdNum = Number(cragId);
   const sectorIdNum = Number(sectorId);
   if (!Number.isInteger(cragIdNum) || !Number.isInteger(sectorIdNum)) notFound();
+
+  const [gradingSystems, gradeEquivalencies] = await Promise.all([
+    db
+      .selectFrom("grading_systems")
+      .select(["id", "name", "slug"])
+      .orderBy("id")
+      .execute(),
+    loadGradeEquivalencies(),
+  ]);
 
   const [crag, sector] = await Promise.all([
     db.selectFrom("crags").selectAll().where("id", "=", cragIdNum).where("deleted", "=", false).executeTakeFirst(),
@@ -66,7 +79,7 @@ export default async function SectorPage({
 
   const routes = await db
     .selectFrom("routes")
-    .select(["id", "name", "grade", "style", "height_m", "description"])
+    .select(["id", "name", "grade", "grading_system_id", "style", "height_m", "description"])
     .where("crag_id", "=", cragIdNum)
     .where("sector_id", "=", sectorIdNum)
     .where("deleted", "=", false)
@@ -88,6 +101,14 @@ export default async function SectorPage({
     if (!currentUser) return false;
     return currentUser.role === "admin" || currentUser.id === createdBy;
   }
+
+  const resolvedRoutes = routes.map((r) => ({
+    ...r,
+    ...resolveGrade(r.grade, r.grading_system_id, gradingSystems, {
+      rope: currentUser?.preferred_rope_grading_system_id,
+      boulder: currentUser?.preferred_boulder_grading_system_id,
+    }, gradeEquivalencies),
+  }));
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
@@ -185,21 +206,21 @@ export default async function SectorPage({
                     className={inputClass}
                   />
                 </label>
-                <label>
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Grade
-                  </span>
-                  <input name="grade" placeholder="e.g. 6b+" required className={inputClass} />
-                </label>
+                <GradeSelect
+                  gradingSystems={gradingSystems}
+                  equivalencies={gradeEquivalencies}
+                  defaultSystemId={currentUser?.preferred_rope_grading_system_id ?? currentUser?.preferred_boulder_grading_system_id}
+                  inputClass={inputClass}
+                />
                 <label>
                   <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                     Type
                   </span>
-                  <select name="style" defaultValue="sport" className={inputClass}>
+                  <Select name="style" defaultValue="sport">
                     <option value="sport">Sport climb</option>
                     <option value="trad">Trad</option>
                     <option value="boulder">Boulder</option>
-                  </select>
+                  </Select>
                 </label>
                 <label>
                   <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
@@ -249,7 +270,7 @@ export default async function SectorPage({
         </div>
       ) : (
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {routes.map((route) => (
+          {resolvedRoutes.map((route) => (
             <li key={route.id}>
               <Link
                 href={`/crags/${cragIdNum}/routes/${route.id}`}
@@ -257,16 +278,19 @@ export default async function SectorPage({
               >
                 <div className="flex items-start justify-between gap-3">
                   <span className="font-semibold leading-snug">{route.name}</span>
-                  <span className="shrink-0 rounded bg-zinc-900 px-2 py-0.5 font-mono text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
+                  <span className="shrink-0 rounded bg-zinc-900 px-2 py-0.5 text-center font-mono text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
                     {route.grade}
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}
-                  >
+                  <span className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}>
                     {typeLabel[route.style]}
                   </span>
+                  {route.systemName && (
+                    <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                      {route.systemName}
+                    </span>
+                  )}
                   {route.height_m !== null && (
                     <span className="text-xs text-zinc-500">{route.height_m} m</span>
                   )}

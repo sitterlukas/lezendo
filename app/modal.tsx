@@ -25,11 +25,11 @@ export default function Modal({
         className={
           variant === "ghost"
             ? "inline-flex items-center gap-1 rounded border border-zinc-300 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
-            : "inline-flex items-center gap-1.5 rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            : "inline-flex items-center gap-1 rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         }
       >
         {variant === "primary" && (
-          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path
               d="M10 4v12M4 10h12"
               stroke="currentColor"
