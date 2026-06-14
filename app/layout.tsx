@@ -59,26 +59,32 @@ export default async function RootLayout({
               Lezendo
             </Link>
             <div className="flex items-center gap-6 text-sm font-medium text-zinc-600 dark:text-zinc-400">
+              <Link
+                href="/crags"
+                className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                Crags
+              </Link>
+              <Link
+                href="/gear"
+                className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                Gear
+              </Link>
+              <Link
+                href="/forum"
+                className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                Forum
+              </Link>
+              <Link
+                href="/leaderboard"
+                className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                Leaderboard
+              </Link>
               {session?.user ? (
                 <>
-                  <Link
-                    href="/crags"
-                    className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
-                  >
-                    Crags
-                  </Link>
-                  <Link
-                    href="/gear"
-                    className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
-                  >
-                    Gear
-                  </Link>
-                  <Link
-                    href="/forum"
-                    className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
-                  >
-                    Forum
-                  </Link>
                   <div className="group relative">
                     <Link
                       href="/profile"
