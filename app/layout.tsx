@@ -87,7 +87,7 @@ export default async function RootLayout({
                 <>
                   <div className="group relative">
                     <Link
-                      href="/profile"
+                      href="/profile/statistics"
                       className="flex items-center gap-1 py-2 text-zinc-900 transition dark:text-zinc-100"
                     >
                       Profile
@@ -117,10 +117,10 @@ export default async function RootLayout({
                           </span>
                         </p>
                         <Link
-                          href="/profile"
+                          href="/profile/statistics"
                           className="block px-4 py-2 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                         >
-                          Logged routes
+                          Statistics
                         </Link>
                         <Link
                           href="/profile/gear"

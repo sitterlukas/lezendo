@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const tabs = [
-  { href: "/profile", label: "Logged routes", key: "logbook" },
+  { href: "/profile/statistics", label: "Statistics", key: "statistics" },
   { href: "/profile/gear", label: "Gear", key: "gear" },
   { href: "/profile/settings", label: "Settings", key: "settings" },
 ] as const;
