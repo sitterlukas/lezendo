@@ -6,20 +6,30 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:make": "kysely migrate:make",
+    "migrate:latest": "kysely migrate:latest",
+    "migrate:down": "kysely migrate:down",
+    "migrate:list": "kysely migrate:list"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "kysely": "^0.29.2",
     "next": "16.2.9",
+    "next-auth": "^5.0.0-beta.31",
+    "pg": "^8.21.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "kysely-ctl": "^0.21.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
