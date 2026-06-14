@@ -8,6 +8,7 @@ import {
   deleteGearReview,
 } from "@/app/actions";
 import Modal from "@/app/modal";
+import Select from "@/app/ui/select";
 import ConfirmSubmit from "@/app/confirm-submit";
 
 const categoryMeta: Record<GearCategory, { label: string }> = {
@@ -142,13 +143,13 @@ export default async function GearPage() {
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Category
                 </span>
-                <select name="category" defaultValue="rope" className={inputClass}>
+                <Select name="category" defaultValue="rope">
                   {Object.entries(categoryMeta).map(([value, meta]) => (
                     <option key={value} value={value}>
                       {meta.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </label>
               <label>
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
@@ -283,13 +284,13 @@ export default async function GearPage() {
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Rating
                 </span>
-                <select name="rating" defaultValue="5" className={inputClass}>
+                <Select name="rating" defaultValue="5">
                   <option value="5">★★★★★ — excellent</option>
                   <option value="4">★★★★ — good</option>
                   <option value="3">★★★ — okay</option>
                   <option value="2">★★ — disappointing</option>
                   <option value="1">★ — avoid</option>
-                </select>
+                </Select>
               </label>
               <label>
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">

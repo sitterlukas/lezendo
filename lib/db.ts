@@ -29,12 +29,27 @@ export interface SectorsTable {
   created_at: Generated<Date>;
 }
 
+export interface GradingSystemsTable {
+  id: Generated<number>;
+  name: string;
+  slug: string;
+}
+
+export interface GradeEquivalenciesTable {
+  id: Generated<number>;
+  equivalency_id: number;
+  grading_system_id: number;
+  grade: string;
+  discipline: "rope" | "boulder";
+}
+
 export interface RoutesTable {
   id: Generated<number>;
   name: string;
   crag_id: number;
   sector_id: number | null;
   grade: string;
+  grading_system_id: number;
   style: ClimbStyle;
   height_m: number | null;
   description: string | null;
@@ -71,6 +86,8 @@ export interface UsersTable {
   name: string;
   password_hash: string | null;
   role: Generated<UserRole>;
+  preferred_rope_grading_system_id: number | null;
+  preferred_boulder_grading_system_id: number | null;
   created_at: Generated<Date>;
 }
 
@@ -138,6 +155,8 @@ export interface Database {
   crags: CragsTable;
   sectors: SectorsTable;
   routes: RoutesTable;
+  grading_systems: GradingSystemsTable;
+  grade_equivalencies: GradeEquivalenciesTable;
   ascents: AscentsTable;
   users: UsersTable;
   gear_items: GearItemsTable;
