@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+DATABASE_URL=postgresql://***REMOVED***@localhost:5432/lezendo
+AUTH_SECRET=***REMOVED***
+BLOB_READ_WRITE_TOKEN=
