@@ -14,6 +14,7 @@ export interface CragsTable {
   country: string | null;
   description: string | null;
   deleted: Generated<boolean>;
+  created_by: number | null;
   created_at: Generated<Date>;
 }
 
@@ -23,6 +24,7 @@ export interface SectorsTable {
   name: string;
   description: string | null;
   deleted: Generated<boolean>;
+  created_by: number | null;
   created_at: Generated<Date>;
 }
 
@@ -36,6 +38,7 @@ export interface RoutesTable {
   height_m: number | null;
   description: string | null;
   deleted: Generated<boolean>;
+  created_by: number | null;
   created_at: Generated<Date>;
 }
 
