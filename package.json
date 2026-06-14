@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "kysely migrate:latest && next build",
     "start": "next start",
     "lint": "eslint",
     "migrate:make": "kysely migrate:make",

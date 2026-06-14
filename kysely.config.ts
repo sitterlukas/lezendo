@@ -3,7 +3,8 @@ import { PostgresDialect } from "kysely";
 import { Pool } from "pg";
 
 // kysely-ctl runs outside Next.js, so load env vars ourselves.
-process.loadEnvFile(".env.local");
+// On Vercel the vars are already injected; skip if the file doesn't exist.
+try { process.loadEnvFile(".env.local"); } catch {}
 
 export default defineConfig({
   dialect: new PostgresDialect({
