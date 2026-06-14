@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import { sql } from "kysely";
@@ -19,9 +18,9 @@ export default async function CragsPage({
   searchParams: Promise<{ q?: string; country?: string; page?: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
+  const currentUser = session?.user?.email
+    ? await db.selectFrom("users").select(["id", "role"]).where("email", "=", session.user.email.toLowerCase()).executeTakeFirst() ?? null
+    : null;
 
   const params = await searchParams;
   const q = params.q?.trim() || "";
@@ -231,7 +230,7 @@ export default async function CragsPage({
             )}
           </form>
 
-          <Modal
+          {currentUser && <Modal
             triggerLabel="Add crag"
             title="Add a crag"
             subtitle="Found a new spot? Put it on the map."
@@ -292,7 +291,7 @@ export default async function CragsPage({
                 Add crag
               </button>
             </form>
-          </Modal>
+          </Modal>}
         </div>
       </header>
 
@@ -391,7 +390,7 @@ export default async function CragsPage({
           ))}
         </div>
       )}
-      {deletedCrags.length > 0 && (
+      {currentUser?.role === "admin" && deletedCrags.length > 0 && (
         <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Deleted crags

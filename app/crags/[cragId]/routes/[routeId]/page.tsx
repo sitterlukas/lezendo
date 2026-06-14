@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import db, { type ClimbStyle, type TickType } from "@/lib/db";
 import { logAscent, updateRoute, deleteRoute } from "@/app/actions";
@@ -42,7 +42,13 @@ export default async function RoutePage({
   params: Promise<{ cragId: string; routeId: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  const currentUser = session?.user?.email
+    ? await db
+        .selectFrom("users")
+        .select(["id", "role"])
+        .where("email", "=", session.user.email.toLowerCase())
+        .executeTakeFirst() ?? null
+    : null;
 
   const { cragId, routeId } = await params;
   const cragIdNum = Number(cragId);
@@ -76,13 +82,6 @@ export default async function RoutePage({
         .executeTakeFirst()
     : null;
 
-  const email = session.user.email!;
-  const user = await db
-    .selectFrom("users")
-    .select("id")
-    .where("email", "=", email.toLowerCase())
-    .executeTakeFirst();
-
   const allAscents = await db
     .selectFrom("ascents")
     .innerJoin("users", "users.id", "ascents.user_id")
@@ -99,8 +98,13 @@ export default async function RoutePage({
     .orderBy("ascents.created_at", "desc")
     .execute();
 
-  const myAscents = user ? allAscents.filter((a) => a.user_id === user.id) : [];
-  const communityAscents = allAscents.filter((a) => !user || a.user_id !== user.id);
+  const myAscents = currentUser ? allAscents.filter((a) => a.user_id === currentUser.id) : [];
+  const communityAscents = allAscents.filter((a) => !currentUser || a.user_id !== currentUser.id);
+
+  function canEdit(createdBy: number | null) {
+    if (!currentUser) return false;
+    return currentUser.role === "admin" || currentUser.id === createdBy;
+  }
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
@@ -156,114 +160,118 @@ export default async function RoutePage({
           <span className="rounded bg-zinc-900 px-4 py-2 font-mono text-2xl font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
             {route.grade}
           </span>
-          <form action={deleteRoute}>
-            <input type="hidden" name="route_id" value={route.id} />
-            <input type="hidden" name="crag_id" value={cragIdNum} />
-            <ConfirmSubmit
-              title={`Delete ${route.name}?`}
-              message="This will permanently delete the route and all logged ascents for it."
-              confirmLabel="Delete route"
-              triggerAriaLabel="Delete route"
-              triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-3 py-1.5 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
-            >
-              Delete route
-            </ConfirmSubmit>
-          </form>
-          <Modal
-            triggerLabel="Edit route"
-            variant="ghost"
-            title={`Edit ${route.name}`}
-          >
-            <form action={updateRoute} className="grid gap-4 sm:grid-cols-2">
-              <input type="hidden" name="route_id" value={route.id} />
-              <input type="hidden" name="crag_id" value={cragIdNum} />
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Name
-                </span>
-                <input
-                  name="name"
-                  defaultValue={route.name}
-                  required
-                  className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Grade
-                </span>
-                <input
-                  name="grade"
-                  defaultValue={route.grade}
-                  required
-                  className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Type
-                </span>
-                <select
-                  name="style"
-                  defaultValue={route.style}
-                  className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+          {canEdit(route.created_by) && (
+            <>
+              <form action={deleteRoute}>
+                <input type="hidden" name="route_id" value={route.id} />
+                <input type="hidden" name="crag_id" value={cragIdNum} />
+                <ConfirmSubmit
+                  title={`Delete ${route.name}?`}
+                  message="This will permanently delete the route and all logged ascents for it."
+                  confirmLabel="Delete route"
+                  triggerAriaLabel="Delete route"
+                  triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-3 py-1.5 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
                 >
-                  <option value="sport">Sport climb</option>
-                  <option value="trad">Trad</option>
-                  <option value="boulder">Boulder</option>
-                </select>
-              </label>
-              {sectors.length > 0 && (
-                <label>
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Sector
-                  </span>
-                  <select
-                    name="sector_id"
-                    defaultValue={route.sector_id ?? ""}
-                    className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-                  >
-                    <option value="">— no sector —</option>
-                    {sectors.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Height (m)
-                </span>
-                <input
-                  name="height_m"
-                  type="number"
-                  min="1"
-                  defaultValue={route.height_m ?? ""}
-                  placeholder="optional"
-                  className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-                />
-              </label>
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Description
-                </span>
-                <textarea
-                  name="description"
-                  defaultValue={route.description ?? ""}
-                  rows={3}
-                  className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                  Delete route
+                </ConfirmSubmit>
+              </form>
+              <Modal
+                triggerLabel="Edit route"
+                variant="ghost"
+                title={`Edit ${route.name}`}
               >
-                Save changes
-              </button>
-            </form>
-          </Modal>
+                <form action={updateRoute} className="grid gap-4 sm:grid-cols-2">
+                  <input type="hidden" name="route_id" value={route.id} />
+                  <input type="hidden" name="crag_id" value={cragIdNum} />
+                  <label className="sm:col-span-2">
+                    <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                      Name
+                    </span>
+                    <input
+                      name="name"
+                      defaultValue={route.name}
+                      required
+                      className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                    />
+                  </label>
+                  <label>
+                    <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                      Grade
+                    </span>
+                    <input
+                      name="grade"
+                      defaultValue={route.grade}
+                      required
+                      className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                    />
+                  </label>
+                  <label>
+                    <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                      Type
+                    </span>
+                    <select
+                      name="style"
+                      defaultValue={route.style}
+                      className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                    >
+                      <option value="sport">Sport climb</option>
+                      <option value="trad">Trad</option>
+                      <option value="boulder">Boulder</option>
+                    </select>
+                  </label>
+                  {sectors.length > 0 && (
+                    <label>
+                      <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        Sector
+                      </span>
+                      <select
+                        name="sector_id"
+                        defaultValue={route.sector_id ?? ""}
+                        className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                      >
+                        <option value="">— no sector —</option>
+                        {sectors.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <label>
+                    <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                      Height (m)
+                    </span>
+                    <input
+                      name="height_m"
+                      type="number"
+                      min="1"
+                      defaultValue={route.height_m ?? ""}
+                      placeholder="optional"
+                      className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                    />
+                  </label>
+                  <label className="sm:col-span-2">
+                    <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                      Description
+                    </span>
+                    <textarea
+                      name="description"
+                      defaultValue={route.description ?? ""}
+                      rows={3}
+                      className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                  >
+                    Save changes
+                  </button>
+                </form>
+              </Modal>
+            </>
+          )}
         </div>
       </div>
 
@@ -272,38 +280,50 @@ export default async function RoutePage({
         <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
           Log ascent
         </h2>
-        <form action={logAscent} className="mt-4 flex flex-wrap items-end gap-3">
-          <input type="hidden" name="route_id" value={route.id} />
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">Style</span>
-            <select
-              name="tick_type"
-              defaultValue="redpoint"
-              className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        {currentUser ? (
+          <form action={logAscent} className="mt-4 flex flex-wrap items-end gap-3">
+            <input type="hidden" name="route_id" value={route.id} />
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-zinc-500">Style</span>
+              <select
+                name="tick_type"
+                defaultValue="redpoint"
+                className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              >
+                <option value="onsight">Onsight</option>
+                <option value="flash">Flash</option>
+                <option value="redpoint">Redpoint</option>
+                <option value="toprope">Toprope</option>
+                <option value="attempt">Attempt</option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-zinc-500">Date</span>
+              <input
+                type="date"
+                name="ascent_date"
+                defaultValue={new Date().toISOString().slice(0, 10)}
+                className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded bg-zinc-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
             >
-              <option value="onsight">Onsight</option>
-              <option value="flash">Flash</option>
-              <option value="redpoint">Redpoint</option>
-              <option value="toprope">Toprope</option>
-              <option value="attempt">Attempt</option>
-            </select>
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">Date</span>
-            <input
-              type="date"
-              name="ascent_date"
-              defaultValue={new Date().toISOString().slice(0, 10)}
-              className="rounded border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            />
-          </label>
-          <button
-            type="submit"
-            className="rounded bg-zinc-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
-            Log
-          </button>
-        </form>
+              Log
+            </button>
+          </form>
+        ) : (
+          <p className="mt-4 text-sm text-zinc-500">
+            <Link
+              href="/login"
+              className="font-medium text-zinc-900 underline underline-offset-2 transition hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-400"
+            >
+              Sign in
+            </Link>{" "}
+            to log your ascents.
+          </p>
+        )}
       </section>
 
       {/* My ascents */}

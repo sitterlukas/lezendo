@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { sql } from "kysely";
 import db from "@/lib/db";
@@ -13,7 +12,9 @@ const inputClass =
 
 export default async function ForumPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  const currentUser = session?.user?.email
+    ? await db.selectFrom("users").select(["id", "role"]).where("email", "=", session.user.email.toLowerCase()).executeTakeFirst() ?? null
+    : null;
 
   const topics = await db
     .selectFrom("forum_topics")
@@ -43,7 +44,7 @@ export default async function ForumPage() {
           </p>
         </div>
 
-        <Modal
+        {currentUser && <Modal
           triggerLabel="New topic"
           title="Start a new topic"
           subtitle="Ask a question, share beta, or start a discussion."
@@ -79,7 +80,7 @@ export default async function ForumPage() {
               Post topic
             </button>
           </form>
-        </Modal>
+        </Modal>}
       </header>
 
       {topics.length === 0 ? (

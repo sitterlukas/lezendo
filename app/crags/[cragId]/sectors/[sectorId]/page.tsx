@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import db, { type ClimbStyle } from "@/lib/db";
 import { addRoute, updateSector, deleteSector } from "@/app/actions";
@@ -29,7 +29,13 @@ export default async function SectorPage({
   params: Promise<{ cragId: string; sectorId: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  const currentUser = session?.user?.email
+    ? await db
+        .selectFrom("users")
+        .select(["id", "role"])
+        .where("email", "=", session.user.email.toLowerCase())
+        .executeTakeFirst() ?? null
+    : null;
 
   const { cragId, sectorId } = await params;
   const cragIdNum = Number(cragId);
@@ -48,32 +54,29 @@ export default async function SectorPage({
   ]);
   if (!crag || !sector) notFound();
 
-  const email = session.user.email!;
-  const [routes, user] = await Promise.all([
-    db
-      .selectFrom("routes")
-      .select(["id", "name", "grade", "style", "height_m", "description"])
-      .where("crag_id", "=", cragIdNum)
-      .where("sector_id", "=", sectorIdNum)
-      .where("deleted", "=", false)
-      .orderBy("name")
-      .execute(),
-    db
-      .selectFrom("users")
-      .select("id")
-      .where("email", "=", email.toLowerCase())
-      .executeTakeFirst(),
-  ]);
+  const routes = await db
+    .selectFrom("routes")
+    .select(["id", "name", "grade", "style", "height_m", "description"])
+    .where("crag_id", "=", cragIdNum)
+    .where("sector_id", "=", sectorIdNum)
+    .where("deleted", "=", false)
+    .orderBy("name")
+    .execute();
 
   const tickedRouteIds = new Set<number>();
-  if (user) {
+  if (currentUser) {
     const ticked = await db
       .selectFrom("ascents")
       .select("route_id")
       .distinct()
-      .where("user_id", "=", user.id)
+      .where("user_id", "=", currentUser.id)
       .execute();
     for (const t of ticked) tickedRouteIds.add(t.route_id);
+  }
+
+  function canEdit(createdBy: number | null) {
+    if (!currentUser) return false;
+    return currentUser.role === "admin" || currentUser.id === createdBy;
   }
 
   return (
@@ -109,110 +112,114 @@ export default async function SectorPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Modal
-            triggerLabel="Edit sector"
-            variant="ghost"
-            title={`Edit sector: ${sector.name}`}
-          >
-            <form action={updateSector} className="grid gap-4">
-              <input type="hidden" name="sector_id" value={sector.id} />
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Name
-                </span>
-                <input
-                  name="name"
-                  defaultValue={sector.name}
-                  required
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Description
-                </span>
-                <textarea
-                  name="description"
-                  defaultValue={sector.description ?? ""}
-                  rows={2}
-                  className={inputClass}
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-              >
-                Save changes
-              </button>
-            </form>
-          </Modal>
+          {canEdit(sector.created_by) && (
+            <Modal
+              triggerLabel="Edit sector"
+              variant="ghost"
+              title={`Edit sector: ${sector.name}`}
+            >
+              <form action={updateSector} className="grid gap-4">
+                <input type="hidden" name="sector_id" value={sector.id} />
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Name
+                  </span>
+                  <input
+                    name="name"
+                    defaultValue={sector.name}
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Description
+                  </span>
+                  <textarea
+                    name="description"
+                    defaultValue={sector.description ?? ""}
+                    rows={2}
+                    className={inputClass}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                >
+                  Save changes
+                </button>
+              </form>
+            </Modal>
+          )}
 
-          <Modal
-            triggerLabel="Add route"
-            title={`Add a route in ${sector.name}`}
-            subtitle={`Routes here will be assigned to the ${sector.name} sector.`}
-          >
-            <form action={addRoute} className="grid gap-4 sm:grid-cols-2">
-              <input type="hidden" name="crag_id" value={crag.id} />
-              <input type="hidden" name="sector_id" value={sector.id} />
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Route name
-                </span>
-                <input
-                  name="name"
-                  placeholder="e.g. Moonlight Arête"
-                  required
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Grade
-                </span>
-                <input name="grade" placeholder="e.g. 6b+" required className={inputClass} />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Type
-                </span>
-                <select name="style" defaultValue="sport" className={inputClass}>
-                  <option value="sport">Sport climb</option>
-                  <option value="trad">Trad</option>
-                  <option value="boulder">Boulder</option>
-                </select>
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Height (m)
-                </span>
-                <input
-                  name="height_m"
-                  type="number"
-                  min="1"
-                  placeholder="optional"
-                  className={inputClass}
-                />
-              </label>
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Description
-                </span>
-                <textarea
-                  name="description"
-                  placeholder="Beta, rock type, what makes it good… (optional)"
-                  rows={2}
-                  className={inputClass}
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-              >
-                Add route
-              </button>
-            </form>
-          </Modal>
+          {currentUser && (
+            <Modal
+              triggerLabel="Add route"
+              title={`Add a route in ${sector.name}`}
+              subtitle={`Routes here will be assigned to the ${sector.name} sector.`}
+            >
+              <form action={addRoute} className="grid gap-4 sm:grid-cols-2">
+                <input type="hidden" name="crag_id" value={crag.id} />
+                <input type="hidden" name="sector_id" value={sector.id} />
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Route name
+                  </span>
+                  <input
+                    name="name"
+                    placeholder="e.g. Moonlight Arête"
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Grade
+                  </span>
+                  <input name="grade" placeholder="e.g. 6b+" required className={inputClass} />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Type
+                  </span>
+                  <select name="style" defaultValue="sport" className={inputClass}>
+                    <option value="sport">Sport climb</option>
+                    <option value="trad">Trad</option>
+                    <option value="boulder">Boulder</option>
+                  </select>
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Height (m)
+                  </span>
+                  <input
+                    name="height_m"
+                    type="number"
+                    min="1"
+                    placeholder="optional"
+                    className={inputClass}
+                  />
+                </label>
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Description
+                  </span>
+                  <textarea
+                    name="description"
+                    placeholder="Beta, rock type, what makes it good… (optional)"
+                    rows={2}
+                    className={inputClass}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                >
+                  Add route
+                </button>
+              </form>
+            </Modal>
+          )}
         </div>
       </header>
 
@@ -261,33 +268,35 @@ export default async function SectorPage({
         </ul>
       )}
 
-      {/* Danger zone */}
-      <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-          Danger zone
-        </h2>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded border border-red-200 p-4 dark:border-red-900/50">
-          <div>
-            <p className="text-sm font-medium">Delete this sector</p>
-            <p className="mt-0.5 text-xs text-zinc-500">
-              Routes in this sector will remain but lose their sector assignment.
-            </p>
+      {/* Danger zone — only for sector author or admin */}
+      {canEdit(sector.created_by) && (
+        <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+            Danger zone
+          </h2>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded border border-red-200 p-4 dark:border-red-900/50">
+            <div>
+              <p className="text-sm font-medium">Delete this sector</p>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                Routes in this sector will remain but lose their sector assignment.
+              </p>
+            </div>
+            <form action={deleteSector}>
+              <input type="hidden" name="sector_id" value={sector.id} />
+              <input type="hidden" name="crag_id" value={cragIdNum} />
+              <ConfirmSubmit
+                title={`Delete ${sector.name}?`}
+                message={`This will permanently delete the sector "${sector.name}". Routes inside it will remain but become unsectored.`}
+                confirmLabel="Delete sector"
+                triggerAriaLabel="Delete sector"
+                triggerClassName="rounded border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:hover:bg-red-950/30"
+              >
+                Delete sector
+              </ConfirmSubmit>
+            </form>
           </div>
-          <form action={deleteSector}>
-            <input type="hidden" name="sector_id" value={sector.id} />
-            <input type="hidden" name="crag_id" value={cragIdNum} />
-            <ConfirmSubmit
-              title={`Delete ${sector.name}?`}
-              message={`This will permanently delete the sector "${sector.name}". Routes inside it will remain but become unsectored.`}
-              confirmLabel="Delete sector"
-              triggerAriaLabel="Delete sector"
-              triggerClassName="rounded border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:hover:bg-red-950/30"
-            >
-              Delete sector
-            </ConfirmSubmit>
-          </form>
-        </div>
-      </section>
+        </section>
+      )}
     </main>
   );
 }

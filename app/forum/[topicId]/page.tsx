@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import { createPost } from "@/app/actions";
@@ -12,7 +12,6 @@ export default async function TopicPage({
   params: Promise<{ topicId: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) redirect("/login");
 
   const { topicId } = await params;
   const id = Number(topicId);
@@ -46,13 +45,13 @@ export default async function TopicPage({
     .orderBy("forum_posts.created_at", "asc")
     .execute();
 
-  // Current user id for highlighting own posts
-  const email = session.user.email!;
-  const currentUser = await db
-    .selectFrom("users")
-    .select("id")
-    .where("email", "=", email.toLowerCase())
-    .executeTakeFirst();
+  const currentUser = session?.user?.email
+    ? await db
+        .selectFrom("users")
+        .select("id")
+        .where("email", "=", session.user.email.toLowerCase())
+        .executeTakeFirst() ?? null
+    : null;
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
@@ -125,24 +124,36 @@ export default async function TopicPage({
         <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
           Reply
         </h2>
-        <form action={createPost} className="mt-4 grid gap-3">
-          <input type="hidden" name="topic_id" value={topic.id} />
-          <textarea
-            name="body"
-            placeholder="Write your reply…"
-            rows={5}
-            required
-            className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          <div>
-            <button
-              type="submit"
-              className="rounded bg-zinc-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        {currentUser ? (
+          <form action={createPost} className="mt-4 grid gap-3">
+            <input type="hidden" name="topic_id" value={topic.id} />
+            <textarea
+              name="body"
+              placeholder="Write your reply…"
+              rows={5}
+              required
+              className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+            />
+            <div>
+              <button
+                type="submit"
+                className="rounded bg-zinc-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              >
+                Post reply
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="mt-4 text-sm text-zinc-500">
+            <Link
+              href="/login"
+              className="font-medium text-zinc-900 underline underline-offset-2 transition hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-400"
             >
-              Post reply
-            </button>
-          </div>
-        </form>
+              Sign in
+            </Link>{" "}
+            to join the discussion.
+          </p>
+        )}
       </section>
     </main>
   );

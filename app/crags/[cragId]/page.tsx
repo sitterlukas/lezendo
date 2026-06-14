@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import db, { type ClimbStyle } from "@/lib/db";
 import { addRoute, addSector, updateCrag, updateSector, deleteCrag, deleteSector, recoverSector, recoverRoute } from "@/app/actions";
@@ -29,7 +29,13 @@ export default async function CragPage({
   params: Promise<{ cragId: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  const currentUser = session?.user?.email
+    ? await db
+        .selectFrom("users")
+        .select(["id", "role"])
+        .where("email", "=", session.user.email.toLowerCase())
+        .executeTakeFirst() ?? null
+    : null;
 
   const { cragId } = await params;
   const id = Number(cragId);
@@ -46,7 +52,7 @@ export default async function CragPage({
   const [sectors, routes, tickedRows] = await Promise.all([
     db
       .selectFrom("sectors")
-      .select(["id", "name", "description"])
+      .select(["id", "name", "description", "created_by"])
       .where("crag_id", "=", id)
       .where("deleted", "=", false)
       .orderBy("name")
@@ -61,7 +67,7 @@ export default async function CragPage({
       .execute(),
 
     (async () => {
-      const email = session.user?.email;
+      const email = session?.user?.email;
       const user = email
         ? await db
             .selectFrom("users")
@@ -82,23 +88,25 @@ export default async function CragPage({
 
   const tickedRouteIds = new Set(tickedRows.map((r) => r.route_id));
 
-  // Deleted sectors and routes for trash sections
-  const [deletedSectors, deletedRoutes] = await Promise.all([
-    db
-      .selectFrom("sectors")
-      .select(["id", "name"])
-      .where("crag_id", "=", id)
-      .where("deleted", "=", true)
-      .orderBy("name")
-      .execute(),
-    db
-      .selectFrom("routes")
-      .select(["id", "name", "grade"])
-      .where("crag_id", "=", id)
-      .where("deleted", "=", true)
-      .orderBy("name")
-      .execute(),
-  ]);
+  // Deleted sectors and routes — only fetched when user is admin
+  const [deletedSectors, deletedRoutes] = currentUser?.role === "admin"
+    ? await Promise.all([
+        db
+          .selectFrom("sectors")
+          .select(["id", "name"])
+          .where("crag_id", "=", id)
+          .where("deleted", "=", true)
+          .orderBy("name")
+          .execute(),
+        db
+          .selectFrom("routes")
+          .select(["id", "name", "grade"])
+          .where("crag_id", "=", id)
+          .where("deleted", "=", true)
+          .orderBy("name")
+          .execute(),
+      ])
+    : [[], []];
 
   type LogEntry = { at: Date; by: string };
 
@@ -135,6 +143,11 @@ export default async function CragPage({
 
   const unsectoredRoutes = routesBySector.get(null) ?? [];
 
+  function canEdit(createdBy: number | null) {
+    if (!currentUser) return false;
+    return currentUser.role === "admin" || currentUser.id === createdBy;
+  }
+
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <Link
@@ -166,184 +179,190 @@ export default async function CragPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Modal
-            triggerLabel="Edit crag"
-            variant="ghost"
-            title={`Edit ${crag.name}`}
-          >
-            <form action={updateCrag} className="grid gap-4">
-              <input type="hidden" name="crag_id" value={crag.id} />
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Name
-                </span>
-                <input
-                  name="name"
-                  defaultValue={crag.name}
-                  required
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Area
-                </span>
-                <input
-                  name="area"
-                  defaultValue={crag.area ?? ""}
-                  placeholder="e.g. Bohemian Switzerland"
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Country
-                </span>
-                <input
-                  name="country"
-                  defaultValue={crag.country ?? ""}
-                  placeholder="e.g. Czech Republic"
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Description
-                </span>
-                <textarea
-                  name="description"
-                  defaultValue={crag.description ?? ""}
-                  rows={3}
-                  className={inputClass}
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-              >
-                Save changes
-              </button>
-            </form>
-          </Modal>
-
-          <Modal
-            triggerLabel="Add sector"
-            title={`Add a sector at ${crag.name}`}
-            subtitle="Group routes by wall, face, or area."
-          >
-            <form action={addSector} className="grid gap-4">
-              <input type="hidden" name="crag_id" value={crag.id} />
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Sector name
-                </span>
-                <input
-                  name="name"
-                  placeholder="e.g. Main wall"
-                  required
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Description
-                </span>
-                <textarea
-                  name="description"
-                  placeholder="Aspect, approach, character… (optional)"
-                  rows={2}
-                  className={inputClass}
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-              >
-                Add sector
-              </button>
-            </form>
-          </Modal>
-
-          <Modal
-            triggerLabel="Add route"
-            title={`Add a route at ${crag.name}`}
-            subtitle="Know a line that's missing? Put it in the book."
-          >
-            <form action={addRoute} className="grid gap-4 sm:grid-cols-2">
-              <input type="hidden" name="crag_id" value={crag.id} />
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Route name
-                </span>
-                <input
-                  name="name"
-                  placeholder="e.g. Moonlight Arête"
-                  required
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Grade
-                </span>
-                <input name="grade" placeholder="e.g. 6b+" required className={inputClass} />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Type
-                </span>
-                <select name="style" defaultValue="sport" className={inputClass}>
-                  <option value="sport">Sport climb</option>
-                  <option value="trad">Trad</option>
-                  <option value="boulder">Boulder</option>
-                </select>
-              </label>
-              {sectors.length > 0 && (
+          {canEdit(crag.created_by) && (
+            <Modal
+              triggerLabel="Edit crag"
+              variant="ghost"
+              title={`Edit ${crag.name}`}
+            >
+              <form action={updateCrag} className="grid gap-4">
+                <input type="hidden" name="crag_id" value={crag.id} />
                 <label>
                   <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Sector
+                    Name
                   </span>
-                  <select name="sector_id" className={inputClass}>
-                    <option value="">— no sector —</option>
-                    {sectors.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
+                  <input
+                    name="name"
+                    defaultValue={crag.name}
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Area
+                  </span>
+                  <input
+                    name="area"
+                    defaultValue={crag.area ?? ""}
+                    placeholder="e.g. Bohemian Switzerland"
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Country
+                  </span>
+                  <input
+                    name="country"
+                    defaultValue={crag.country ?? ""}
+                    placeholder="e.g. Czech Republic"
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Description
+                  </span>
+                  <textarea
+                    name="description"
+                    defaultValue={crag.description ?? ""}
+                    rows={3}
+                    className={inputClass}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                >
+                  Save changes
+                </button>
+              </form>
+            </Modal>
+          )}
+
+          {currentUser && (
+            <Modal
+              triggerLabel="Add sector"
+              title={`Add a sector at ${crag.name}`}
+              subtitle="Group routes by wall, face, or area."
+            >
+              <form action={addSector} className="grid gap-4">
+                <input type="hidden" name="crag_id" value={crag.id} />
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Sector name
+                  </span>
+                  <input
+                    name="name"
+                    placeholder="e.g. Main wall"
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Description
+                  </span>
+                  <textarea
+                    name="description"
+                    placeholder="Aspect, approach, character… (optional)"
+                    rows={2}
+                    className={inputClass}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                >
+                  Add sector
+                </button>
+              </form>
+            </Modal>
+          )}
+
+          {currentUser && (
+            <Modal
+              triggerLabel="Add route"
+              title={`Add a route at ${crag.name}`}
+              subtitle="Know a line that's missing? Put it in the book."
+            >
+              <form action={addRoute} className="grid gap-4 sm:grid-cols-2">
+                <input type="hidden" name="crag_id" value={crag.id} />
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Route name
+                  </span>
+                  <input
+                    name="name"
+                    placeholder="e.g. Moonlight Arête"
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Grade
+                  </span>
+                  <input name="grade" placeholder="e.g. 6b+" required className={inputClass} />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Type
+                  </span>
+                  <select name="style" defaultValue="sport" className={inputClass}>
+                    <option value="sport">Sport climb</option>
+                    <option value="trad">Trad</option>
+                    <option value="boulder">Boulder</option>
                   </select>
                 </label>
-              )}
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Height (m)
-                </span>
-                <input
-                  name="height_m"
-                  type="number"
-                  min="1"
-                  placeholder="optional"
-                  className={inputClass}
-                />
-              </label>
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Description
-                </span>
-                <textarea
-                  name="description"
-                  placeholder="Beta, rock type, what makes it good… (optional)"
-                  rows={2}
-                  className={inputClass}
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-              >
-                Add route
-              </button>
-            </form>
-          </Modal>
+                {sectors.length > 0 && (
+                  <label>
+                    <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                      Sector
+                    </span>
+                    <select name="sector_id" className={inputClass}>
+                      <option value="">— no sector —</option>
+                      {sectors.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Height (m)
+                  </span>
+                  <input
+                    name="height_m"
+                    type="number"
+                    min="1"
+                    placeholder="optional"
+                    className={inputClass}
+                  />
+                </label>
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Description
+                  </span>
+                  <textarea
+                    name="description"
+                    placeholder="Beta, rock type, what makes it good… (optional)"
+                    rows={2}
+                    className={inputClass}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                >
+                  Add route
+                </button>
+              </form>
+            </Modal>
+          )}
         </div>
       </header>
 
@@ -371,56 +390,60 @@ export default async function CragPage({
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Modal
-                      triggerLabel="Edit"
-                      variant="ghost"
-                      title={`Edit sector: ${sector.name}`}
-                    >
-                      <form action={updateSector} className="grid gap-4">
-                        <input type="hidden" name="sector_id" value={sector.id} />
-                        <label>
-                          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                            Name
-                          </span>
-                          <input
-                            name="name"
-                            defaultValue={sector.name}
-                            required
-                            className={inputClass}
-                          />
-                        </label>
-                        <label>
-                          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                            Description
-                          </span>
-                          <textarea
-                            name="description"
-                            defaultValue={sector.description ?? ""}
-                            rows={2}
-                            className={inputClass}
-                          />
-                        </label>
-                        <button
-                          type="submit"
-                          className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                    {canEdit(sector.created_by) && (
+                      <>
+                        <Modal
+                          triggerLabel="Edit"
+                          variant="ghost"
+                          title={`Edit sector: ${sector.name}`}
                         >
-                          Save changes
-                        </button>
-                      </form>
-                    </Modal>
-                    <form action={deleteSector}>
-                      <input type="hidden" name="sector_id" value={sector.id} />
-                      <input type="hidden" name="crag_id" value={id} />
-                      <ConfirmSubmit
-                        title={`Delete ${sector.name}?`}
-                        message="Routes in this sector will remain but lose their sector assignment."
-                        confirmLabel="Delete sector"
-                        triggerAriaLabel={`Delete ${sector.name}`}
-                        triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-2 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
-                      >
-                        Delete
-                      </ConfirmSubmit>
-                    </form>
+                          <form action={updateSector} className="grid gap-4">
+                            <input type="hidden" name="sector_id" value={sector.id} />
+                            <label>
+                              <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                Name
+                              </span>
+                              <input
+                                name="name"
+                                defaultValue={sector.name}
+                                required
+                                className={inputClass}
+                              />
+                            </label>
+                            <label>
+                              <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                Description
+                              </span>
+                              <textarea
+                                name="description"
+                                defaultValue={sector.description ?? ""}
+                                rows={2}
+                                className={inputClass}
+                              />
+                            </label>
+                            <button
+                              type="submit"
+                              className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                            >
+                              Save changes
+                            </button>
+                          </form>
+                        </Modal>
+                        <form action={deleteSector}>
+                          <input type="hidden" name="sector_id" value={sector.id} />
+                          <input type="hidden" name="crag_id" value={id} />
+                          <ConfirmSubmit
+                            title={`Delete ${sector.name}?`}
+                            message="Routes in this sector will remain but lose their sector assignment."
+                            confirmLabel="Delete sector"
+                            triggerAriaLabel={`Delete ${sector.name}`}
+                            triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-2 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
+                          >
+                            Delete
+                          </ConfirmSubmit>
+                        </form>
+                      </>
+                    )}
                     <Link
                       href={`/crags/${id}/sectors/${sector.id}`}
                       className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -492,8 +515,8 @@ export default async function CragPage({
         </ul>
       )}
 
-      {/* Deleted sectors */}
-      {deletedSectors.length > 0 && (
+      {/* Deleted sectors — admin only */}
+      {currentUser?.role === "admin" && deletedSectors.length > 0 && (
         <section className="mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Deleted sectors
@@ -528,8 +551,8 @@ export default async function CragPage({
         </section>
       )}
 
-      {/* Deleted routes */}
-      {deletedRoutes.length > 0 && (
+      {/* Deleted routes — admin only */}
+      {currentUser?.role === "admin" && deletedRoutes.length > 0 && (
         <section className="mt-8 border-t border-zinc-200 pt-8 dark:border-zinc-800">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Deleted routes
@@ -567,32 +590,34 @@ export default async function CragPage({
         </section>
       )}
 
-      {/* Danger zone */}
-      <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-          Danger zone
-        </h2>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded border border-red-200 p-4 dark:border-red-900/50">
-          <div>
-            <p className="text-sm font-medium">Delete this crag</p>
-            <p className="mt-0.5 text-xs text-zinc-500">
-              Permanently removes the crag, all its sectors, and all its routes.
-            </p>
+      {/* Danger zone — only for crag author or admin */}
+      {canEdit(crag.created_by) && (
+        <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+            Danger zone
+          </h2>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded border border-red-200 p-4 dark:border-red-900/50">
+            <div>
+              <p className="text-sm font-medium">Delete this crag</p>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                Permanently removes the crag, all its sectors, and all its routes.
+              </p>
+            </div>
+            <form action={deleteCrag}>
+              <input type="hidden" name="crag_id" value={crag.id} />
+              <ConfirmSubmit
+                title={`Delete ${crag.name}?`}
+                message={`This will permanently delete ${crag.name}, all its sectors, and all its routes. This cannot be undone.`}
+                confirmLabel="Delete crag"
+                triggerAriaLabel="Delete crag"
+                triggerClassName="rounded border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:hover:bg-red-950/30"
+              >
+                Delete crag
+              </ConfirmSubmit>
+            </form>
           </div>
-          <form action={deleteCrag}>
-            <input type="hidden" name="crag_id" value={crag.id} />
-            <ConfirmSubmit
-              title={`Delete ${crag.name}?`}
-              message={`This will permanently delete ${crag.name}, all its sectors, and all its routes. This cannot be undone.`}
-              confirmLabel="Delete crag"
-              triggerAriaLabel="Delete crag"
-              triggerClassName="rounded border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:hover:bg-red-950/30"
-            >
-              Delete crag
-            </ConfirmSubmit>
-          </form>
-        </div>
-      </section>
+        </section>
+      )}
     </main>
   );
 }
