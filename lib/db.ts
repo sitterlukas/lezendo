@@ -106,6 +106,21 @@ export interface CountriesTable {
   name: string;
 }
 
+export interface ForumTopicsTable {
+  id: Generated<number>;
+  title: string;
+  user_id: number;
+  created_at: Generated<Date>;
+}
+
+export interface ForumPostsTable {
+  id: Generated<number>;
+  topic_id: number;
+  user_id: number;
+  body: string;
+  created_at: Generated<Date>;
+}
+
 export interface Database {
   crags: CragsTable;
   sectors: SectorsTable;
@@ -116,6 +131,8 @@ export interface Database {
   gear_reviews: GearReviewsTable;
   countries: CountriesTable;
   deletion_log: DeletionLogTable;
+  forum_topics: ForumTopicsTable;
+  forum_posts: ForumPostsTable;
 }
 
 export type Crag = Selectable<CragsTable>;

@@ -73,6 +73,12 @@ export default async function RootLayout({
                   >
                     Gear
                   </Link>
+                  <Link
+                    href="/forum"
+                    className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+                  >
+                    Forum
+                  </Link>
                   <div className="group relative">
                     <Link
                       href="/profile"

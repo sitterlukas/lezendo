@@ -317,6 +317,51 @@ export async function updateRoute(formData: FormData) {
   revalidatePath("/crags", "layout");
 }
 
+export async function createTopic(formData: FormData) {
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  const title = String(formData.get("title") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
+  if (!title || !body) return;
+
+  const topic = await db
+    .insertInto("forum_topics")
+    .values({ title, user_id: userId })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+
+  await db
+    .insertInto("forum_posts")
+    .values({ topic_id: topic.id, user_id: userId, body })
+    .execute();
+
+  redirect(`/forum/${topic.id}`);
+}
+
+export async function createPost(formData: FormData) {
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  const topicId = Number(formData.get("topic_id"));
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body || !Number.isInteger(topicId)) return;
+
+  const topic = await db
+    .selectFrom("forum_topics")
+    .select("id")
+    .where("id", "=", topicId)
+    .executeTakeFirst();
+  if (!topic) return;
+
+  await db
+    .insertInto("forum_posts")
+    .values({ topic_id: topicId, user_id: userId, body })
+    .execute();
+
+  revalidatePath(`/forum/${topicId}`);
+}
+
 async function logDeletion(
   entityType: DeletionEntityType,
   entityId: number,
