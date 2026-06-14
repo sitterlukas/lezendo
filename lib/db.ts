@@ -1,4 +1,7 @@
 import { Kysely, PostgresDialect, type Generated, type Selectable, type Insertable } from "kysely";
+
+export type DeletionEntityType = "crag" | "sector" | "route";
+export type DeletionAction = "delete" | "recover";
 import { Pool } from "pg";
 
 export type ClimbStyle = "sport" | "trad" | "boulder";
@@ -10,6 +13,16 @@ export interface CragsTable {
   area: string | null;
   country: string | null;
   description: string | null;
+  deleted: Generated<boolean>;
+  created_at: Generated<Date>;
+}
+
+export interface SectorsTable {
+  id: Generated<number>;
+  crag_id: number;
+  name: string;
+  description: string | null;
+  deleted: Generated<boolean>;
   created_at: Generated<Date>;
 }
 
@@ -17,10 +30,22 @@ export interface RoutesTable {
   id: Generated<number>;
   name: string;
   crag_id: number;
+  sector_id: number | null;
   grade: string;
   style: ClimbStyle;
   height_m: number | null;
   description: string | null;
+  deleted: Generated<boolean>;
+  created_at: Generated<Date>;
+}
+
+export interface DeletionLogTable {
+  id: Generated<number>;
+  entity_type: DeletionEntityType;
+  entity_id: number;
+  entity_name: string;
+  action: DeletionAction;
+  user_id: number;
   created_at: Generated<Date>;
 }
 
@@ -34,11 +59,14 @@ export interface AscentsTable {
   created_at: Generated<Date>;
 }
 
+export type UserRole = "member" | "admin";
+
 export interface UsersTable {
   id: Generated<number>;
   email: string;
   name: string;
   password_hash: string | null;
+  role: Generated<UserRole>;
   created_at: Generated<Date>;
 }
 
@@ -80,12 +108,14 @@ export interface CountriesTable {
 
 export interface Database {
   crags: CragsTable;
+  sectors: SectorsTable;
   routes: RoutesTable;
   ascents: AscentsTable;
   users: UsersTable;
   gear_items: GearItemsTable;
   gear_reviews: GearReviewsTable;
   countries: CountriesTable;
+  deletion_log: DeletionLogTable;
 }
 
 export type Crag = Selectable<CragsTable>;

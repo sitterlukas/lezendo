@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import db, { type ClimbStyle } from "@/lib/db";
-import { addRoute, logAscent } from "@/app/actions";
+import { addRoute, addSector, updateCrag, updateSector, deleteCrag, deleteSector, recoverSector, recoverRoute } from "@/app/actions";
 import Modal from "@/app/modal";
+import ConfirmSubmit from "@/app/confirm-submit";
 
 const typeLabel: Record<ClimbStyle, string> = {
   sport: "Sport climb",
@@ -14,28 +15,21 @@ const typeLabel: Record<ClimbStyle, string> = {
 const typeBadge: Record<ClimbStyle, string> = {
   sport: "bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300",
   trad: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
-  boulder:
-    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
+  boulder: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
 };
 
-const routeTypes = ["sport", "trad", "boulder"] as const;
-
 const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900";
+  "w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900";
 
 export const dynamic = "force-dynamic";
 
 export default async function CragPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ cragId: string }>;
-  searchParams: Promise<{ type?: string }>;
 }) {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
+  if (!session?.user) redirect("/login");
 
   const { cragId } = await params;
   const id = Number(cragId);
@@ -45,39 +39,101 @@ export default async function CragPage({
     .selectFrom("crags")
     .selectAll()
     .where("id", "=", id)
+    .where("deleted", "=", false)
     .executeTakeFirst();
   if (!crag) notFound();
 
-  const { type } = await searchParams;
-  const activeType = routeTypes.find((t) => t === type);
+  const [sectors, routes, tickedRows] = await Promise.all([
+    db
+      .selectFrom("sectors")
+      .select(["id", "name", "description"])
+      .where("crag_id", "=", id)
+      .where("deleted", "=", false)
+      .orderBy("name")
+      .execute(),
 
-  let query = db
-    .selectFrom("routes")
-    .select(["id", "name", "grade", "style", "height_m", "description"])
-    .where("crag_id", "=", id)
-    .orderBy("created_at", "desc");
-  if (activeType) {
-    query = query.where("style", "=", activeType);
+    db
+      .selectFrom("routes")
+      .select(["id", "name", "grade", "style", "height_m", "description", "sector_id"])
+      .where("crag_id", "=", id)
+      .where("deleted", "=", false)
+      .orderBy("name")
+      .execute(),
+
+    (async () => {
+      const email = session.user?.email;
+      const user = email
+        ? await db
+            .selectFrom("users")
+            .select("id")
+            .where("email", "=", email.toLowerCase())
+            .executeTakeFirst()
+        : undefined;
+      return user
+        ? db
+            .selectFrom("ascents")
+            .select("route_id")
+            .distinct()
+            .where("user_id", "=", user.id)
+            .execute()
+        : [];
+    })(),
+  ]);
+
+  const tickedRouteIds = new Set(tickedRows.map((r) => r.route_id));
+
+  // Deleted sectors and routes for trash sections
+  const [deletedSectors, deletedRoutes] = await Promise.all([
+    db
+      .selectFrom("sectors")
+      .select(["id", "name"])
+      .where("crag_id", "=", id)
+      .where("deleted", "=", true)
+      .orderBy("name")
+      .execute(),
+    db
+      .selectFrom("routes")
+      .select(["id", "name", "grade"])
+      .where("crag_id", "=", id)
+      .where("deleted", "=", true)
+      .orderBy("name")
+      .execute(),
+  ]);
+
+  type LogEntry = { at: Date; by: string };
+
+  async function buildLogMap(entityType: "sector" | "route", ids: number[]) {
+    if (ids.length === 0) return new Map<number, LogEntry>();
+    const entries = await db
+      .selectFrom("deletion_log")
+      .innerJoin("users", "users.id", "deletion_log.user_id")
+      .select(["deletion_log.entity_id", "deletion_log.created_at", "users.name as by"])
+      .where("deletion_log.entity_type", "=", entityType)
+      .where("deletion_log.action", "=", "delete")
+      .where("deletion_log.entity_id", "in", ids)
+      .orderBy("deletion_log.created_at", "desc")
+      .execute();
+    const map = new Map<number, LogEntry>();
+    for (const e of entries) {
+      if (!map.has(e.entity_id)) map.set(e.entity_id, { at: e.created_at as Date, by: e.by as string });
+    }
+    return map;
   }
-  const routes = await query.execute();
 
-  const email = session.user?.email;
-  const user = email
-    ? await db
-        .selectFrom("users")
-        .select("id")
-        .where("email", "=", email.toLowerCase())
-        .executeTakeFirst()
-    : undefined;
-  const tickedRows = user
-    ? await db
-        .selectFrom("ascents")
-        .select("route_id")
-        .distinct()
-        .where("user_id", "=", user.id)
-        .execute()
-    : [];
-  const tickedRouteIds = new Set(tickedRows.map((row) => row.route_id));
+  const [deletedSectorLog, deletedRouteLog] = await Promise.all([
+    buildLogMap("sector", deletedSectors.map((s) => s.id)),
+    buildLogMap("route", deletedRoutes.map((r) => r.id)),
+  ]);
+
+  // Group routes by sector
+  const routesBySector = new Map<number | null, typeof routes>();
+  for (const route of routes) {
+    const key = route.sector_id ?? null;
+    if (!routesBySector.has(key)) routesBySector.set(key, []);
+    routesBySector.get(key)!.push(route);
+  }
+
+  const unsectoredRoutes = routesBySector.get(null) ?? [];
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -102,38 +158,111 @@ export default async function CragPage({
             </p>
           )}
           <p className="mt-3 text-sm text-zinc-500">
+            {sectors.length > 0 && (
+              <>{sectors.length} {sectors.length === 1 ? "sector" : "sectors"} · </>
+            )}
             {routes.length} {routes.length === 1 ? "route" : "routes"}
-            {activeType ? ` — ${typeLabel[activeType].toLowerCase()} only` : ""}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Route type filter */}
-          <nav className="flex items-center gap-2 text-sm">
-          <Link
-            href={`/crags/${id}`}
-            className={`rounded px-3 py-1.5 font-medium transition ${
-              !activeType
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-            }`}
+          <Modal
+            triggerLabel="Edit crag"
+            variant="ghost"
+            title={`Edit ${crag.name}`}
           >
-            All
-          </Link>
-          {routeTypes.map((t) => (
-            <Link
-              key={t}
-              href={`/crags/${id}?type=${t}`}
-              className={`rounded px-3 py-1.5 font-medium transition ${
-                activeType === t
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              }`}
-            >
-              {typeLabel[t]}
-            </Link>
-          ))}
-          </nav>
+            <form action={updateCrag} className="grid gap-4">
+              <input type="hidden" name="crag_id" value={crag.id} />
+              <label>
+                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  Name
+                </span>
+                <input
+                  name="name"
+                  defaultValue={crag.name}
+                  required
+                  className={inputClass}
+                />
+              </label>
+              <label>
+                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  Area
+                </span>
+                <input
+                  name="area"
+                  defaultValue={crag.area ?? ""}
+                  placeholder="e.g. Bohemian Switzerland"
+                  className={inputClass}
+                />
+              </label>
+              <label>
+                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  Country
+                </span>
+                <input
+                  name="country"
+                  defaultValue={crag.country ?? ""}
+                  placeholder="e.g. Czech Republic"
+                  className={inputClass}
+                />
+              </label>
+              <label>
+                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  Description
+                </span>
+                <textarea
+                  name="description"
+                  defaultValue={crag.description ?? ""}
+                  rows={3}
+                  className={inputClass}
+                />
+              </label>
+              <button
+                type="submit"
+                className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              >
+                Save changes
+              </button>
+            </form>
+          </Modal>
+
+          <Modal
+            triggerLabel="Add sector"
+            title={`Add a sector at ${crag.name}`}
+            subtitle="Group routes by wall, face, or area."
+          >
+            <form action={addSector} className="grid gap-4">
+              <input type="hidden" name="crag_id" value={crag.id} />
+              <label>
+                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  Sector name
+                </span>
+                <input
+                  name="name"
+                  placeholder="e.g. Main wall"
+                  required
+                  className={inputClass}
+                />
+              </label>
+              <label>
+                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  Description
+                </span>
+                <textarea
+                  name="description"
+                  placeholder="Aspect, approach, character… (optional)"
+                  rows={2}
+                  className={inputClass}
+                />
+              </label>
+              <button
+                type="submit"
+                className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+              >
+                Add sector
+              </button>
+            </form>
+          </Modal>
 
           <Modal
             triggerLabel="Add route"
@@ -157,12 +286,7 @@ export default async function CragPage({
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Grade
                 </span>
-                <input
-                  name="grade"
-                  placeholder="e.g. 6b+"
-                  required
-                  className={inputClass}
-                />
+                <input name="grade" placeholder="e.g. 6b+" required className={inputClass} />
               </label>
               <label>
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
@@ -174,6 +298,21 @@ export default async function CragPage({
                   <option value="boulder">Boulder</option>
                 </select>
               </label>
+              {sectors.length > 0 && (
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Sector
+                  </span>
+                  <select name="sector_id" className={inputClass}>
+                    <option value="">— no sector —</option>
+                    {sectors.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label>
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Height (m)
@@ -199,7 +338,7 @@ export default async function CragPage({
               </label>
               <button
                 type="submit"
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
               >
                 Add route
               </button>
@@ -208,84 +347,296 @@ export default async function CragPage({
         </div>
       </header>
 
-      {routes.length === 0 ? (
+      {routes.length === 0 && sectors.length === 0 && (
         <div className="mt-12 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
           <p className="font-medium">No routes here yet.</p>
           <p className="mt-1 text-sm text-zinc-500">
-            {activeType
-              ? `No ${typeLabel[activeType].toLowerCase()} routes at ${crag.name} — try another type or add one with the button above.`
-              : `Be the first to add a line at ${crag.name}.`}
+            Add a sector to organise the wall, or go straight to adding a route.
           </p>
         </div>
-      ) : (
+      )}
+
+      {/* Sectors with their routes */}
+      {sectors.length > 0 && (
+        <div className="mt-10 space-y-10">
+          {sectors.map((sector) => {
+            const sectorRoutes = routesBySector.get(sector.id) ?? [];
+            return (
+              <section key={sector.id}>
+                <div className="flex items-baseline justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
+                  <div className="flex items-baseline gap-3">
+                    <h2 className="text-lg font-semibold">{sector.name}</h2>
+                    <span className="text-sm text-zinc-500">
+                      {sectorRoutes.length} {sectorRoutes.length === 1 ? "route" : "routes"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Modal
+                      triggerLabel="Edit"
+                      variant="ghost"
+                      title={`Edit sector: ${sector.name}`}
+                    >
+                      <form action={updateSector} className="grid gap-4">
+                        <input type="hidden" name="sector_id" value={sector.id} />
+                        <label>
+                          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                            Name
+                          </span>
+                          <input
+                            name="name"
+                            defaultValue={sector.name}
+                            required
+                            className={inputClass}
+                          />
+                        </label>
+                        <label>
+                          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                            Description
+                          </span>
+                          <textarea
+                            name="description"
+                            defaultValue={sector.description ?? ""}
+                            rows={2}
+                            className={inputClass}
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                        >
+                          Save changes
+                        </button>
+                      </form>
+                    </Modal>
+                    <form action={deleteSector}>
+                      <input type="hidden" name="sector_id" value={sector.id} />
+                      <input type="hidden" name="crag_id" value={id} />
+                      <ConfirmSubmit
+                        title={`Delete ${sector.name}?`}
+                        message="Routes in this sector will remain but lose their sector assignment."
+                        confirmLabel="Delete sector"
+                        triggerAriaLabel={`Delete ${sector.name}`}
+                        triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-2 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
+                      >
+                        Delete
+                      </ConfirmSubmit>
+                    </form>
+                    <Link
+                      href={`/crags/${id}/sectors/${sector.id}`}
+                      className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
+                    >
+                      View sector →
+                    </Link>
+                  </div>
+                </div>
+                {sector.description && (
+                  <p className="mt-2 text-sm text-zinc-500">{sector.description}</p>
+                )}
+                {sectorRoutes.length === 0 ? (
+                  <p className="mt-4 text-sm text-zinc-400 dark:text-zinc-600">
+                    No routes in this sector yet.
+                  </p>
+                ) : (
+                  <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {sectorRoutes.map((route) => (
+                      <RouteCard
+                        key={route.id}
+                        route={route}
+                        cragId={id}
+                        ticked={tickedRouteIds.has(route.id)}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </section>
+            );
+          })}
+
+          {/* Routes without a sector */}
+          {unsectoredRoutes.length > 0 && (
+            <section>
+              <div className="flex items-baseline gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
+                <h2 className="text-lg font-semibold text-zinc-400 dark:text-zinc-500">
+                  Other routes
+                </h2>
+                <span className="text-sm text-zinc-400 dark:text-zinc-500">
+                  {unsectoredRoutes.length} without a sector
+                </span>
+              </div>
+              <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {unsectoredRoutes.map((route) => (
+                  <RouteCard
+                    key={route.id}
+                    route={route}
+                    cragId={id}
+                    ticked={tickedRouteIds.has(route.id)}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      )}
+
+      {/* No sectors: flat list */}
+      {sectors.length === 0 && routes.length > 0 && (
         <ul className="mt-8 grid gap-4 sm:grid-cols-2">
           {routes.map((route) => (
-            <li
+            <RouteCard
               key={route.id}
-              className="group flex flex-col rounded border border-zinc-200 bg-white p-5 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="text-lg font-semibold leading-snug">
-                  {route.name}
-                </h3>
-                <span className="shrink-0 rounded bg-zinc-900 px-2.5 py-1 font-mono text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
-                  {route.grade}
-                </span>
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
-                <span
-                  className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}
-                >
-                  {typeLabel[route.style]}
-                </span>
-                {route.height_m !== null && (
-                  <span className="text-xs">↑ {route.height_m} m</span>
-                )}
-                {tickedRouteIds.has(route.id) && (
-                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                    Climbed
-                  </span>
-                )}
-              </div>
-              {route.description && (
-                <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  {route.description}
-                </p>
-              )}
-              <form
-                action={logAscent}
-                className="mt-4 flex items-center gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800"
-              >
-                <input type="hidden" name="route_id" value={route.id} />
-                <select
-                  name="tick_type"
-                  defaultValue="redpoint"
-                  className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
-                >
-                  <option value="onsight">Onsight</option>
-                  <option value="flash">Flash</option>
-                  <option value="redpoint">Redpoint</option>
-                  <option value="toprope">Toprope</option>
-                  <option value="attempt">Attempt</option>
-                </select>
-                <input
-                  type="date"
-                  name="ascent_date"
-                  defaultValue={new Date().toISOString().slice(0, 10)}
-                  className="rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
-                />
-                <button
-                  type="submit"
-                  className="ml-auto rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-                >
-                  ✓ Tick
-                </button>
-              </form>
-            </li>
+              route={route}
+              cragId={id}
+              ticked={tickedRouteIds.has(route.id)}
+            />
           ))}
         </ul>
       )}
 
+      {/* Deleted sectors */}
+      {deletedSectors.length > 0 && (
+        <section className="mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+            Deleted sectors
+          </h2>
+          <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            {deletedSectors.map((sector) => {
+              const log = deletedSectorLog.get(sector.id);
+              return (
+                <li key={sector.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                  <div>
+                    <span className="font-medium text-zinc-500">{sector.name}</span>
+                    {log && (
+                      <span className="ml-3 text-xs text-zinc-400">
+                        · Deleted by {log.by} on{" "}
+                        {log.at.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                  </div>
+                  <form action={recoverSector}>
+                    <input type="hidden" name="sector_id" value={sector.id} />
+                    <button
+                      type="submit"
+                      className="rounded border border-zinc-300 px-3 py-1 text-xs font-medium transition hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    >
+                      Recover
+                    </button>
+                  </form>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {/* Deleted routes */}
+      {deletedRoutes.length > 0 && (
+        <section className="mt-8 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+            Deleted routes
+          </h2>
+          <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            {deletedRoutes.map((route) => {
+              const log = deletedRouteLog.get(route.id);
+              return (
+                <li key={route.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-zinc-500">{route.name}</span>
+                    <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-500 dark:bg-zinc-800">
+                      {route.grade}
+                    </span>
+                    {log && (
+                      <span className="text-xs text-zinc-400">
+                        · Deleted by {log.by} on{" "}
+                        {log.at.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                  </div>
+                  <form action={recoverRoute}>
+                    <input type="hidden" name="route_id" value={route.id} />
+                    <button
+                      type="submit"
+                      className="rounded border border-zinc-300 px-3 py-1 text-xs font-medium transition hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    >
+                      Recover
+                    </button>
+                  </form>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {/* Danger zone */}
+      <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+          Danger zone
+        </h2>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded border border-red-200 p-4 dark:border-red-900/50">
+          <div>
+            <p className="text-sm font-medium">Delete this crag</p>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              Permanently removes the crag, all its sectors, and all its routes.
+            </p>
+          </div>
+          <form action={deleteCrag}>
+            <input type="hidden" name="crag_id" value={crag.id} />
+            <ConfirmSubmit
+              title={`Delete ${crag.name}?`}
+              message={`This will permanently delete ${crag.name}, all its sectors, and all its routes. This cannot be undone.`}
+              confirmLabel="Delete crag"
+              triggerAriaLabel="Delete crag"
+              triggerClassName="rounded border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:hover:bg-red-950/30"
+            >
+              Delete crag
+            </ConfirmSubmit>
+          </form>
+        </div>
+      </section>
     </main>
+  );
+}
+
+function RouteCard({
+  route,
+  cragId,
+  ticked,
+}: {
+  route: { id: number; name: string; grade: string; style: ClimbStyle; height_m: number | null; description: string | null };
+  cragId: number;
+  ticked: boolean;
+}) {
+  return (
+    <li>
+      <Link
+        href={`/crags/${cragId}/routes/${route.id}`}
+        className="flex h-full flex-col rounded border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <span className="font-semibold leading-snug">{route.name}</span>
+          <span className="shrink-0 rounded bg-zinc-900 px-2 py-0.5 font-mono text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
+            {route.grade}
+          </span>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}>
+            {typeLabel[route.style]}
+          </span>
+          {route.height_m !== null && (
+            <span className="text-xs text-zinc-500">{route.height_m} m</span>
+          )}
+          {ticked && (
+            <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/50 dark:text-green-300">
+              Climbed
+            </span>
+          )}
+        </div>
+        {route.description && (
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+            {route.description}
+          </p>
+        )}
+      </Link>
+    </li>
   );
 }

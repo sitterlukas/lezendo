@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import { sql } from "kysely";
-import { addCrag } from "@/app/actions";
+import { addCrag, recoverCrag } from "@/app/actions";
 import Modal from "@/app/modal";
 
 const inputClass =
@@ -36,6 +36,7 @@ export default async function CragsPage({
     .select("country")
     .distinct()
     .where("country", "is not", null)
+    .where("deleted", "=", false)
     .orderBy("country")
     .execute();
   const usedCountries = usedCountryRows.map((r) => r.country as string);
@@ -51,7 +52,9 @@ export default async function CragsPage({
   // Base query
   let baseQuery = db
     .selectFrom("crags")
-    .leftJoin("routes", "routes.crag_id", "crags.id")
+    .leftJoin("routes", (join) =>
+      join.onRef("routes.crag_id", "=", "crags.id").on("routes.deleted", "=", false)
+    )
     .select((eb) => [
       "crags.id",
       "crags.name",
@@ -61,6 +64,7 @@ export default async function CragsPage({
       eb.fn.count<number>("routes.id").as("routeCount"),
     ])
     .groupBy("crags.id")
+    .where("crags.deleted", "=", false)
     .orderBy(sql`crags.country NULLS LAST`)
     .orderBy("crags.name");
 
@@ -104,10 +108,36 @@ export default async function CragsPage({
     if (countryFilter) {
       countQuery = countQuery.where("country", "=", countryFilter);
     }
+    countQuery = countQuery.where("deleted", "=", false);
     const { total } = await countQuery.executeTakeFirstOrThrow();
     totalCount = Number(total);
     totalPages = Math.ceil(totalCount / PAGE_SIZE);
   }
+
+  // Deleted crags for trash section
+  const deletedCrags = await db
+    .selectFrom("crags")
+    .select(["id", "name", "area", "country"])
+    .where("deleted", "=", true)
+    .orderBy("name")
+    .execute();
+
+  const deletedCragLog = await (async () => {
+    if (deletedCrags.length === 0) return new Map<number, { at: Date; by: string }>();
+    const entries = await db
+      .selectFrom("deletion_log")
+      .innerJoin("users", "users.id", "deletion_log.user_id")
+      .select(["deletion_log.entity_id", "deletion_log.created_at", "users.name as by"])
+      .where("deletion_log.entity_type", "=", "crag")
+      .where("deletion_log.action", "=", "delete")
+      .orderBy("deletion_log.created_at", "desc")
+      .execute();
+    const map = new Map<number, { at: Date; by: string }>();
+    for (const e of entries) {
+      if (!map.has(e.entity_id)) map.set(e.entity_id, { at: e.created_at as Date, by: e.by as string });
+    }
+    return map;
+  })();
 
   // Group crags by country for the default view
   const groups = crags.reduce<{ country: string | null; items: typeof crags }[]>(
@@ -301,6 +331,8 @@ export default async function CragsPage({
           <p className="mt-1 text-sm text-zinc-500">
             {q
               ? <>Nothing matches &ldquo;{q}&rdquo; — try a different search or add the crag with the button above.</>
+              : countryFilter
+              ? <>No crags in {countryFilter} yet — add one with the button above.</>
               : "Add your first crag with the button above."}
           </p>
         </div>
@@ -358,6 +390,45 @@ export default async function CragsPage({
             </section>
           ))}
         </div>
+      )}
+      {deletedCrags.length > 0 && (
+        <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+            Deleted crags
+          </h2>
+          <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            {deletedCrags.map((crag) => {
+              const log = deletedCragLog.get(crag.id);
+              return (
+                <li key={crag.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                  <div>
+                    <span className="font-medium text-zinc-500">{crag.name}</span>
+                    {(crag.area || crag.country) && (
+                      <span className="ml-2 text-xs text-zinc-400">
+                        {[crag.area, crag.country].filter(Boolean).join(", ")}
+                      </span>
+                    )}
+                    {log && (
+                      <span className="ml-3 text-xs text-zinc-400">
+                        · Deleted by {log.by} on{" "}
+                        {log.at.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    )}
+                  </div>
+                  <form action={recoverCrag}>
+                    <input type="hidden" name="crag_id" value={crag.id} />
+                    <button
+                      type="submit"
+                      className="rounded border border-zinc-300 px-3 py-1 text-xs font-medium transition hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    >
+                      Recover
+                    </button>
+                  </form>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
     </main>
   );

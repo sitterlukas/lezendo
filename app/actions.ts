@@ -1,11 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import db, {
   type ClimbStyle,
   type GearCategory,
   type TickType,
+  type DeletionEntityType,
+  type DeletionAction,
 } from "@/lib/db";
 
 const styles: ClimbStyle[] = ["sport", "trad", "boulder"];
@@ -62,7 +65,7 @@ export async function logAscent(formData: FormData) {
     })
     .execute();
 
-  revalidatePath("/crags");
+  revalidatePath("/crags", "layout");
   revalidatePath("/profile");
 }
 
@@ -230,12 +233,234 @@ export async function addCrag(formData: FormData) {
   revalidatePath("/");
 }
 
+export async function updateCrag(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) return;
+
+  const cragId = Number(formData.get("crag_id"));
+  const name = String(formData.get("name") ?? "").trim();
+  const area = String(formData.get("area") ?? "").trim();
+  const country = String(formData.get("country") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+
+  if (!name || !Number.isInteger(cragId)) return;
+
+  await db
+    .updateTable("crags")
+    .set({ name, area: area || null, country: country || null, description: description || null })
+    .where("id", "=", cragId)
+    .execute();
+
+  revalidatePath("/crags", "layout");
+}
+
+export async function updateSector(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) return;
+
+  const sectorId = Number(formData.get("sector_id"));
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+
+  if (!name || !Number.isInteger(sectorId)) return;
+
+  await db
+    .updateTable("sectors")
+    .set({ name, description: description || null })
+    .where("id", "=", sectorId)
+    .execute();
+
+  revalidatePath("/crags", "layout");
+}
+
+export async function updateRoute(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) return;
+
+  const routeId = Number(formData.get("route_id"));
+  const cragId = Number(formData.get("crag_id"));
+  const sectorIdRaw = String(formData.get("sector_id") ?? "").trim();
+  const sectorId = sectorIdRaw ? Number(sectorIdRaw) : null;
+  const name = String(formData.get("name") ?? "").trim();
+  const grade = String(formData.get("grade") ?? "").trim();
+  const style = String(formData.get("style") ?? "") as ClimbStyle;
+  const heightRaw = String(formData.get("height_m") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+
+  if (!name || !grade || !Number.isInteger(routeId) || !styles.includes(style)) return;
+
+  if (sectorId) {
+    const sector = await db
+      .selectFrom("sectors")
+      .select("id")
+      .where("id", "=", sectorId)
+      .where("crag_id", "=", cragId)
+      .executeTakeFirst();
+    if (!sector) return;
+  }
+
+  const height = heightRaw ? Number.parseInt(heightRaw, 10) : null;
+
+  await db
+    .updateTable("routes")
+    .set({
+      name,
+      grade,
+      style,
+      sector_id: sectorId,
+      height_m: height && !Number.isNaN(height) ? height : null,
+      description: description || null,
+    })
+    .where("id", "=", routeId)
+    .execute();
+
+  revalidatePath("/crags", "layout");
+}
+
+async function logDeletion(
+  entityType: DeletionEntityType,
+  entityId: number,
+  entityName: string,
+  action: DeletionAction,
+  userId: number
+) {
+  await db
+    .insertInto("deletion_log")
+    .values({ entity_type: entityType, entity_id: entityId, entity_name: entityName, action, user_id: userId })
+    .execute();
+}
+
+export async function deleteCrag(formData: FormData) {
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  const cragId = Number(formData.get("crag_id"));
+  if (!Number.isInteger(cragId)) return;
+
+  const crag = await db.selectFrom("crags").select(["id", "name"]).where("id", "=", cragId).executeTakeFirst();
+  if (!crag) return;
+
+  await db.updateTable("crags").set({ deleted: true }).where("id", "=", cragId).execute();
+  await logDeletion("crag", cragId, crag.name, "delete", userId);
+
+  redirect("/crags");
+}
+
+export async function deleteSector(formData: FormData) {
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  const sectorId = Number(formData.get("sector_id"));
+  const cragId = Number(formData.get("crag_id"));
+  if (!Number.isInteger(sectorId) || !Number.isInteger(cragId)) return;
+
+  const sector = await db.selectFrom("sectors").select(["id", "name"]).where("id", "=", sectorId).executeTakeFirst();
+  if (!sector) return;
+
+  await db.updateTable("sectors").set({ deleted: true }).where("id", "=", sectorId).execute();
+  await logDeletion("sector", sectorId, sector.name, "delete", userId);
+
+  redirect(`/crags/${cragId}`);
+}
+
+export async function deleteRoute(formData: FormData) {
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  const routeId = Number(formData.get("route_id"));
+  const cragId = Number(formData.get("crag_id"));
+  if (!Number.isInteger(routeId) || !Number.isInteger(cragId)) return;
+
+  const route = await db.selectFrom("routes").select(["id", "name"]).where("id", "=", routeId).executeTakeFirst();
+  if (!route) return;
+
+  await db.updateTable("routes").set({ deleted: true }).where("id", "=", routeId).execute();
+  await logDeletion("route", routeId, route.name, "delete", userId);
+
+  redirect(`/crags/${cragId}`);
+}
+
+export async function recoverCrag(formData: FormData) {
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  const cragId = Number(formData.get("crag_id"));
+  if (!Number.isInteger(cragId)) return;
+
+  const crag = await db.selectFrom("crags").select(["id", "name"]).where("id", "=", cragId).executeTakeFirst();
+  if (!crag) return;
+
+  await db.updateTable("crags").set({ deleted: false }).where("id", "=", cragId).execute();
+  await logDeletion("crag", cragId, crag.name, "recover", userId);
+
+  revalidatePath("/crags", "layout");
+}
+
+export async function recoverSector(formData: FormData) {
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  const sectorId = Number(formData.get("sector_id"));
+  if (!Number.isInteger(sectorId)) return;
+
+  const sector = await db.selectFrom("sectors").select(["id", "name"]).where("id", "=", sectorId).executeTakeFirst();
+  if (!sector) return;
+
+  await db.updateTable("sectors").set({ deleted: false }).where("id", "=", sectorId).execute();
+  await logDeletion("sector", sectorId, sector.name, "recover", userId);
+
+  revalidatePath("/crags", "layout");
+}
+
+export async function recoverRoute(formData: FormData) {
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  const routeId = Number(formData.get("route_id"));
+  if (!Number.isInteger(routeId)) return;
+
+  const route = await db.selectFrom("routes").select(["id", "name"]).where("id", "=", routeId).executeTakeFirst();
+  if (!route) return;
+
+  await db.updateTable("routes").set({ deleted: false }).where("id", "=", routeId).execute();
+  await logDeletion("route", routeId, route.name, "recover", userId);
+
+  revalidatePath("/crags", "layout");
+}
+
+export async function addSector(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) return;
+
+  const name = String(formData.get("name") ?? "").trim();
+  const cragId = Number(formData.get("crag_id"));
+  const description = String(formData.get("description") ?? "").trim();
+
+  if (!name || !Number.isInteger(cragId)) return;
+
+  const crag = await db
+    .selectFrom("crags")
+    .select("id")
+    .where("id", "=", cragId)
+    .executeTakeFirst();
+  if (!crag) return;
+
+  await db
+    .insertInto("sectors")
+    .values({ crag_id: cragId, name, description: description || null })
+    .execute();
+
+  revalidatePath("/crags", "layout");
+}
+
 export async function addRoute(formData: FormData) {
   const session = await auth();
   if (!session?.user) return;
 
   const name = String(formData.get("name") ?? "").trim();
   const cragId = Number(formData.get("crag_id"));
+  const sectorIdRaw = String(formData.get("sector_id") ?? "").trim();
+  const sectorId = sectorIdRaw ? Number(sectorIdRaw) : null;
   const grade = String(formData.get("grade") ?? "").trim();
   const style = String(formData.get("style") ?? "sport") as ClimbStyle;
   const heightRaw = String(formData.get("height_m") ?? "").trim();
@@ -251,6 +476,16 @@ export async function addRoute(formData: FormData) {
     .executeTakeFirst();
   if (!crag) return;
 
+  if (sectorId) {
+    const sector = await db
+      .selectFrom("sectors")
+      .select("id")
+      .where("id", "=", sectorId)
+      .where("crag_id", "=", cragId)
+      .executeTakeFirst();
+    if (!sector) return;
+  }
+
   const height = heightRaw ? Number.parseInt(heightRaw, 10) : null;
 
   await db
@@ -258,6 +493,7 @@ export async function addRoute(formData: FormData) {
     .values({
       name,
       crag_id: cragId,
+      sector_id: sectorId,
       grade,
       style,
       height_m: Number.isNaN(height) ? null : height,
@@ -265,7 +501,6 @@ export async function addRoute(formData: FormData) {
     })
     .execute();
 
-  revalidatePath(`/crags/${cragId}`);
-  revalidatePath("/crags");
+  revalidatePath("/crags", "layout");
   revalidatePath("/");
 }

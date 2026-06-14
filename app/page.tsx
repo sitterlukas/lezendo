@@ -38,15 +38,11 @@ const features = [
 ];
 
 export default async function LandingPage() {
-  const [routeCount, cragCount, ascentCount] = await Promise.all(
-    (["routes", "crags", "ascents"] as const).map(async (table) => {
-      const { count } = await db
-        .selectFrom(table)
-        .select((eb) => eb.fn.countAll<number>().as("count"))
-        .executeTakeFirstOrThrow();
-      return count;
-    })
-  );
+  const [routeCount, cragCount, ascentCount] = await Promise.all([
+    db.selectFrom("routes").select((eb) => eb.fn.countAll<number>().as("count")).where("deleted", "=", false).executeTakeFirstOrThrow().then((r) => r.count),
+    db.selectFrom("crags").select((eb) => eb.fn.countAll<number>().as("count")).where("deleted", "=", false).executeTakeFirstOrThrow().then((r) => r.count),
+    db.selectFrom("ascents").select((eb) => eb.fn.countAll<number>().as("count")).executeTakeFirstOrThrow().then((r) => r.count),
+  ]);
 
   return (
     <main className="flex-1">

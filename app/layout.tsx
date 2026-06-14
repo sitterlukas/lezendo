@@ -36,11 +36,12 @@ export default async function RootLayout({
   const dbUser = session?.user?.email
     ? await db
         .selectFrom("users")
-        .select("name")
+        .select(["name", "role"])
         .where("email", "=", session.user.email.toLowerCase())
         .executeTakeFirst()
     : undefined;
   const displayName = dbUser?.name ?? session?.user?.name;
+  const isAdmin = dbUser?.role === "admin";
 
   return (
     <html
@@ -121,6 +122,14 @@ export default async function RootLayout({
                         >
                           Settings
                         </Link>
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            className="block px-4 py-2 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                          >
+                            Admin
+                          </Link>
+                        )}
                         <div className="my-2 border-t border-zinc-200 dark:border-zinc-800" />
                         <form action={logout}>
                           <button
