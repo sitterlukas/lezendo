@@ -5,6 +5,8 @@ import db, { type ClimbStyle } from "@/lib/db";
 import { addRoute, addSector, updateCrag, updateSector, deleteCrag, deleteSector, recoverSector, recoverRoute } from "@/app/actions";
 import Modal from "@/app/modal";
 import ConfirmSubmit from "@/app/confirm-submit";
+import ImageGallery from "@/app/image-gallery";
+import ImageUpload from "@/app/image-upload";
 
 const typeLabel: Record<ClimbStyle, string> = {
   sport: "Sport climb",
@@ -48,6 +50,14 @@ export default async function CragPage({
     .where("deleted", "=", false)
     .executeTakeFirst();
   if (!crag) notFound();
+
+  const images = await db
+    .selectFrom("images")
+    .select(["id", "url", "uploaded_by"])
+    .where("entity_type", "=", "crag")
+    .where("entity_id", "=", id)
+    .orderBy("created_at")
+    .execute();
 
   const [sectors, routes, tickedRows] = await Promise.all([
     db
@@ -179,6 +189,9 @@ export default async function CragPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {currentUser && (
+            <ImageUpload entityType="crag" entityId={id} />
+          )}
           {canEdit(crag.created_by) && (
             <Modal
               triggerLabel="Edit crag"
@@ -365,6 +378,12 @@ export default async function CragPage({
           )}
         </div>
       </header>
+
+      <ImageGallery
+        images={images}
+        currentUserId={currentUser?.id ?? null}
+        isAdmin={currentUser?.role === "admin"}
+      />
 
       {routes.length === 0 && sectors.length === 0 && (
         <div className="mt-12 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">

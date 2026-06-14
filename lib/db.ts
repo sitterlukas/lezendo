@@ -2,6 +2,7 @@ import { Kysely, PostgresDialect, type Generated, type Selectable, type Insertab
 
 export type DeletionEntityType = "crag" | "sector" | "route";
 export type DeletionAction = "delete" | "recover";
+export type ImageEntityType = "crag" | "sector" | "route";
 import { Pool } from "pg";
 
 export type ClimbStyle = "sport" | "trad" | "boulder";
@@ -116,6 +117,15 @@ export interface ForumTopicsTable {
   created_at: Generated<Date>;
 }
 
+export interface ImagesTable {
+  id: Generated<number>;
+  entity_type: ImageEntityType;
+  entity_id: number;
+  url: string;
+  uploaded_by: number | null;
+  created_at: Generated<Date>;
+}
+
 export interface ForumPostsTable {
   id: Generated<number>;
   topic_id: number;
@@ -134,6 +144,7 @@ export interface Database {
   gear_reviews: GearReviewsTable;
   countries: CountriesTable;
   deletion_log: DeletionLogTable;
+  images: ImagesTable;
   forum_topics: ForumTopicsTable;
   forum_posts: ForumPostsTable;
 }

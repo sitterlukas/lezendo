@@ -5,6 +5,8 @@ import db, { type ClimbStyle } from "@/lib/db";
 import { addRoute, updateSector, deleteSector } from "@/app/actions";
 import Modal from "@/app/modal";
 import ConfirmSubmit from "@/app/confirm-submit";
+import ImageGallery from "@/app/image-gallery";
+import ImageUpload from "@/app/image-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +55,14 @@ export default async function SectorPage({
       .executeTakeFirst(),
   ]);
   if (!crag || !sector) notFound();
+
+  const images = await db
+    .selectFrom("images")
+    .select(["id", "url", "uploaded_by"])
+    .where("entity_type", "=", "sector")
+    .where("entity_id", "=", sectorIdNum)
+    .orderBy("created_at")
+    .execute();
 
   const routes = await db
     .selectFrom("routes")
@@ -112,6 +122,9 @@ export default async function SectorPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {currentUser && (
+            <ImageUpload entityType="sector" entityId={sectorIdNum} />
+          )}
           {canEdit(sector.created_by) && (
             <Modal
               triggerLabel="Edit sector"
@@ -222,6 +235,12 @@ export default async function SectorPage({
           )}
         </div>
       </header>
+
+      <ImageGallery
+        images={images}
+        currentUserId={currentUser?.id ?? null}
+        isAdmin={currentUser?.role === "admin"}
+      />
 
       {routes.length === 0 ? (
         <div className="mt-12 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">

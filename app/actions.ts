@@ -9,6 +9,7 @@ import db, {
   type TickType,
   type DeletionEntityType,
   type DeletionAction,
+  type ImageEntityType,
 } from "@/lib/db";
 
 const styles: ClimbStyle[] = ["sport", "trad", "boulder"];
@@ -575,4 +576,40 @@ export async function addRoute(formData: FormData) {
 
   revalidatePath("/crags", "layout");
   revalidatePath("/");
+}
+export async function saveImage(
+  url: string,
+  entityType: ImageEntityType,
+  entityId: number
+) {
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  await db
+    .insertInto("images")
+    .values({ entity_type: entityType, entity_id: entityId, url, uploaded_by: userId })
+    .execute();
+
+  revalidatePath("/crags", "layout");
+}
+
+export async function deleteImage(imageId: number) {
+  const user = await currentUserFull();
+  if (!user) return;
+
+  const image = await db
+    .selectFrom("images")
+    .selectAll()
+    .where("id", "=", imageId)
+    .executeTakeFirst();
+  if (!image) return;
+
+  if (!canModify(user, image.uploaded_by)) return;
+
+  const { del } = await import("@vercel/blob");
+  await del(image.url);
+
+  await db.deleteFrom("images").where("id", "=", imageId).execute();
+
+  revalidatePath("/crags", "layout");
 }

@@ -5,6 +5,8 @@ import db, { type ClimbStyle, type TickType } from "@/lib/db";
 import { logAscent, updateRoute, deleteRoute } from "@/app/actions";
 import Modal from "@/app/modal";
 import ConfirmSubmit from "@/app/confirm-submit";
+import ImageGallery from "@/app/image-gallery";
+import ImageUpload from "@/app/image-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +83,14 @@ export default async function RoutePage({
         .where("id", "=", route.sector_id)
         .executeTakeFirst()
     : null;
+
+  const images = await db
+    .selectFrom("images")
+    .select(["id", "url", "uploaded_by"])
+    .where("entity_type", "=", "route")
+    .where("entity_id", "=", routeIdNum)
+    .orderBy("created_at")
+    .execute();
 
   const allAscents = await db
     .selectFrom("ascents")
@@ -160,6 +170,9 @@ export default async function RoutePage({
           <span className="rounded bg-zinc-900 px-4 py-2 font-mono text-2xl font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
             {route.grade}
           </span>
+          {currentUser && (
+            <ImageUpload entityType="route" entityId={routeIdNum} />
+          )}
           {canEdit(route.created_by) && (
             <>
               <form action={deleteRoute}>
@@ -274,6 +287,12 @@ export default async function RoutePage({
           )}
         </div>
       </div>
+
+      <ImageGallery
+        images={images}
+        currentUserId={currentUser?.id ?? null}
+        isAdmin={currentUser?.role === "admin"}
+      />
 
       {/* Log ascent */}
       <section className="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-800">

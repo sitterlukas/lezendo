@@ -13,6 +13,7 @@
     "migrate:list": "kysely migrate:list"
   },
   "dependencies": {
+    "@vercel/blob": "^2.4.0",
     "bcryptjs": "^3.0.3",
     "kysely": "^0.29.2",
     "next": "16.2.9",
