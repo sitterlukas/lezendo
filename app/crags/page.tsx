@@ -4,6 +4,7 @@ import db from "@/lib/db";
 import { sql } from "kysely";
 import { addCrag, recoverCrag } from "@/app/actions";
 import Modal from "@/app/modal";
+import Select from "@/app/ui/select";
 
 const inputClass =
   "w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900";
@@ -170,67 +171,68 @@ export default async function CragsPage({
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">Crags</h1>
-          <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-            {paginated ? (
-              <>
-                {totalCount} {totalCount === 1 ? "crag" : "crags"}
-                {q && <> matching &ldquo;{q}&rdquo;</>}
-                {countryFilter && <> in {countryFilter}</>}
-              </>
-            ) : (
-              <>
-                {crags.length} {crags.length === 1 ? "crag" : "crags"} across{" "}
-                {groups.filter((g) => g.country).length}{" "}
-                {groups.filter((g) => g.country).length === 1 ? "country" : "countries"}
-              </>
-            )}
-          </p>
-        </div>
+      <header>
+        <h1 className="text-4xl font-bold tracking-tight">Crags</h1>
+        <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+          {paginated ? (
+            <>
+              {totalCount} {totalCount === 1 ? "crag" : "crags"}
+              {q && <> matching &ldquo;{q}&rdquo;</>}
+              {countryFilter && <> in {countryFilter}</>}
+            </>
+          ) : (
+            <>
+              {crags.length} {crags.length === 1 ? "crag" : "crags"} across{" "}
+              {groups.filter((g) => g.country).length}{" "}
+              {groups.filter((g) => g.country).length === 1 ? "country" : "countries"}
+            </>
+          )}
+        </p>
+      </header>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <form action="/crags" className="flex items-center gap-2">
-            {countryFilter && (
-              <input type="hidden" name="country" value={countryFilter} />
-            )}
-            <div className="relative">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 20 20"
-                fill="none"
-                aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
-              >
-                <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
-                <path
-                  d="m13.5 13.5 4 4"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <input
-                type="search"
-                name="q"
-                defaultValue={q}
-                placeholder="Search crags…"
-                className="w-56 rounded border border-zinc-300 bg-white py-2 pl-9 pr-4 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <form action="/crags" className="flex items-center gap-2">
+          {countryFilter && (
+            <input type="hidden" name="country" value={countryFilter} />
+          )}
+          <div className="relative">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+            >
+              <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
+              <path
+                d="m13.5 13.5 4 4"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
               />
-            </div>
-            {(q || countryFilter) && (
-              <Link
-                href="/crags"
-                className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
-              >
-                Clear
-              </Link>
-            )}
-          </form>
+            </svg>
+            <input
+              type="search"
+              name="q"
+              defaultValue={q}
+              placeholder="Search crags…"
+              className="w-56 rounded border border-zinc-300 bg-white py-2 pl-9 pr-4 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+            />
+          </div>
+          {(q || countryFilter) && (
+            <Link
+              href="/crags"
+              className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              Clear
+            </Link>
+          )}
+        </form>
 
-          {currentUser && <Modal
+      {currentUser && (
+        <div>
+          <Modal
             triggerLabel="Add crag"
             title="Add a crag"
             subtitle="Found a new spot? Put it on the map."
@@ -261,17 +263,12 @@ export default async function CragsPage({
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Country
                 </span>
-                <input
-                  name="country"
-                  placeholder="e.g. Czech Republic"
-                  list="countries-list"
-                  className={inputClass}
-                />
-                <datalist id="countries-list">
+                <Select name="country" defaultValue="">
+                  <option value="">— not specified —</option>
                   {allCountries.map((c) => (
-                    <option key={c} value={c} />
+                    <option key={c} value={c}>{c}</option>
                   ))}
-                </datalist>
+                </Select>
               </label>
               <label className="sm:col-span-2">
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
@@ -291,13 +288,14 @@ export default async function CragsPage({
                 Add crag
               </button>
             </form>
-          </Modal>}
+          </Modal>
         </div>
-      </header>
+      )}
+      </div>
 
       {/* Country filter tabs */}
       {usedCountries.length > 0 && (
-        <nav className="mt-6 flex flex-wrap gap-2 text-sm">
+        <nav className="mt-4 flex flex-wrap gap-2 text-sm">
           <Link
             href={q ? `/crags?q=${encodeURIComponent(q)}` : "/crags"}
             className={`rounded px-3 py-1.5 font-medium transition ${
@@ -329,10 +327,10 @@ export default async function CragsPage({
           <p className="font-medium">No crags found.</p>
           <p className="mt-1 text-sm text-zinc-500">
             {q
-              ? <>Nothing matches &ldquo;{q}&rdquo; — try a different search or add the crag with the button above.</>
+              ? <>Nothing matches &ldquo;{q}&rdquo; — try a different search or add the crag.</>
               : countryFilter
-              ? <>No crags in {countryFilter} yet — add one with the button above.</>
-              : "Add your first crag with the button above."}
+              ? <>No crags in {countryFilter} yet — add one.</>
+              : "Add your first crag."}
           </p>
         </div>
       )}

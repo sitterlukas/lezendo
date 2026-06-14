@@ -11,8 +11,44 @@ import db, {
   type DeletionAction,
   type ImageEntityType,
 } from "@/lib/db";
+import { gradesForSystem, disciplineOf } from "@/lib/grade-conversion";
+import { loadGradeEquivalencies } from "@/lib/grade-data";
 
 const styles: ClimbStyle[] = ["sport", "trad", "boulder"];
+
+// Bouldering is its own discipline; sport and trad are both roped.
+const disciplineForStyle = (style: ClimbStyle): "rope" | "boulder" =>
+  style === "boulder" ? "boulder" : "rope";
+
+// Validates the grading system + grade for a route. Returns an error message to
+// surface, or null when valid. Enforces two things: the grading system's
+// discipline must match the route's style (boulders take boulder grades, roped
+// routes take roped grades), and the grade must be recognized notation for that
+// system (e.g. no "5+" under UIAA).
+async function gradeSystemError(
+  gradingSystemId: number,
+  grade: string,
+  style: ClimbStyle,
+): Promise<string | null> {
+  const gs = await db
+    .selectFrom("grading_systems")
+    .select("slug")
+    .where("id", "=", gradingSystemId)
+    .executeTakeFirst();
+  if (!gs) return "Unknown grading system.";
+
+  const eqs = await loadGradeEquivalencies();
+  const want = disciplineForStyle(style);
+  if (disciplineOf(gs.slug, eqs) !== want) {
+    return want === "boulder"
+      ? "Boulders must use a boulder grading system (e.g. Font or V-scale)."
+      : "Roped routes must use a roped grading system (e.g. French, YDS, UIAA, or British).";
+  }
+  if (!gradesForSystem(gs.slug, eqs).includes(grade)) {
+    return `"${grade}" is not a valid grade for the selected grading system.`;
+  }
+  return null;
+}
 const gearCategories: GearCategory[] = [
   "rope",
   "quickdraws",
@@ -310,8 +346,12 @@ export async function updateRoute(formData: FormData) {
   const style = String(formData.get("style") ?? "") as ClimbStyle;
   const heightRaw = String(formData.get("height_m") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const gradingSystemId = Number(String(formData.get("grading_system_id") ?? "").trim());
 
   if (!name || !grade || !Number.isInteger(routeId) || !styles.includes(style)) return;
+  if (!Number.isInteger(gradingSystemId) || gradingSystemId <= 0) return;
+  const updateGradeError = await gradeSystemError(gradingSystemId, grade, style);
+  if (updateGradeError) throw new Error(updateGradeError);
 
   const route = await db.selectFrom("routes").select(["id", "created_by"]).where("id", "=", routeId).executeTakeFirst();
   if (!route || !canModify(user, route.created_by)) return;
@@ -333,6 +373,7 @@ export async function updateRoute(formData: FormData) {
     .set({
       name,
       grade,
+      grading_system_id: gradingSystemId,
       style,
       sector_id: sectorId,
       height_m: height && !Number.isNaN(height) ? height : null,
@@ -537,9 +578,13 @@ export async function addRoute(formData: FormData) {
   const style = String(formData.get("style") ?? "sport") as ClimbStyle;
   const heightRaw = String(formData.get("height_m") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const gradingSystemId = Number(String(formData.get("grading_system_id") ?? "").trim());
 
   if (!name || !grade || !Number.isInteger(cragId)) return;
   if (!styles.includes(style)) return;
+  if (!Number.isInteger(gradingSystemId) || gradingSystemId <= 0) return;
+  const addGradeError = await gradeSystemError(gradingSystemId, grade, style);
+  if (addGradeError) throw new Error(addGradeError);
 
   const crag = await db
     .selectFrom("crags")
@@ -567,6 +612,7 @@ export async function addRoute(formData: FormData) {
       crag_id: cragId,
       sector_id: sectorId,
       grade,
+      grading_system_id: gradingSystemId,
       style,
       height_m: Number.isNaN(height) ? null : height,
       description: description || null,
