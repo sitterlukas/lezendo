@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
-import db, { type ClimbStyle } from "@/lib/db";
+import db from "@/lib/db";
 import {
   addRoute,
   addSector,
@@ -15,11 +15,12 @@ import {
 import Modal from "@/app/ui/modal";
 import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageGallery from "@/app/ui/image-gallery";
-import ImageUpload from "@/app/ui/image-upload";
+import EntityReviews from "@/app/ui/entity-reviews";
 import AddRouteForm from "@/app/ui/add-route-form";
+import RouteCard from "@/app/ui/route-card";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
-import { typeLabel, typeBadge, inputClass } from "@/app/ui/style";
+import { inputClass } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
 
@@ -239,7 +240,6 @@ export default async function CragPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {currentUser && <ImageUpload entityType="crag" entityId={id} />}
           {canEdit(crag.created_by) && (
             <Modal
               triggerLabel="Edit crag"
@@ -383,6 +383,9 @@ export default async function CragPage({
         images={images}
         currentUserId={currentUser?.id ?? null}
         isAdmin={currentUser?.role === "admin"}
+        entityType="crag"
+        entityId={id}
+        canUpload={!!currentUser}
       />
 
       {routes.length === 0 && sectors.length === 0 && (
@@ -409,7 +412,7 @@ export default async function CragPage({
                 const sectorRoutes = routesBySector.get(sector.id) ?? [];
                 return (
                   <section key={sector.id}>
-                    <div className="flex items-baseline justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
+                    <div className="flex items-baseline justify-between">
                       <div className="flex items-baseline gap-3">
                         <h3 className="text-lg font-semibold">{sector.name}</h3>
                         <span className="text-sm text-zinc-500">
@@ -502,7 +505,9 @@ export default async function CragPage({
                       </p>
                     ) : (
                       <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {sectorRoutes.map((route) => (
+                        {/* Preview the first two routes; the third cell links
+                            through to the full sector. */}
+                        {sectorRoutes.slice(0, 2).map((route) => (
                           <RouteCard
                             key={route.id}
                             route={route}
@@ -510,6 +515,25 @@ export default async function CragPage({
                             ticked={tickedRouteIds.has(route.id)}
                           />
                         ))}
+                        <li>
+                          <Link
+                            href={`/crags/${id}/sectors/${sector.id}`}
+                            className="flex h-full flex-col items-center justify-center gap-1 rounded border border-dashed border-zinc-300 p-4 text-center transition hover:-translate-y-0.5 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+                          >
+                            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                              View sector →
+                            </span>
+                            <span className="text-xs text-zinc-500">
+                              {sectorRoutes.length > 2
+                                ? `+${sectorRoutes.length - 2} more ${
+                                    sectorRoutes.length - 2 === 1
+                                      ? "route"
+                                      : "routes"
+                                  }`
+                                : "See full detail"}
+                            </span>
+                          </Link>
+                        </li>
                       </ul>
                     )}
                   </section>
@@ -521,7 +545,7 @@ export default async function CragPage({
           {/* Routes without a sector */}
           {unsectoredRoutes.length > 0 && (
             <section>
-              <div className="flex items-baseline gap-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
+              <div className="flex items-baseline gap-3">
                 <h2 className="text-lg font-semibold text-zinc-400 dark:text-zinc-500">
                   Other routes
                 </h2>
@@ -558,9 +582,16 @@ export default async function CragPage({
         </ul>
       )}
 
+      <EntityReviews
+        entityType="crag"
+        entityId={id}
+        currentUserId={currentUser?.id ?? null}
+        isAdmin={currentUser?.role === "admin"}
+      />
+
       {/* Deleted sectors — admin only */}
       {currentUser?.role === "admin" && deletedSectors.length > 0 && (
-        <section className="mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+        <section className="mt-12 pt-8">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Deleted sectors
           </h2>
@@ -605,7 +636,7 @@ export default async function CragPage({
 
       {/* Deleted routes — admin only */}
       {currentUser?.role === "admin" && deletedRoutes.length > 0 && (
-        <section className="mt-8 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+        <section className="mt-8 pt-8">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Deleted routes
           </h2>
@@ -651,65 +682,5 @@ export default async function CragPage({
         </section>
       )}
     </main>
-  );
-}
-
-function RouteCard({
-  route,
-  cragId,
-  ticked,
-}: {
-  route: {
-    id: number;
-    name: string;
-    grade: string;
-    originalGrade: string | null;
-    systemName: string | null;
-    style: ClimbStyle;
-    height_m: number | null;
-    description: string | null;
-  };
-  cragId: number;
-  ticked: boolean;
-}) {
-  return (
-    <li>
-      <Link
-        href={`/crags/${cragId}/routes/${route.id}`}
-        className="flex h-full flex-col rounded border border-zinc-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <span className="font-semibold leading-snug">{route.name}</span>
-          <span className="shrink-0 rounded bg-zinc-900 px-2 py-0.5 text-center font-mono text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
-            {route.grade}
-          </span>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span
-            className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}
-          >
-            {typeLabel[route.style]}
-          </span>
-          {route.systemName && (
-            <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-              {route.systemName}
-            </span>
-          )}
-          {route.height_m !== null && (
-            <span className="text-xs text-zinc-500">{route.height_m} m</span>
-          )}
-          {ticked && (
-            <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/50 dark:text-green-300">
-              Climbed
-            </span>
-          )}
-        </div>
-        {route.description && (
-          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-            {route.description}
-          </p>
-        )}
-      </Link>
-    </li>
   );
 }

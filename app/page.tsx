@@ -5,10 +5,29 @@ import db from "@/lib/db";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
 import { typeLabel, typeBadge } from "@/app/ui/style";
+import {
+  periods,
+  periodLabel,
+  periodStart,
+  parsePeriod,
+  parseDiscipline,
+} from "@/lib/leaderboard";
+import { loadLeaderboard, POINTS_EXPLAINER } from "@/lib/points";
+import DisciplineSelect from "@/app/ui/discipline-select";
+import FilterPill from "@/app/ui/filter-pill";
+import RankCrown from "@/app/ui/rank-crown";
 
 export const dynamic = "force-dynamic";
 
-export default async function LandingPage() {
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string; discipline?: string }>;
+}) {
+  const params = await searchParams;
+  const period = parsePeriod(params.period);
+  const discipline = parseDiscipline(params.discipline);
+  const leaderboardStart = periodStart(period);
   const session = await auth();
   const currentUser = session?.user?.email
     ? ((await db
@@ -63,18 +82,9 @@ export default async function LandingPage() {
       .orderBy("routes.created_at", "desc")
       .limit(6)
       .execute(),
-    db
-      .selectFrom("ascents")
-      .innerJoin("users", "users.id", "ascents.user_id")
-      .select((eb) => [
-        "users.name",
-        eb.fn.count<number>("ascents.id").as("total"),
-      ])
-      .where("ascents.tick_type", "!=", "attempt")
-      .groupBy("users.name")
-      .orderBy("total", "desc")
-      .limit(5)
-      .execute(),
+    loadLeaderboard({ start: leaderboardStart, discipline }).then((r) =>
+      r.slice(0, 5),
+    ),
     db
       .selectFrom("grading_systems")
       .select(["id", "name", "slug"])
@@ -280,53 +290,94 @@ export default async function LandingPage() {
       )}
 
       {/* Leaderboard */}
-      {topClimbers.length > 0 && (
-        <section className="mx-auto max-w-5xl px-6 pb-20">
+      {ascentCount > 0 && (
+        <section id="leaderboard" className="mx-auto max-w-5xl px-6 pb-20">
           <div className="flex items-baseline justify-between">
             <h2 className="text-2xl font-bold tracking-tight">Leaderboard</h2>
             <Link
-              href="/leaderboards"
+              href={`/leaderboards?period=${period}&discipline=${discipline}`}
               className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
             >
               Full leaderboard →
             </Link>
           </div>
-          <div className="mt-8 overflow-hidden rounded border border-zinc-200 dark:border-zinc-800">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
-                  <th className="w-12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                    #
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                    Climber
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                    Sends
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                {topClimbers.map((row, index) => (
-                  <tr key={row.name}>
-                    <td className="px-4 py-3 tabular-nums">
-                      <span
-                        className={
-                          index === 0 ? "text-base font-bold" : "text-zinc-400"
-                        }
-                      >
-                        {index + 1}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-medium">{row.name}</td>
-                    <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                      {Number(row.total)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          {/* Period filter (left) + discipline dropdown (right) */}
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <nav className="flex flex-wrap gap-2">
+              {periods.map((p) => (
+                <FilterPill
+                  key={p}
+                  href={`/?period=${p}&discipline=${discipline}#leaderboard`}
+                  active={period === p}
+                  scroll={false}
+                >
+                  {periodLabel[p]}
+                </FilterPill>
+              ))}
+            </nav>
+            <DisciplineSelect
+              value={discipline}
+              period={period}
+              basePath="/"
+              hash="#leaderboard"
+              scroll={false}
+            />
           </div>
+
+          {topClimbers.length === 0 ? (
+            <div className="mt-6 border border-dashed border-zinc-300 py-12 text-center text-sm text-zinc-500 dark:border-zinc-700">
+              No sends logged {periodLabel[period].toLowerCase()}.
+            </div>
+          ) : (
+            <div className="mt-6 overflow-hidden rounded border border-zinc-200 dark:border-zinc-800">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+                    <th className="w-12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      #
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      Climber
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                      Points
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                  {topClimbers.map((row, index) => (
+                    <tr key={row.user_id}>
+                      <td className="px-4 py-3 tabular-nums">
+                        <span
+                          className={
+                            index === 0
+                              ? "text-base font-bold"
+                              : "text-zinc-400"
+                          }
+                        >
+                          {index + 1}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-medium">
+                        <span className="flex items-center gap-1.5">
+                          <RankCrown rank={index + 1} />
+                          {row.name}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums font-semibold">
+                        {row.points.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <p className="mt-3 max-w-2xl text-xs leading-relaxed text-zinc-500">
+            {POINTS_EXPLAINER}
+          </p>
         </section>
       )}
 
