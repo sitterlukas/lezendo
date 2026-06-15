@@ -22,17 +22,23 @@ export default async function SectorPage({
 }) {
   const session = await auth();
   const currentUser = session?.user?.email
-    ? await db
+    ? ((await db
         .selectFrom("users")
-        .select(["id", "role", "preferred_rope_grading_system_id", "preferred_boulder_grading_system_id"])
+        .select([
+          "id",
+          "role",
+          "preferred_rope_grading_system_id",
+          "preferred_boulder_grading_system_id",
+        ])
         .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst() ?? null
+        .executeTakeFirst()) ?? null)
     : null;
 
   const { cragId, sectorId } = await params;
   const cragIdNum = Number(cragId);
   const sectorIdNum = Number(sectorId);
-  if (!Number.isInteger(cragIdNum) || !Number.isInteger(sectorIdNum)) notFound();
+  if (!Number.isInteger(cragIdNum) || !Number.isInteger(sectorIdNum))
+    notFound();
 
   const [gradingSystems, gradeEquivalencies] = await Promise.all([
     db
@@ -44,7 +50,12 @@ export default async function SectorPage({
   ]);
 
   const [crag, sector] = await Promise.all([
-    db.selectFrom("crags").selectAll().where("id", "=", cragIdNum).where("deleted", "=", false).executeTakeFirst(),
+    db
+      .selectFrom("crags")
+      .selectAll()
+      .where("id", "=", cragIdNum)
+      .where("deleted", "=", false)
+      .executeTakeFirst(),
     db
       .selectFrom("sectors")
       .selectAll()
@@ -65,7 +76,15 @@ export default async function SectorPage({
 
   const routes = await db
     .selectFrom("routes")
-    .select(["id", "name", "grade", "grading_system_id", "style", "height_m", "description"])
+    .select([
+      "id",
+      "name",
+      "grade",
+      "grading_system_id",
+      "style",
+      "height_m",
+      "description",
+    ])
     .where("crag_id", "=", cragIdNum)
     .where("sector_id", "=", sectorIdNum)
     .where("deleted", "=", false)
@@ -90,17 +109,26 @@ export default async function SectorPage({
 
   const resolvedRoutes = routes.map((r) => ({
     ...r,
-    ...resolveGrade(r.grade, r.grading_system_id, gradingSystems, {
-      rope: currentUser?.preferred_rope_grading_system_id,
-      boulder: currentUser?.preferred_boulder_grading_system_id,
-    }, gradeEquivalencies),
+    ...resolveGrade(
+      r.grade,
+      r.grading_system_id,
+      gradingSystems,
+      {
+        rope: currentUser?.preferred_rope_grading_system_id,
+        boulder: currentUser?.preferred_boulder_grading_system_id,
+      },
+      gradeEquivalencies,
+    ),
   }));
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-zinc-500">
-        <Link href="/crags" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">
+        <Link
+          href="/crags"
+          className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+        >
           Crags
         </Link>
         <span>/</span>
@@ -195,7 +223,10 @@ export default async function SectorPage({
                 <GradeSelect
                   gradingSystems={gradingSystems}
                   equivalencies={gradeEquivalencies}
-                  defaultSystemId={currentUser?.preferred_rope_grading_system_id ?? currentUser?.preferred_boulder_grading_system_id}
+                  defaultSystemId={
+                    currentUser?.preferred_rope_grading_system_id ??
+                    currentUser?.preferred_boulder_grading_system_id
+                  }
                   inputClass={inputClass}
                 />
                 <label>
@@ -252,7 +283,9 @@ export default async function SectorPage({
       {routes.length === 0 ? (
         <div className="mt-12 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
           <p className="font-medium">No routes in this sector yet.</p>
-          <p className="mt-1 text-sm text-zinc-500">Add the first route to get started.</p>
+          <p className="mt-1 text-sm text-zinc-500">
+            Add the first route to get started.
+          </p>
         </div>
       ) : (
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -263,13 +296,17 @@ export default async function SectorPage({
                 className="flex h-full flex-col rounded border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <span className="font-semibold leading-snug">{route.name}</span>
+                  <span className="font-semibold leading-snug">
+                    {route.name}
+                  </span>
                   <span className="shrink-0 rounded bg-zinc-900 px-2 py-0.5 text-center font-mono text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
                     {route.grade}
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}>
+                  <span
+                    className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}
+                  >
                     {typeLabel[route.style]}
                   </span>
                   {route.systemName && (
@@ -278,7 +315,9 @@ export default async function SectorPage({
                     </span>
                   )}
                   {route.height_m !== null && (
-                    <span className="text-xs text-zinc-500">{route.height_m} m</span>
+                    <span className="text-xs text-zinc-500">
+                      {route.height_m} m
+                    </span>
                   )}
                   {tickedRouteIds.has(route.id) && (
                     <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/50 dark:text-green-300">
@@ -307,7 +346,8 @@ export default async function SectorPage({
             <div>
               <p className="text-sm font-medium">Delete this sector</p>
               <p className="mt-0.5 text-xs text-zinc-500">
-                Routes in this sector will remain but lose their sector assignment.
+                Routes in this sector will remain but lose their sector
+                assignment.
               </p>
             </div>
             <form action={deleteSector}>

@@ -2,7 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import db, { type ClimbStyle } from "@/lib/db";
-import { addRoute, addSector, updateCrag, updateSector, deleteCrag, deleteSector, recoverSector, recoverRoute } from "@/app/actions";
+import {
+  addRoute,
+  addSector,
+  updateCrag,
+  updateSector,
+  deleteCrag,
+  deleteSector,
+  recoverSector,
+  recoverRoute,
+} from "@/app/actions";
 import Modal from "@/app/ui/modal";
 import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageGallery from "@/app/ui/image-gallery";
@@ -22,11 +31,16 @@ export default async function CragPage({
 }) {
   const session = await auth();
   const currentUser = session?.user?.email
-    ? await db
+    ? ((await db
         .selectFrom("users")
-        .select(["id", "role", "preferred_rope_grading_system_id", "preferred_boulder_grading_system_id"])
+        .select([
+          "id",
+          "role",
+          "preferred_rope_grading_system_id",
+          "preferred_boulder_grading_system_id",
+        ])
         .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst() ?? null
+        .executeTakeFirst()) ?? null)
     : null;
 
   const { cragId } = await params;
@@ -69,7 +83,16 @@ export default async function CragPage({
 
     db
       .selectFrom("routes")
-      .select(["id", "name", "grade", "grading_system_id", "style", "height_m", "description", "sector_id"])
+      .select([
+        "id",
+        "name",
+        "grade",
+        "grading_system_id",
+        "style",
+        "height_m",
+        "description",
+        "sector_id",
+      ])
       .where("crag_id", "=", id)
       .where("deleted", "=", false)
       .orderBy("name")
@@ -99,31 +122,38 @@ export default async function CragPage({
 
   const resolvedRoutes = routes.map((r) => ({
     ...r,
-    ...resolveGrade(r.grade, r.grading_system_id, gradingSystems, {
-      rope: currentUser?.preferred_rope_grading_system_id,
-      boulder: currentUser?.preferred_boulder_grading_system_id,
-    }, gradeEquivalencies),
+    ...resolveGrade(
+      r.grade,
+      r.grading_system_id,
+      gradingSystems,
+      {
+        rope: currentUser?.preferred_rope_grading_system_id,
+        boulder: currentUser?.preferred_boulder_grading_system_id,
+      },
+      gradeEquivalencies,
+    ),
   }));
 
   // Deleted sectors and routes — only fetched when user is admin
-  const [deletedSectors, deletedRoutes] = currentUser?.role === "admin"
-    ? await Promise.all([
-        db
-          .selectFrom("sectors")
-          .select(["id", "name"])
-          .where("crag_id", "=", id)
-          .where("deleted", "=", true)
-          .orderBy("name")
-          .execute(),
-        db
-          .selectFrom("routes")
-          .select(["id", "name", "grade"])
-          .where("crag_id", "=", id)
-          .where("deleted", "=", true)
-          .orderBy("name")
-          .execute(),
-      ])
-    : [[], []];
+  const [deletedSectors, deletedRoutes] =
+    currentUser?.role === "admin"
+      ? await Promise.all([
+          db
+            .selectFrom("sectors")
+            .select(["id", "name"])
+            .where("crag_id", "=", id)
+            .where("deleted", "=", true)
+            .orderBy("name")
+            .execute(),
+          db
+            .selectFrom("routes")
+            .select(["id", "name", "grade"])
+            .where("crag_id", "=", id)
+            .where("deleted", "=", true)
+            .orderBy("name")
+            .execute(),
+        ])
+      : [[], []];
 
   type LogEntry = { at: Date; by: string };
 
@@ -132,7 +162,11 @@ export default async function CragPage({
     const entries = await db
       .selectFrom("deletion_log")
       .innerJoin("users", "users.id", "deletion_log.user_id")
-      .select(["deletion_log.entity_id", "deletion_log.created_at", "users.name as by"])
+      .select([
+        "deletion_log.entity_id",
+        "deletion_log.created_at",
+        "users.name as by",
+      ])
       .where("deletion_log.entity_type", "=", entityType)
       .where("deletion_log.action", "=", "delete")
       .where("deletion_log.entity_id", "in", ids)
@@ -140,14 +174,21 @@ export default async function CragPage({
       .execute();
     const map = new Map<number, LogEntry>();
     for (const e of entries) {
-      if (!map.has(e.entity_id)) map.set(e.entity_id, { at: e.created_at as Date, by: e.by as string });
+      if (!map.has(e.entity_id))
+        map.set(e.entity_id, { at: e.created_at as Date, by: e.by as string });
     }
     return map;
   }
 
   const [deletedSectorLog, deletedRouteLog] = await Promise.all([
-    buildLogMap("sector", deletedSectors.map((s) => s.id)),
-    buildLogMap("route", deletedRoutes.map((r) => r.id)),
+    buildLogMap(
+      "sector",
+      deletedSectors.map((s) => s.id),
+    ),
+    buildLogMap(
+      "route",
+      deletedRoutes.map((r) => r.id),
+    ),
   ]);
 
   // Group routes by sector
@@ -189,16 +230,17 @@ export default async function CragPage({
           )}
           <p className="mt-3 text-sm text-zinc-500">
             {sectors.length > 0 && (
-              <>{sectors.length} {sectors.length === 1 ? "sector" : "sectors"} · </>
+              <>
+                {sectors.length} {sectors.length === 1 ? "sector" : "sectors"}{" "}
+                ·{" "}
+              </>
             )}
             {routes.length} {routes.length === 1 ? "route" : "routes"}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {currentUser && (
-            <ImageUpload entityType="crag" entityId={id} />
-          )}
+          {currentUser && <ImageUpload entityType="crag" entityId={id} />}
           {canEdit(crag.created_by) && (
             <Modal
               triggerLabel="Edit crag"
@@ -323,7 +365,10 @@ export default async function CragPage({
                 <GradeSelect
                   gradingSystems={gradingSystems}
                   equivalencies={gradeEquivalencies}
-                  defaultSystemId={currentUser?.preferred_rope_grading_system_id ?? currentUser?.preferred_boulder_grading_system_id}
+                  defaultSystemId={
+                    currentUser?.preferred_rope_grading_system_id ??
+                    currentUser?.preferred_boulder_grading_system_id
+                  }
                   inputClass={inputClass}
                 />
                 <label>
@@ -412,7 +457,8 @@ export default async function CragPage({
                   <div className="flex items-baseline gap-3">
                     <h2 className="text-lg font-semibold">{sector.name}</h2>
                     <span className="text-sm text-zinc-500">
-                      {sectorRoutes.length} {sectorRoutes.length === 1 ? "route" : "routes"}
+                      {sectorRoutes.length}{" "}
+                      {sectorRoutes.length === 1 ? "route" : "routes"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -424,7 +470,11 @@ export default async function CragPage({
                           title={`Edit sector: ${sector.name}`}
                         >
                           <form action={updateSector} className="grid gap-4">
-                            <input type="hidden" name="sector_id" value={sector.id} />
+                            <input
+                              type="hidden"
+                              name="sector_id"
+                              value={sector.id}
+                            />
                             <label>
                               <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                                 Name
@@ -456,7 +506,11 @@ export default async function CragPage({
                           </form>
                         </Modal>
                         <form action={deleteSector}>
-                          <input type="hidden" name="sector_id" value={sector.id} />
+                          <input
+                            type="hidden"
+                            name="sector_id"
+                            value={sector.id}
+                          />
                           <input type="hidden" name="crag_id" value={id} />
                           <ConfirmSubmit
                             title={`Delete ${sector.name}?`}
@@ -479,7 +533,9 @@ export default async function CragPage({
                   </div>
                 </div>
                 {sector.description && (
-                  <p className="mt-2 text-sm text-zinc-500">{sector.description}</p>
+                  <p className="mt-2 text-sm text-zinc-500">
+                    {sector.description}
+                  </p>
                 )}
                 {sectorRoutes.length === 0 ? (
                   <p className="mt-4 text-sm text-zinc-400 dark:text-zinc-600">
@@ -551,13 +607,22 @@ export default async function CragPage({
             {deletedSectors.map((sector) => {
               const log = deletedSectorLog.get(sector.id);
               return (
-                <li key={sector.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <li
+                  key={sector.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                >
                   <div>
-                    <span className="font-medium text-zinc-500">{sector.name}</span>
+                    <span className="font-medium text-zinc-500">
+                      {sector.name}
+                    </span>
                     {log && (
                       <span className="ml-3 text-xs text-zinc-400">
                         · Deleted by {log.by} on{" "}
-                        {log.at.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        {log.at.toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </span>
                     )}
                   </div>
@@ -587,16 +652,25 @@ export default async function CragPage({
             {deletedRoutes.map((route) => {
               const log = deletedRouteLog.get(route.id);
               return (
-                <li key={route.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <li
+                  key={route.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                >
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-zinc-500">{route.name}</span>
+                    <span className="font-medium text-zinc-500">
+                      {route.name}
+                    </span>
                     <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-500 dark:bg-zinc-800">
                       {route.grade}
                     </span>
                     {log && (
                       <span className="text-xs text-zinc-400">
                         · Deleted by {log.by} on{" "}
-                        {log.at.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        {log.at.toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </span>
                     )}
                   </div>
@@ -626,7 +700,8 @@ export default async function CragPage({
             <div>
               <p className="text-sm font-medium">Delete this crag</p>
               <p className="mt-0.5 text-xs text-zinc-500">
-                Permanently removes the crag, all its sectors, and all its routes.
+                Permanently removes the crag, all its sectors, and all its
+                routes.
               </p>
             </div>
             <form action={deleteCrag}>
@@ -653,7 +728,16 @@ function RouteCard({
   cragId,
   ticked,
 }: {
-  route: { id: number; name: string; grade: string; originalGrade: string | null; systemName: string | null; style: ClimbStyle; height_m: number | null; description: string | null };
+  route: {
+    id: number;
+    name: string;
+    grade: string;
+    originalGrade: string | null;
+    systemName: string | null;
+    style: ClimbStyle;
+    height_m: number | null;
+    description: string | null;
+  };
   cragId: number;
   ticked: boolean;
 }) {
@@ -670,7 +754,9 @@ function RouteCard({
           </span>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}>
+          <span
+            className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}
+          >
             {typeLabel[route.style]}
           </span>
           {route.systemName && (

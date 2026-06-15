@@ -4,7 +4,11 @@ import { useState } from "react";
 import Select from "./select";
 import { gradesForSystem, type GradeEquivalency } from "@/lib/grade-conversion";
 
-interface GradingSystem { id: number; name: string; slug: string }
+interface GradingSystem {
+  id: number;
+  name: string;
+  slug: string;
+}
 
 interface Props {
   gradingSystems: GradingSystem[];
@@ -26,8 +30,11 @@ export default function GradeSelect({
   );
   const [grade, setGrade] = useState(defaultGrade ?? "");
 
-  const selectedSlug = gradingSystems.find((gs) => String(gs.id) === systemId)?.slug ?? null;
-  const gradeOptions = selectedSlug ? gradesForSystem(selectedSlug, equivalencies) : [];
+  const selectedSlug =
+    gradingSystems.find((gs) => String(gs.id) === systemId)?.slug ?? null;
+  const gradeOptions = selectedSlug
+    ? gradesForSystem(selectedSlug, equivalencies)
+    : [];
 
   function handleSystemChange(e: React.ChangeEvent<HTMLSelectElement>) {
     setSystemId(e.target.value);
@@ -47,7 +54,9 @@ export default function GradeSelect({
         >
           <option value="">— pick system —</option>
           {gradingSystems.map((gs) => (
-            <option key={gs.id} value={gs.id}>{gs.name}</option>
+            <option key={gs.id} value={gs.id}>
+              {gs.name}
+            </option>
           ))}
         </Select>
       </label>
@@ -64,7 +73,9 @@ export default function GradeSelect({
           >
             <option value="">— pick grade —</option>
             {gradeOptions.map((g) => (
-              <option key={g} value={g}>{g}</option>
+              <option key={g} value={g}>
+                {g}
+              </option>
             ))}
           </Select>
         ) : (
@@ -75,7 +86,10 @@ export default function GradeSelect({
             onChange={(e) => setGrade(e.target.value)}
             placeholder={selectedSlug ? "Enter grade" : "Pick system first"}
             disabled={!selectedSlug && gradeOptions.length === 0}
-            className={inputClass ?? "w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"}
+            className={
+              inputClass ??
+              "w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+            }
           />
         )}
       </label>

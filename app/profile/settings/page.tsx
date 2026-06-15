@@ -27,7 +27,11 @@ export default async function SettingsPage() {
       ])
       .where("email", "=", email.toLowerCase())
       .executeTakeFirst(),
-    db.selectFrom("grading_systems").select(["id", "name", "slug"]).orderBy("id").execute(),
+    db
+      .selectFrom("grading_systems")
+      .select(["id", "name", "slug"])
+      .orderBy("id")
+      .execute(),
     loadGradeEquivalencies(),
   ]);
   if (!user) {

@@ -3,7 +3,8 @@ import { register } from "@/app/actions/auth";
 import OAuthButtons from "@/app/ui/oauth-buttons";
 
 const errorMessages: Record<string, string> = {
-  invalid: "Please fill in all fields — password must be at least 8 characters.",
+  invalid:
+    "Please fill in all fields — password must be at least 8 characters.",
   exists: "An account with this email already exists.",
 };
 

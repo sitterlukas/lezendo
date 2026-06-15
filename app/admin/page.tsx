@@ -19,74 +19,79 @@ export default async function AdminPage() {
     : null;
   if (dbUser?.role !== "admin") redirect("/crags");
 
-  const [deletedCrags, deletedSectors, deletedRoutes, auditLog] = await Promise.all([
-    db
-      .selectFrom("crags")
-      .select(["id", "name", "area", "country"])
-      .where("deleted", "=", true)
-      .orderBy("name")
-      .execute(),
+  const [deletedCrags, deletedSectors, deletedRoutes, auditLog] =
+    await Promise.all([
+      db
+        .selectFrom("crags")
+        .select(["id", "name", "area", "country"])
+        .where("deleted", "=", true)
+        .orderBy("name")
+        .execute(),
 
-    db
-      .selectFrom("sectors")
-      .innerJoin("crags", "crags.id", "sectors.crag_id")
-      .select([
-        "sectors.id",
-        "sectors.name",
-        "sectors.crag_id",
-        "crags.name as crag_name",
-        "crags.deleted as crag_deleted",
-      ])
-      .where("sectors.deleted", "=", true)
-      .orderBy("crags.name")
-      .orderBy("sectors.name")
-      .execute(),
+      db
+        .selectFrom("sectors")
+        .innerJoin("crags", "crags.id", "sectors.crag_id")
+        .select([
+          "sectors.id",
+          "sectors.name",
+          "sectors.crag_id",
+          "crags.name as crag_name",
+          "crags.deleted as crag_deleted",
+        ])
+        .where("sectors.deleted", "=", true)
+        .orderBy("crags.name")
+        .orderBy("sectors.name")
+        .execute(),
 
-    db
-      .selectFrom("routes")
-      .innerJoin("crags", "crags.id", "routes.crag_id")
-      .leftJoin("sectors", "sectors.id", "routes.sector_id")
-      .select([
-        "routes.id",
-        "routes.name",
-        "routes.grade",
-        "routes.crag_id",
-        "crags.name as crag_name",
-        "crags.deleted as crag_deleted",
-        "sectors.name as sector_name",
-      ])
-      .where("routes.deleted", "=", true)
-      .orderBy("crags.name")
-      .orderBy("routes.name")
-      .execute(),
+      db
+        .selectFrom("routes")
+        .innerJoin("crags", "crags.id", "routes.crag_id")
+        .leftJoin("sectors", "sectors.id", "routes.sector_id")
+        .select([
+          "routes.id",
+          "routes.name",
+          "routes.grade",
+          "routes.crag_id",
+          "crags.name as crag_name",
+          "crags.deleted as crag_deleted",
+          "sectors.name as sector_name",
+        ])
+        .where("routes.deleted", "=", true)
+        .orderBy("crags.name")
+        .orderBy("routes.name")
+        .execute(),
 
-    db
-      .selectFrom("deletion_log")
-      .innerJoin("users", "users.id", "deletion_log.user_id")
-      .select([
-        "deletion_log.id",
-        "deletion_log.entity_type",
-        "deletion_log.entity_id",
-        "deletion_log.entity_name",
-        "deletion_log.action",
-        "deletion_log.created_at",
-        "users.name as user_name",
-      ])
-      .orderBy("deletion_log.created_at", "desc")
-      .limit(300)
-      .execute(),
-  ]);
+      db
+        .selectFrom("deletion_log")
+        .innerJoin("users", "users.id", "deletion_log.user_id")
+        .select([
+          "deletion_log.id",
+          "deletion_log.entity_type",
+          "deletion_log.entity_id",
+          "deletion_log.entity_name",
+          "deletion_log.action",
+          "deletion_log.created_at",
+          "users.name as user_name",
+        ])
+        .orderBy("deletion_log.created_at", "desc")
+        .limit(300)
+        .execute(),
+    ]);
 
   // Latest delete action per entity (auditLog is newest-first)
   const lastDeleteMap = new Map<string, { by: string; at: Date }>();
   for (const e of auditLog) {
     const key = `${e.entity_type}:${e.entity_id}`;
     if (e.action === "delete" && !lastDeleteMap.has(key)) {
-      lastDeleteMap.set(key, { by: e.user_name as string, at: e.created_at as Date });
+      lastDeleteMap.set(key, {
+        by: e.user_name as string,
+        at: e.created_at as Date,
+      });
     }
   }
 
-  const totalDeleted = deletedCrags.length + deletedSectors.length + deletedRoutes.length;
+  const totalDeleted =
+    deletedCrags.length + deletedSectors.length + deletedRoutes.length;
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -95,7 +100,9 @@ export default async function AdminPage() {
           <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Administration
           </p>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight">Deleted content</h1>
+          <h1 className="mt-2 text-4xl font-bold tracking-tight">
+            Deleted content
+          </h1>
           <p className="mt-2 text-zinc-500">
             {totalDeleted === 0
               ? "Nothing deleted."
@@ -103,7 +110,10 @@ export default async function AdminPage() {
           </p>
         </div>
         <div className="flex gap-4 text-sm text-zinc-500">
-          <Link href="/crags" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">
+          <Link
+            href="/crags"
+            className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
             ← Back to crags
           </Link>
         </div>
@@ -113,18 +123,30 @@ export default async function AdminPage() {
       {totalDeleted > 0 && (
         <div className="mt-6 flex flex-wrap gap-3">
           {deletedCrags.length > 0 && (
-            <a href="#deleted-crags" className="rounded border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 transition hover:border-zinc-300 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-700">
-              {deletedCrags.length} {deletedCrags.length === 1 ? "crag" : "crags"}
+            <a
+              href="#deleted-crags"
+              className="rounded border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 transition hover:border-zinc-300 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-700"
+            >
+              {deletedCrags.length}{" "}
+              {deletedCrags.length === 1 ? "crag" : "crags"}
             </a>
           )}
           {deletedSectors.length > 0 && (
-            <a href="#deleted-sectors" className="rounded border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 transition hover:border-zinc-300 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-700">
-              {deletedSectors.length} {deletedSectors.length === 1 ? "sector" : "sectors"}
+            <a
+              href="#deleted-sectors"
+              className="rounded border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 transition hover:border-zinc-300 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-700"
+            >
+              {deletedSectors.length}{" "}
+              {deletedSectors.length === 1 ? "sector" : "sectors"}
             </a>
           )}
           {deletedRoutes.length > 0 && (
-            <a href="#deleted-routes" className="rounded border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 transition hover:border-zinc-300 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-700">
-              {deletedRoutes.length} {deletedRoutes.length === 1 ? "route" : "routes"}
+            <a
+              href="#deleted-routes"
+              className="rounded border border-zinc-200 px-3 py-1.5 text-sm text-zinc-600 transition hover:border-zinc-300 dark:border-zinc-800 dark:text-zinc-400 dark:hover:border-zinc-700"
+            >
+              {deletedRoutes.length}{" "}
+              {deletedRoutes.length === 1 ? "route" : "routes"}
             </a>
           )}
         </div>
@@ -149,7 +171,10 @@ export default async function AdminPage() {
             {deletedCrags.map((crag) => {
               const log = lastDeleteMap.get(`crag:${crag.id}`);
               return (
-                <li key={crag.id} className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
+                <li
+                  key={crag.id}
+                  className="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
+                >
                   <div>
                     <span className="font-medium">{crag.name}</span>
                     {(crag.area || crag.country) && (
@@ -194,7 +219,10 @@ export default async function AdminPage() {
             {deletedSectors.map((sector) => {
               const log = lastDeleteMap.get(`sector:${sector.id}`);
               return (
-                <li key={sector.id} className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
+                <li
+                  key={sector.id}
+                  className="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
+                >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{sector.name}</span>
@@ -254,7 +282,10 @@ export default async function AdminPage() {
             {deletedRoutes.map((route) => {
               const log = lastDeleteMap.get(`route:${route.id}`);
               return (
-                <li key={route.id} className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
+                <li
+                  key={route.id}
+                  className="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
+                >
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{route.name}</span>
@@ -263,7 +294,9 @@ export default async function AdminPage() {
                       </span>
                       <span className="text-zinc-400">·</span>
                       {route.crag_deleted ? (
-                        <span className="text-sm text-zinc-400 line-through">{route.crag_name}</span>
+                        <span className="text-sm text-zinc-400 line-through">
+                          {route.crag_name}
+                        </span>
                       ) : (
                         <Link
                           href={`/crags/${route.crag_id}`}
@@ -275,7 +308,9 @@ export default async function AdminPage() {
                       {route.sector_name && (
                         <>
                           <span className="text-zinc-400">/</span>
-                          <span className="text-sm text-zinc-500">{route.sector_name}</span>
+                          <span className="text-sm text-zinc-500">
+                            {route.sector_name}
+                          </span>
                         </>
                       )}
                       {route.crag_deleted && (
@@ -321,7 +356,10 @@ export default async function AdminPage() {
         ) : (
           <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
             {auditLog.map((entry) => (
-              <li key={entry.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+              <li
+                key={entry.id}
+                className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm"
+              >
                 <span
                   className={`rounded px-2 py-0.5 text-xs font-medium ${
                     entry.action === "delete"
@@ -331,7 +369,9 @@ export default async function AdminPage() {
                 >
                   {entry.action === "delete" ? "Deleted" : "Recovered"}
                 </span>
-                <span className="capitalize text-zinc-500">{entry.entity_type}</span>
+                <span className="capitalize text-zinc-500">
+                  {entry.entity_type}
+                </span>
                 <span className="font-medium">{entry.entity_name}</span>
                 <span className="ml-auto text-xs text-zinc-400">
                   {entry.user_name as string} ·{" "}
@@ -348,7 +388,9 @@ export default async function AdminPage() {
           </ul>
         )}
         {auditLog.length === 300 && (
-          <p className="mt-3 text-xs text-zinc-400">Showing the 300 most recent actions.</p>
+          <p className="mt-3 text-xs text-zinc-400">
+            Showing the 300 most recent actions.
+          </p>
         )}
       </section>
     </main>

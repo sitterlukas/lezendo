@@ -15,7 +15,11 @@ export interface GradeEquivalency {
   discipline: "rope" | "boulder";
 }
 
-interface GradingSystem { id: number; name: string; slug: string }
+interface GradingSystem {
+  id: number;
+  name: string;
+  slug: string;
+}
 
 export function disciplineOf(
   slug: string,
@@ -27,7 +31,10 @@ export function disciplineOf(
 /**
  * Return all grades for a system in ascending difficulty order.
  */
-export function gradesForSystem(slug: string, eqs: GradeEquivalency[]): string[] {
+export function gradesForSystem(
+  slug: string,
+  eqs: GradeEquivalency[],
+): string[] {
   return eqs
     .filter((e) => e.slug === slug)
     .sort((a, b) => a.rank - b.rank)
@@ -49,7 +56,9 @@ function convertGrade(
   if (disciplineOf(fromSlug, eqs) !== disciplineOf(toSlug, eqs)) return null;
 
   const src = eqs.find(
-    (e) => e.slug === fromSlug && e.grade.toLowerCase() === grade.trim().toLowerCase(),
+    (e) =>
+      e.slug === fromSlug &&
+      e.grade.toLowerCase() === grade.trim().toLowerCase(),
   );
   if (!src) return null;
 
@@ -73,13 +82,19 @@ export function resolveGrade(
   prefs: { rope?: number | null; boulder?: number | null },
   eqs: GradeEquivalency[],
 ): { grade: string; originalGrade: string | null; systemName: string | null } {
-  const routeSlug = gradingSystems.find((gs) => gs.id === routeSystemId)?.slug ?? null;
+  const routeSlug =
+    gradingSystems.find((gs) => gs.id === routeSystemId)?.slug ?? null;
 
   // Pick the preference matching the route's own discipline.
   const routeDiscipline = routeSlug ? disciplineOf(routeSlug, eqs) : null;
   const preferredSystemId =
-    routeDiscipline === "boulder" ? prefs.boulder : routeDiscipline === "rope" ? prefs.rope : null;
-  const preferredSlug = gradingSystems.find((gs) => gs.id === preferredSystemId)?.slug ?? null;
+    routeDiscipline === "boulder"
+      ? prefs.boulder
+      : routeDiscipline === "rope"
+        ? prefs.rope
+        : null;
+  const preferredSlug =
+    gradingSystems.find((gs) => gs.id === preferredSystemId)?.slug ?? null;
 
   const converted =
     grade && routeSlug && preferredSlug
@@ -91,7 +106,8 @@ export function resolveGrade(
     grade: isConverted ? converted! : grade,
     originalGrade: isConverted ? grade : null,
     systemName:
-      gradingSystems.find((gs) => gs.id === (isConverted ? preferredSystemId : routeSystemId))
-        ?.name ?? null,
+      gradingSystems.find(
+        (gs) => gs.id === (isConverted ? preferredSystemId : routeSystemId),
+      )?.name ?? null,
   };
 }
