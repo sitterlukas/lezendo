@@ -16,6 +16,9 @@ interface Props {
   defaultSystemId?: number | null;
   defaultGrade?: string;
   inputClass?: string;
+  // Notified whenever the selected grading system changes, so a parent form can
+  // cross-validate it against the route type.
+  onSystemChange?: (systemId: string) => void;
 }
 
 export default function GradeSelect({
@@ -24,6 +27,7 @@ export default function GradeSelect({
   defaultSystemId,
   defaultGrade,
   inputClass,
+  onSystemChange,
 }: Props) {
   const [systemId, setSystemId] = useState(
     defaultSystemId
@@ -41,6 +45,7 @@ export default function GradeSelect({
   function handleSystemChange(e: React.ChangeEvent<HTMLSelectElement>) {
     setSystemId(e.target.value);
     setGrade("");
+    onSystemChange?.(e.target.value);
   }
 
   return (
