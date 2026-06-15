@@ -676,7 +676,7 @@ function RouteCard({
     <li>
       <Link
         href={`/crags/${cragId}/routes/${route.id}`}
-        className="flex h-full flex-col rounded border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700"
+        className="flex h-full flex-col rounded border border-zinc-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700"
       >
         <div className="flex items-start justify-between gap-3">
           <span className="font-semibold leading-snug">{route.name}</span>
