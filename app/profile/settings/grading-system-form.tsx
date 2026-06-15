@@ -23,18 +23,10 @@ export default function GradingSystemForm({
     (gs) => disciplineOf(gs.slug, equivalencies) === "boulder",
   );
 
-  // When the user hasn't chosen yet, default to UIAA (rope) and Fontainebleau
-  // (boulder), falling back to the first available system of each discipline.
-  const ropeFallback =
-    ropeSystems.find((gs) => gs.slug === "uiaa")?.id ?? ropeSystems[0]?.id;
-  const boulderFallback =
-    boulderSystems.find((gs) => gs.slug === "font")?.id ??
-    boulderSystems[0]?.id;
-
-  const [rope, setRope] = useState(String(ropeDefault ?? ropeFallback ?? ""));
-  const [boulder, setBoulder] = useState(
-    String(boulderDefault ?? boulderFallback ?? ""),
-  );
+  // Preferences are seeded with DB defaults (UIAA / Fontainebleau) and never
+  // cleared by this form, so the incoming values are always set.
+  const [rope, setRope] = useState(String(ropeDefault ?? ""));
+  const [boulder, setBoulder] = useState(String(boulderDefault ?? ""));
 
   const [state, action, pending] = useActionState(updateGradingSystem, {
     saved: false,
