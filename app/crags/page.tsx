@@ -5,6 +5,7 @@ import { sql } from "kysely";
 import { addCrag, recoverCrag } from "@/app/actions";
 import Modal from "@/app/ui/modal";
 import Select from "@/app/ui/select";
+import FilterPill from "@/app/ui/filter-pill";
 import { inputClass } from "@/app/ui/style";
 
 const PAGE_SIZE = 24;
@@ -315,28 +316,20 @@ export default async function CragsPage({
       {/* Country filter tabs */}
       {usedCountries.length > 0 && (
         <nav className="mt-4 flex flex-wrap gap-2 text-sm">
-          <Link
+          <FilterPill
             href={q ? `/crags?q=${encodeURIComponent(q)}` : "/crags"}
-            className={`rounded px-3 py-1.5 font-medium transition ${
-              !countryFilter
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-            }`}
+            active={!countryFilter}
           >
             All
-          </Link>
+          </FilterPill>
           {usedCountries.map((country) => (
-            <Link
+            <FilterPill
               key={country}
               href={countryUrl(country)}
-              className={`rounded px-3 py-1.5 font-medium transition ${
-                countryFilter === country
-                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                  : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-              }`}
+              active={countryFilter === country}
             >
               {country}
-            </Link>
+            </FilterPill>
           ))}
         </nav>
       )}
@@ -368,7 +361,7 @@ export default async function CragsPage({
             ))}
           </ul>
           {totalPages > 1 && (
-            <div className="mt-10 flex items-center justify-between border-t border-zinc-200 pt-6 dark:border-zinc-800">
+            <div className="mt-10 flex items-center justify-between pt-6">
               <span className="text-sm text-zinc-500">
                 Page {page} of {totalPages}
               </span>
@@ -400,7 +393,7 @@ export default async function CragsPage({
         <div className="mt-12 space-y-12">
           {groups.map((group) => (
             <section key={group.country ?? "__none__"}>
-              <h2 className="border-b border-zinc-200 pb-3 text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
                 {group.country ?? "No country"}
               </h2>
               <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -413,7 +406,7 @@ export default async function CragsPage({
         </div>
       )}
       {currentUser?.role === "admin" && deletedCrags.length > 0 && (
-        <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+        <section className="mt-16 pt-8">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Deleted crags
           </h2>

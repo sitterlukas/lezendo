@@ -263,6 +263,57 @@ export async function deleteGearReview(formData: FormData) {
   revalidatePath("/profile/gear");
 }
 
+const reviewEntityTypes = ["crag", "sector", "route"] as const;
+
+export async function addEntityReview(formData: FormData) {
+  const userId = await currentUserId();
+  if (userId === null) return;
+
+  const entityType = String(formData.get("entity_type") ?? "");
+  const entityId = Number(formData.get("entity_id"));
+  const rating = Number(formData.get("rating"));
+  const body = String(formData.get("body") ?? "").trim();
+
+  if (!reviewEntityTypes.includes(entityType as (typeof reviewEntityTypes)[number]))
+    return;
+  if (!Number.isInteger(entityId)) return;
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return;
+
+  // One review per user per entity: posting again updates rating/comment.
+  await db
+    .insertInto("entity_reviews")
+    .values({
+      entity_type: entityType as (typeof reviewEntityTypes)[number],
+      entity_id: entityId,
+      user_id: userId,
+      rating,
+      body: body || null,
+    })
+    .onConflict((oc) =>
+      oc
+        .columns(["entity_type", "entity_id", "user_id"])
+        .doUpdateSet({ rating, body: body || null }),
+    )
+    .execute();
+
+  revalidatePath("/crags", "layout");
+}
+
+export async function deleteEntityReview(formData: FormData) {
+  const user = await currentUserFull();
+  if (!user) return;
+
+  const reviewId = Number(formData.get("review_id"));
+  if (!Number.isInteger(reviewId)) return;
+
+  let query = db.deleteFrom("entity_reviews").where("id", "=", reviewId);
+  // Owners delete their own; admins can delete any.
+  if (user.role !== "admin") query = query.where("user_id", "=", user.id);
+  await query.execute();
+
+  revalidatePath("/crags", "layout");
+}
+
 export async function addCrag(formData: FormData) {
   const userId = await currentUserId();
   if (!userId) return;
@@ -343,6 +394,47 @@ export async function updateSector(formData: FormData) {
   await db
     .updateTable("sectors")
     .set({ name, description: description || null })
+    .where("id", "=", sectorId)
+    .execute();
+
+  revalidatePath("/crags", "layout");
+}
+
+export async function updateSectorLocation(formData: FormData) {
+  const user = await currentUserFull();
+  if (!user) return;
+
+  const sectorId = Number(formData.get("sector_id"));
+  const kind = String(formData.get("kind") ?? "");
+  const latRaw = String(formData.get("latitude") ?? "").trim();
+  const lngRaw = String(formData.get("longitude") ?? "").trim();
+
+  if (!Number.isInteger(sectorId)) return;
+  if (kind !== "sector" && kind !== "parking") return;
+  if (!latRaw || !lngRaw) return;
+
+  const lat = Number(latRaw);
+  const lng = Number(lngRaw);
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90) return;
+  if (!Number.isFinite(lng) || lng < -180 || lng > 180) return;
+
+  // Location/parking coordinates are community-editable: any signed-in user
+  // can add or correct them (unlike sector name/description, which are
+  // restricted to the author/admin in updateSector).
+  const sector = await db
+    .selectFrom("sectors")
+    .select("id")
+    .where("id", "=", sectorId)
+    .executeTakeFirst();
+  if (!sector) return;
+
+  await db
+    .updateTable("sectors")
+    .set(
+      kind === "parking"
+        ? { parking_latitude: lat, parking_longitude: lng }
+        : { latitude: lat, longitude: lng },
+    )
     .where("id", "=", sectorId)
     .execute();
 

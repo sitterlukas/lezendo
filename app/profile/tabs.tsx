@@ -12,7 +12,7 @@ export default function ProfileTabs({
   active: (typeof tabs)[number]["key"];
 }) {
   return (
-    <nav className="mt-6 flex gap-6 border-b border-zinc-200 text-sm font-medium dark:border-zinc-800">
+    <nav className="mt-6 flex gap-6 text-sm font-medium">
       {tabs.map((tab) => (
         <Link
           key={tab.key}

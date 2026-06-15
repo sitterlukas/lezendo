@@ -125,7 +125,7 @@ export default async function TopicPage({
       </div>
 
       {/* Reply form */}
-      <section className="mt-8 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+      <section className="mt-8 pt-8">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
           Reply
         </h2>

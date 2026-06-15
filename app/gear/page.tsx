@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { auth } from "@/auth";
 import db, { type GearCategory } from "@/lib/db";
 import {
@@ -10,6 +10,9 @@ import {
 import Modal from "@/app/ui/modal";
 import Select from "@/app/ui/select";
 import ConfirmSubmit from "@/app/ui/confirm-submit";
+import Stars from "@/app/ui/stars";
+import StarRatingInput from "@/app/ui/star-rating-input";
+import TrashIcon from "@/app/ui/trash-icon";
 import { inputClass } from "@/app/ui/style";
 
 const categoryMeta: Record<GearCategory, { label: string }> = {
@@ -26,73 +29,36 @@ const categoryMeta: Record<GearCategory, { label: string }> = {
 const trashTriggerClass =
   "rounded-md p-1 text-zinc-300 transition hover:bg-red-50 hover:text-red-600 group-hover:text-zinc-400 dark:text-zinc-600 dark:hover:bg-red-950/50 dark:hover:text-red-400";
 
-function TrashIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 20 20"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M3.5 5.5h13m-9-2h5m-7.5 2 .7 11a1.5 1.5 0 0 0 1.5 1.4h5.6a1.5 1.5 0 0 0 1.5-1.4l.7-11M8 9v5m4-5v5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <span
-      className="font-mono text-sm tracking-tight text-amber-500"
-      aria-label={`${rating} out of 5 stars`}
-    >
-      {"★".repeat(rating)}
-      <span className="text-zinc-300 dark:text-zinc-600">
-        {"★".repeat(5 - rating)}
-      </span>
-    </span>
-  );
-}
-
 export const dynamic = "force-dynamic";
 
 export default async function GearPage() {
   const session = await auth();
   const email = session?.user?.email;
-  if (!email) {
-    redirect("/login");
-  }
-
-  const user = await db
-    .selectFrom("users")
-    .select("id")
-    .where("email", "=", email.toLowerCase())
-    .executeTakeFirst();
-  if (!user) {
-    redirect("/login");
-  }
+  const user = email
+    ? ((await db
+        .selectFrom("users")
+        .select("id")
+        .where("email", "=", email.toLowerCase())
+        .executeTakeFirst()) ?? null)
+    : null;
 
   const [gearItems, reviews] = await Promise.all([
-    db
-      .selectFrom("gear_items")
-      .select([
-        "id",
-        "name",
-        "category",
-        "brand",
-        "purchased_on",
-        "retired_on",
-        "notes",
-      ])
-      .where("user_id", "=", user.id)
-      .orderBy("created_at", "desc")
-      .execute(),
+    user
+      ? db
+          .selectFrom("gear_items")
+          .select([
+            "id",
+            "name",
+            "category",
+            "brand",
+            "purchased_on",
+            "retired_on",
+            "notes",
+          ])
+          .where("user_id", "=", user.id)
+          .orderBy("created_at", "desc")
+          .execute()
+      : Promise.resolve([]),
     db
       .selectFrom("gear_reviews")
       .innerJoin("users", "users.id", "gear_reviews.user_id")
@@ -125,15 +91,24 @@ export default async function GearPage() {
           <div>
             <h2 className="text-2xl font-semibold tracking-tight">Your gear</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              {gearItems.length} {gearItems.length === 1 ? "item" : "items"} in
-              your rack.
+              {user
+                ? `${gearItems.length} ${gearItems.length === 1 ? "item" : "items"} in your rack.`
+                : "Log in to track your rope, draws, and rubber."}
             </p>
           </div>
-          <Modal
-            triggerLabel="Add gear"
-            title="Add gear"
-            subtitle="Track what's in your pack and how old it is."
-          >
+          {!user ? (
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1 rounded border border-zinc-300 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+            >
+              Log in to add gear
+            </Link>
+          ) : (
+            <Modal
+              triggerLabel="Add gear"
+              title="Add gear"
+              subtitle="Track what's in your pack and how old it is."
+            >
             <form action={addGearItem} className="grid gap-4 sm:grid-cols-2">
               <label className="sm:col-span-2">
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
@@ -192,10 +167,25 @@ export default async function GearPage() {
                 Add gear
               </button>
             </form>
-          </Modal>
+            </Modal>
+          )}
         </div>
 
-        {gearItems.length === 0 ? (
+        {!user ? (
+          <div className="mt-6 border border-dashed border-zinc-300 py-12 text-center dark:border-zinc-700">
+            <p className="font-medium">Track your own rack</p>
+            <p className="mx-auto mt-1 max-w-md text-sm text-zinc-500">
+              <Link
+                href="/login"
+                className="font-medium text-zinc-900 underline underline-offset-2 dark:text-zinc-100"
+              >
+                Log in
+              </Link>{" "}
+              to add your rope, draws, and shoes and keep track of their age and
+              wear.
+            </p>
+          </div>
+        ) : gearItems.length === 0 ? (
           <div className="mt-6 border border-dashed border-zinc-300 py-12 text-center dark:border-zinc-700">
             <p className="font-medium">Your rack is empty.</p>
             <p className="mx-auto mt-1 max-w-md text-sm text-zinc-500">
@@ -270,11 +260,19 @@ export default async function GearPage() {
               from fellow climbers.
             </p>
           </div>
-          <Modal
-            triggerLabel="Write review"
-            title="Write a review"
-            subtitle="Help other climbers pick their next piece of gear."
-          >
+          {!user ? (
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1 rounded border border-zinc-300 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+            >
+              Log in to write a review
+            </Link>
+          ) : (
+            <Modal
+              triggerLabel="Write review"
+              title="Write a review"
+              subtitle="Help other climbers pick their next piece of gear."
+            >
             <form action={addGearReview} className="grid gap-4">
               <label>
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
@@ -287,18 +285,12 @@ export default async function GearPage() {
                   className={inputClass}
                 />
               </label>
-              <label>
+              <div>
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Rating
                 </span>
-                <Select name="rating" defaultValue="5">
-                  <option value="5">★★★★★ — excellent</option>
-                  <option value="4">★★★★ — good</option>
-                  <option value="3">★★★ — okay</option>
-                  <option value="2">★★ — disappointing</option>
-                  <option value="1">★ — avoid</option>
-                </Select>
-              </label>
+                <StarRatingInput defaultValue={5} />
+              </div>
               <label>
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Review
@@ -318,7 +310,8 @@ export default async function GearPage() {
                 Publish review
               </button>
             </form>
-          </Modal>
+            </Modal>
+          )}
         </div>
 
         {reviews.length === 0 ? (
@@ -337,7 +330,7 @@ export default async function GearPage() {
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-semibold">{review.product}</h3>
-                  <Stars rating={review.rating} />
+                  <Stars rating={review.rating} className="text-sm" />
                   <span className="ml-auto text-sm text-zinc-500">
                     {review.author} ·{" "}
                     {review.created_at.toLocaleDateString("en-GB", {
@@ -346,7 +339,7 @@ export default async function GearPage() {
                       year: "numeric",
                     })}
                   </span>
-                  {review.user_id === user.id && (
+                  {user && review.user_id === user.id && (
                     <form action={deleteGearReview}>
                       <input type="hidden" name="review_id" value={review.id} />
                       <ConfirmSubmit

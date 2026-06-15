@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import ProfileTabs from "@/app/profile/tabs";
+import { loadUserPoints, POINTS_EXPLAINER } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +102,7 @@ export default async function StatisticsPage() {
     .executeTakeFirst();
   if (!user) redirect("/login");
 
-  const [tickRows, styleRows, gradeRows, uniqueRoutes, uniqueCrags] =
+  const [tickRows, styleRows, gradeRows, uniqueRoutes, uniqueCrags, points] =
     await Promise.all([
       // Ascents grouped by tick type
       db
@@ -155,6 +156,9 @@ export default async function StatisticsPage() {
         .where("ascents.user_id", "=", user.id)
         .where("ascents.tick_type", "!=", "attempt")
         .executeTakeFirstOrThrow(),
+
+      // Total points (all-time), split by discipline
+      loadUserPoints(user.id),
     ]);
 
   const byTick = Object.fromEntries(
@@ -229,14 +233,37 @@ export default async function StatisticsPage() {
               ))}
             </div>
 
-            {hardestGrade && (
-              <div className="mt-3 rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
-                <p className="text-xs text-zinc-500">Hardest send</p>
-                <p className="mt-1 font-mono text-3xl font-bold">
-                  {hardestGrade}
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+                <p className="text-xs text-zinc-500">Points</p>
+                <p className="mt-1 text-3xl font-bold tabular-nums">
+                  {points.combined.toLocaleString()}
+                </p>
+                <p className="mt-1.5 text-xs text-zinc-500">
+                  <span className="tabular-nums">
+                    Rope {points.rope.toLocaleString()}
+                  </span>
+                  <span className="px-1.5 text-zinc-300 dark:text-zinc-600">
+                    ·
+                  </span>
+                  <span className="tabular-nums">
+                    Boulder {points.boulder.toLocaleString()}
+                  </span>
                 </p>
               </div>
-            )}
+              {hardestGrade && (
+                <div className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+                  <p className="text-xs text-zinc-500">Hardest send</p>
+                  <p className="mt-1 font-mono text-3xl font-bold">
+                    {hardestGrade}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+              {POINTS_EXPLAINER}
+            </p>
 
             {/* By tick type */}
             {sends.length > 0 && (
