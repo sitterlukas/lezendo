@@ -24,12 +24,9 @@ export async function updateName(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
-export async function updateGradingSystem(
-  _prev: { saved: boolean },
-  formData: FormData,
-): Promise<{ saved: boolean }> {
+export async function updateGradingSystem(formData: FormData): Promise<void> {
   const email = (await auth())?.user?.email;
-  if (!email) return { saved: false };
+  if (!email) return;
 
   const ropeRaw = String(
     formData.get("preferred_rope_grading_system_id") ?? "",
@@ -50,7 +47,6 @@ export async function updateGradingSystem(
     .execute();
 
   revalidatePath("/profile/settings");
-  return { saved: true };
 }
 
 export async function register(formData: FormData) {
