@@ -164,7 +164,7 @@ export default async function AdminPage() {
       {/* Deleted crags */}
       {deletedCrags.length > 0 && (
         <section id="deleted-crags" className="mt-12 scroll-mt-20">
-          <h2 className="border-b border-zinc-200 pb-3 text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Crags
           </h2>
           <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
@@ -212,7 +212,7 @@ export default async function AdminPage() {
       {/* Deleted sectors */}
       {deletedSectors.length > 0 && (
         <section id="deleted-sectors" className="mt-10 scroll-mt-20">
-          <h2 className="border-b border-zinc-200 pb-3 text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Sectors
           </h2>
           <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
@@ -275,7 +275,7 @@ export default async function AdminPage() {
       {/* Deleted routes */}
       {deletedRoutes.length > 0 && (
         <section id="deleted-routes" className="mt-10 scroll-mt-20">
-          <h2 className="border-b border-zinc-200 pb-3 text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Routes
           </h2>
           <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
@@ -347,7 +347,7 @@ export default async function AdminPage() {
       )}
 
       {/* Activity log */}
-      <section className="mt-16 border-t border-zinc-200 pt-10 dark:border-zinc-800">
+      <section className="mt-16 pt-10">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
           Activity log
         </h2>

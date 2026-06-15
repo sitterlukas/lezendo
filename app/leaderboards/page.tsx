@@ -1,48 +1,28 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import db from "@/lib/db";
+import {
+  periods,
+  periodLabel,
+  periodStart,
+  parsePeriod,
+  parseDiscipline,
+} from "@/lib/leaderboard";
+import { loadLeaderboard, POINTS_EXPLAINER } from "@/lib/points";
+import DisciplineSelect from "@/app/ui/discipline-select";
+import FilterPill from "@/app/ui/filter-pill";
+import RankCrown from "@/app/ui/rank-crown";
 
 export const dynamic = "force-dynamic";
-
-type Period = "week" | "month" | "year" | "all";
-
-const periods: Period[] = ["week", "month", "year", "all"];
-
-const periodLabel: Record<Period, string> = {
-  week: "This week",
-  month: "This month",
-  year: "This year",
-  all: "All time",
-};
-
-function periodStart(period: Period): Date | null {
-  const now = new Date();
-  switch (period) {
-    case "week": {
-      const d = new Date(now);
-      const day = d.getDay();
-      d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-      d.setHours(0, 0, 0, 0);
-      return d;
-    }
-    case "month":
-      return new Date(now.getFullYear(), now.getMonth(), 1);
-    case "year":
-      return new Date(now.getFullYear(), 0, 1);
-    case "all":
-      return null;
-  }
-}
 
 export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ period?: string; discipline?: string }>;
 }) {
   const params = await searchParams;
-  const period = (
-    periods.includes(params.period as Period) ? params.period : "week"
-  ) as Period;
+  const period = parsePeriod(params.period);
+  const discipline = parseDiscipline(params.discipline);
 
   const session = await auth();
   const currentUser = session?.user?.email
@@ -55,80 +35,47 @@ export default async function LeaderboardPage({
 
   const start = periodStart(period);
 
-  let query = db
-    .selectFrom("ascents")
-    .innerJoin("users", "users.id", "ascents.user_id")
-    .select((eb) => [
-      "ascents.user_id",
-      "users.name",
-      eb.fn.count<number>("ascents.id").as("total"),
-    ])
-    .where("ascents.tick_type", "!=", "attempt")
-    .groupBy(["ascents.user_id", "users.name"])
-    .orderBy("total", "desc")
-    .limit(25);
+  const all = await loadLeaderboard({ start, discipline });
+  const rows = all.slice(0, 25);
 
-  if (start) {
-    query = query.where("ascents.ascent_date", ">=", start);
-  }
-
-  const rows = await query.execute();
-
-  // If the current user is outside the top 25, find their rank separately
+  // If the current user is outside the top 25, surface their rank separately.
   let myRow: { rank: number; total: number } | null = null;
   if (currentUser && !rows.some((r) => r.user_id === currentUser.id)) {
-    let countQuery = db
-      .selectFrom("ascents")
-      .select((eb) => eb.fn.count<number>("ascents.id").as("total"))
-      .where("ascents.user_id", "=", currentUser.id)
-      .where("ascents.tick_type", "!=", "attempt");
-    if (start)
-      countQuery = countQuery.where("ascents.ascent_date", ">=", start);
-    const myCount = await countQuery.executeTakeFirst();
-    const myTotal = Number(myCount?.total ?? 0);
-    if (myTotal > 0) {
-      let rankQuery = db
-        .selectFrom("ascents")
-        .select("ascents.user_id")
-        .select((eb) => eb.fn.count<number>("ascents.id").as("total"))
-        .where("ascents.tick_type", "!=", "attempt")
-        .groupBy("ascents.user_id")
-        .having((eb) => eb.fn.count<number>("ascents.id"), ">", myTotal);
-      if (start)
-        rankQuery = rankQuery.where("ascents.ascent_date", ">=", start);
-      const ahead = await rankQuery.execute();
-      myRow = { rank: ahead.length + 1, total: myTotal };
-    }
+    const idx = all.findIndex((r) => r.user_id === currentUser.id);
+    if (idx >= 0) myRow = { rank: idx + 1, total: all[idx].points };
   }
+
+  // Preserve the discipline when switching period.
+  const periodHref = (p: string) =>
+    `/leaderboards?period=${p}&discipline=${discipline}`;
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
       <h1 className="text-4xl font-bold tracking-tight">Leaderboards</h1>
-      <p className="mt-2 text-zinc-500">
-        Most sends logged — attempts not counted.
+      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
+        {POINTS_EXPLAINER}
       </p>
 
-      {/* Period tabs */}
-      <nav className="mt-6 flex flex-wrap gap-2">
-        {periods.map((p) => (
-          <Link
-            key={p}
-            href={`/leaderboards?period=${p}`}
-            className={`rounded px-3 py-1.5 text-sm font-medium transition ${
-              period === p
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                : "border border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-            }`}
-          >
-            {periodLabel[p]}
-          </Link>
-        ))}
-      </nav>
+      {/* Period tabs (left) + discipline dropdown (right) */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <nav className="flex flex-wrap gap-2">
+          {periods.map((p) => (
+            <FilterPill key={p} href={periodHref(p)} active={period === p}>
+              {periodLabel[p]}
+            </FilterPill>
+          ))}
+        </nav>
+        <DisciplineSelect
+          value={discipline}
+          period={period}
+          basePath="/leaderboards"
+        />
+      </div>
 
       {rows.length === 0 ? (
         <div className="mt-12 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
           <p className="font-medium">
-            No ascents logged{" "}
+            No sends logged{" "}
             {period === "all" ? "yet" : `${periodLabel[period].toLowerCase()}`}.
           </p>
           <p className="mt-1 text-sm text-zinc-500">
@@ -151,7 +98,7 @@ export default async function LeaderboardPage({
                     Climber
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                    Sends
+                    Points
                   </th>
                 </tr>
               </thead>
@@ -176,15 +123,18 @@ export default async function LeaderboardPage({
                         </span>
                       </td>
                       <td className="px-4 py-3 font-medium">
-                        {row.name}
-                        {isMe && (
-                          <span className="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800">
-                            You
-                          </span>
-                        )}
+                        <span className="flex items-center gap-1.5">
+                          <RankCrown rank={index + 1} />
+                          {row.name}
+                          {isMe && (
+                            <span className="ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800">
+                              You
+                            </span>
+                          )}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                        {Number(row.total)}
+                        {row.points.toLocaleString()}
                       </td>
                     </tr>
                   );
@@ -202,7 +152,7 @@ export default async function LeaderboardPage({
                   #{myRow.rank}
                 </span>
                 <span className="font-semibold tabular-nums">
-                  {myRow.total} sends
+                  {myRow.total.toLocaleString()} pts
                 </span>
               </div>
             </div>
