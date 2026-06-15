@@ -34,7 +34,7 @@ export default function ImageGallery({
           >
             <button
               type="button"
-              className="block h-full w-full"
+              className="relative block h-full w-full"
               onClick={() => setLightbox(img.url)}
             >
               <Image
