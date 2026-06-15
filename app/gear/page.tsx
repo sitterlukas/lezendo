@@ -28,7 +28,13 @@ const trashTriggerClass =
 
 function TrashIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M3.5 5.5h13m-9-2h5m-7.5 2 .7 11a1.5 1.5 0 0 0 1.5 1.4h5.6a1.5 1.5 0 0 0 1.5-1.4l.7-11M8 9v5m4-5v5"
         stroke="currentColor"
@@ -42,7 +48,10 @@ function TrashIcon() {
 
 function Stars({ rating }: { rating: number }) {
   return (
-    <span className="font-mono text-sm tracking-tight text-amber-500" aria-label={`${rating} out of 5 stars`}>
+    <span
+      className="font-mono text-sm tracking-tight text-amber-500"
+      aria-label={`${rating} out of 5 stars`}
+    >
       {"★".repeat(rating)}
       <span className="text-zinc-300 dark:text-zinc-600">
         {"★".repeat(5 - rating)}
@@ -116,8 +125,8 @@ export default async function GearPage() {
           <div>
             <h2 className="text-2xl font-semibold tracking-tight">Your gear</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              {gearItems.length}{" "}
-              {gearItems.length === 1 ? "item" : "items"} in your rack.
+              {gearItems.length} {gearItems.length === 1 ? "item" : "items"} in
+              your rack.
             </p>
           </div>
           <Modal

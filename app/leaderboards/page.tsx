@@ -40,15 +40,17 @@ export default async function LeaderboardPage({
   searchParams: Promise<{ period?: string }>;
 }) {
   const params = await searchParams;
-  const period = (periods.includes(params.period as Period) ? params.period : "week") as Period;
+  const period = (
+    periods.includes(params.period as Period) ? params.period : "week"
+  ) as Period;
 
   const session = await auth();
   const currentUser = session?.user?.email
-    ? await db
+    ? ((await db
         .selectFrom("users")
         .select("id")
         .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst() ?? null
+        .executeTakeFirst()) ?? null)
     : null;
 
   const start = periodStart(period);
@@ -80,7 +82,8 @@ export default async function LeaderboardPage({
       .select((eb) => eb.fn.count<number>("ascents.id").as("total"))
       .where("ascents.user_id", "=", currentUser.id)
       .where("ascents.tick_type", "!=", "attempt");
-    if (start) countQuery = countQuery.where("ascents.ascent_date", ">=", start);
+    if (start)
+      countQuery = countQuery.where("ascents.ascent_date", ">=", start);
     const myCount = await countQuery.executeTakeFirst();
     const myTotal = Number(myCount?.total ?? 0);
     if (myTotal > 0) {
@@ -91,7 +94,8 @@ export default async function LeaderboardPage({
         .where("ascents.tick_type", "!=", "attempt")
         .groupBy("ascents.user_id")
         .having((eb) => eb.fn.count<number>("ascents.id"), ">", myTotal);
-      if (start) rankQuery = rankQuery.where("ascents.ascent_date", ">=", start);
+      if (start)
+        rankQuery = rankQuery.where("ascents.ascent_date", ">=", start);
       const ahead = await rankQuery.execute();
       myRow = { rank: ahead.length + 1, total: myTotal };
     }
@@ -100,7 +104,9 @@ export default async function LeaderboardPage({
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
       <h1 className="text-4xl font-bold tracking-tight">Leaderboards</h1>
-      <p className="mt-2 text-zinc-500">Most sends logged — attempts not counted.</p>
+      <p className="mt-2 text-zinc-500">
+        Most sends logged — attempts not counted.
+      </p>
 
       {/* Period tabs */}
       <nav className="mt-6 flex flex-wrap gap-2">
@@ -121,9 +127,15 @@ export default async function LeaderboardPage({
 
       {rows.length === 0 ? (
         <div className="mt-12 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
-          <p className="font-medium">No ascents logged {period === "all" ? "yet" : `${periodLabel[period].toLowerCase()}`}.</p>
+          <p className="font-medium">
+            No ascents logged{" "}
+            {period === "all" ? "yet" : `${periodLabel[period].toLowerCase()}`}.
+          </p>
           <p className="mt-1 text-sm text-zinc-500">
-            <Link href="/crags" className="underline underline-offset-2">Head to the crags</Link> and log your first send.
+            <Link href="/crags" className="underline underline-offset-2">
+              Head to the crags
+            </Link>{" "}
+            and log your first send.
           </p>
         </div>
       ) : (
@@ -186,8 +198,12 @@ export default async function LeaderboardPage({
             <div className="mt-4 flex items-center justify-between rounded border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900/40">
               <span className="text-zinc-500">Your rank</span>
               <div className="flex items-center gap-4">
-                <span className="tabular-nums text-zinc-400">#{myRow.rank}</span>
-                <span className="font-semibold tabular-nums">{myRow.total} sends</span>
+                <span className="tabular-nums text-zinc-400">
+                  #{myRow.rank}
+                </span>
+                <span className="font-semibold tabular-nums">
+                  {myRow.total} sends
+                </span>
               </div>
             </div>
           )}

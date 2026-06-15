@@ -29,7 +29,13 @@ export default function Modal({
         }
       >
         {variant === "primary" && (
-          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+          >
             <path
               d="M10 4v12M4 10h12"
               stroke="currentColor"
@@ -39,7 +45,13 @@ export default function Modal({
           </svg>
         )}
         {variant === "ghost" && (
-          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+          >
             <path
               d="M13.5 3.5a2.121 2.121 0 0 1 3 3L6 17l-4 1 1-4L13.5 3.5Z"
               stroke="currentColor"
@@ -60,10 +72,7 @@ export default function Modal({
         }}
         className="m-auto w-full max-w-lg rounded bg-white p-0 shadow-xl backdrop:bg-black/50 dark:bg-zinc-900 dark:text-zinc-100"
       >
-        <div
-          className="p-6"
-          onSubmit={() => dialogRef.current?.close()}
-        >
+        <div className="p-6" onSubmit={() => dialogRef.current?.close()}>
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold">{title}</h2>
@@ -77,7 +86,13 @@ export default function Modal({
               aria-label="Close"
               className="rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
             >
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden="true"
+              >
                 <path
                   d="m5 5 10 10M15 5 5 15"
                   stroke="currentColor"

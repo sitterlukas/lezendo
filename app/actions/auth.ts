@@ -31,14 +31,20 @@ export async function updateGradingSystem(
   const email = (await auth())?.user?.email;
   if (!email) return { saved: false };
 
-  const ropeRaw = String(formData.get("preferred_rope_grading_system_id") ?? "").trim();
-  const boulderRaw = String(formData.get("preferred_boulder_grading_system_id") ?? "").trim();
+  const ropeRaw = String(
+    formData.get("preferred_rope_grading_system_id") ?? "",
+  ).trim();
+  const boulderRaw = String(
+    formData.get("preferred_boulder_grading_system_id") ?? "",
+  ).trim();
 
   await db
     .updateTable("users")
     .set({
       preferred_rope_grading_system_id: ropeRaw ? Number(ropeRaw) : null,
-      preferred_boulder_grading_system_id: boulderRaw ? Number(boulderRaw) : null,
+      preferred_boulder_grading_system_id: boulderRaw
+        ? Number(boulderRaw)
+        : null,
     })
     .where("email", "=", email.toLowerCase())
     .execute();

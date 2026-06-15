@@ -6,7 +6,7 @@ import { compare } from "bcryptjs";
 import db from "@/lib/db";
 
 const googleEnabled = Boolean(
-  process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+  process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
 );
 
 // Drives which sign-in buttons the login/register pages render.
