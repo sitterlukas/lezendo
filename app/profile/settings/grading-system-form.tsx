@@ -16,6 +16,26 @@ export default function GradingSystemForm({
   ropeDefault: number | null;
   boulderDefault: number | null;
 }) {
+  const ropeSystems = gradingSystems.filter(
+    (gs) => disciplineOf(gs.slug, equivalencies) === "rope",
+  );
+  const boulderSystems = gradingSystems.filter(
+    (gs) => disciplineOf(gs.slug, equivalencies) === "boulder",
+  );
+
+  // When the user hasn't chosen yet, default to UIAA (rope) and Fontainebleau
+  // (boulder), falling back to the first available system of each discipline.
+  const ropeFallback =
+    ropeSystems.find((gs) => gs.slug === "uiaa")?.id ?? ropeSystems[0]?.id;
+  const boulderFallback =
+    boulderSystems.find((gs) => gs.slug === "font")?.id ??
+    boulderSystems[0]?.id;
+
+  const [rope, setRope] = useState(String(ropeDefault ?? ropeFallback ?? ""));
+  const [boulder, setBoulder] = useState(
+    String(boulderDefault ?? boulderFallback ?? ""),
+  );
+
   const [state, action, pending] = useActionState(updateGradingSystem, {
     saved: false,
   });
@@ -30,13 +50,6 @@ export default function GradingSystemForm({
     return () => clearTimeout(t);
   }, [showToast, state]);
 
-  const ropeSystems = gradingSystems.filter(
-    (gs) => disciplineOf(gs.slug, equivalencies) === "rope",
-  );
-  const boulderSystems = gradingSystems.filter(
-    (gs) => disciplineOf(gs.slug, equivalencies) === "boulder",
-  );
-
   return (
     <>
       <form
@@ -49,9 +62,9 @@ export default function GradingSystemForm({
           </span>
           <Select
             name="preferred_rope_grading_system_id"
-            defaultValue={ropeDefault ?? ""}
+            value={rope}
+            onChange={(e) => setRope(e.target.value)}
           >
-            <option value="">— no preference —</option>
             {ropeSystems.map((gs) => (
               <option key={gs.id} value={gs.id}>
                 {gs.name}
@@ -65,9 +78,9 @@ export default function GradingSystemForm({
           </span>
           <Select
             name="preferred_boulder_grading_system_id"
-            defaultValue={boulderDefault ?? ""}
+            value={boulder}
+            onChange={(e) => setBoulder(e.target.value)}
           >
-            <option value="">— no preference —</option>
             {boulderSystems.map((gs) => (
               <option key={gs.id} value={gs.id}>
                 {gs.name}
@@ -90,7 +103,7 @@ export default function GradingSystemForm({
         className={`fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-300 dark:bg-zinc-100 dark:text-zinc-900 ${
           showToast
             ? "translate-y-0 opacity-100"
-            : "translate-y-3 opacity-0 pointer-events-none"
+            : "pointer-events-none translate-y-3 opacity-0"
         }`}
       >
         <svg
