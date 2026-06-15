@@ -101,7 +101,7 @@ export default function AddRouteForm({
       )}
       <label>
         <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          Height (m)
+          Length (m)
         </span>
         <input
           name="height_m"
@@ -111,6 +111,32 @@ export default function AddRouteForm({
           className={inputClass}
         />
       </label>
+      {style !== "boulder" && (
+        <>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              Bolts
+            </span>
+            <input
+              name="bolt_count"
+              type="number"
+              min="0"
+              placeholder="optional"
+              className={inputClass}
+            />
+          </label>
+          <label className="sm:col-span-2">
+            <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              Bolting / protection
+            </span>
+            <input
+              name="protection"
+              placeholder="e.g. Sport-bolted, stainless steel, lower-off (optional)"
+              className={inputClass}
+            />
+          </label>
+        </>
+      )}
       <label className="sm:col-span-2">
         <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
           Description

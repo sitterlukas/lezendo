@@ -190,9 +190,6 @@ export default async function RoutePage({
                 {displaySystemName}
               </span>
             )}
-            {route.height_m !== null && (
-              <span className="text-sm text-zinc-500">{route.height_m} m</span>
-            )}
             <span className="text-sm text-zinc-500">
               {[crag.area, crag.country].filter(Boolean).join(", ")}
             </span>
@@ -201,6 +198,42 @@ export default async function RoutePage({
             <p className="mt-4 max-w-xl text-zinc-600 dark:text-zinc-400">
               {route.description}
             </p>
+          )}
+          {(route.height_m !== null ||
+            route.bolt_count !== null ||
+            route.protection) && (
+            <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
+              {route.height_m !== null && (
+                <div>
+                  <dt className="text-xs uppercase tracking-wider text-zinc-400">
+                    Length
+                  </dt>
+                  <dd className="mt-0.5 font-medium tabular-nums">
+                    {route.height_m} m
+                  </dd>
+                </div>
+              )}
+              {route.bolt_count !== null && (
+                <div>
+                  <dt className="text-xs uppercase tracking-wider text-zinc-400">
+                    Bolts
+                  </dt>
+                  <dd className="mt-0.5 font-medium tabular-nums">
+                    {route.bolt_count}
+                  </dd>
+                </div>
+              )}
+              {route.protection && (
+                <div>
+                  <dt className="text-xs uppercase tracking-wider text-zinc-400">
+                    Bolting
+                  </dt>
+                  <dd className="mt-0.5 max-w-xs font-medium">
+                    {route.protection}
+                  </dd>
+                </div>
+              )}
+            </dl>
           )}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-3">
@@ -285,7 +318,7 @@ export default async function RoutePage({
                     )}
                     <label>
                       <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                        Height (m)
+                        Length (m)
                       </span>
                       <input
                         name="height_m"
@@ -293,6 +326,30 @@ export default async function RoutePage({
                         min="1"
                         defaultValue={route.height_m ?? ""}
                         placeholder="optional"
+                        className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                      />
+                    </label>
+                    <label>
+                      <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        Bolts
+                      </span>
+                      <input
+                        name="bolt_count"
+                        type="number"
+                        min="0"
+                        defaultValue={route.bolt_count ?? ""}
+                        placeholder="optional"
+                        className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                      />
+                    </label>
+                    <label className="sm:col-span-2">
+                      <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        Bolting / protection
+                      </span>
+                      <input
+                        name="protection"
+                        defaultValue={route.protection ?? ""}
+                        placeholder="e.g. Sport-bolted, stainless steel, lower-off (optional)"
                         className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
                       />
                     </label>
