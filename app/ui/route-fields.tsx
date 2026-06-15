@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Select from "./select";
 import GradeSelect from "./grade-select";
+import FieldLabel from "@/app/ui/field-label";
 import { disciplineOf, type GradeEquivalency } from "@/lib/grade-conversion";
 
 type System = { id: number; name: string; slug: string };
 
-export default function AddRouteForm({
-  action,
+// Route create fields (no <form>, no submit) for use inside CreateModal. Owns
+// the style↔grading-system mismatch check and reports validity up so the modal
+// can disable its submit button.
+export default function RouteFields({
   cragId,
   sectors = [],
   fixedSectorId,
@@ -16,8 +19,8 @@ export default function AddRouteForm({
   equivalencies,
   defaultSystemId,
   inputClass,
+  onValidityChange,
 }: {
-  action: (formData: FormData) => void | Promise<void>;
   cragId: number;
   sectors?: { id: number; name: string }[];
   fixedSectorId?: number;
@@ -25,14 +28,14 @@ export default function AddRouteForm({
   equivalencies: GradeEquivalency[];
   defaultSystemId?: number | null;
   inputClass: string;
+  onValidityChange?: (valid: boolean) => void;
 }) {
   const [style, setStyle] = useState("sport");
   const [systemId, setSystemId] = useState(
     String(defaultSystemId ?? gradingSystems[0]?.id ?? ""),
   );
 
-  // Cross-check the grading system's discipline against the route type, mirroring
-  // the server-side guard. Boulders take boulder grades; sport/trad take roped.
+  // Boulders take boulder grades; sport/trad take roped — mirrors the server guard.
   const systemDiscipline =
     disciplineOf(
       gradingSystems.find((gs) => String(gs.id) === systemId)?.slug ?? "",
@@ -46,16 +49,20 @@ export default function AddRouteForm({
       : "Roped routes must use a roped grading system (e.g. French, YDS, UIAA, or British)."
     : null;
 
+  useEffect(() => {
+    onValidityChange?.(!mismatch);
+  }, [mismatch, onValidityChange]);
+
   return (
-    <form action={action} className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2">
       <input type="hidden" name="crag_id" value={cragId} />
       {fixedSectorId != null && (
         <input type="hidden" name="sector_id" value={fixedSectorId} />
       )}
       <label className="sm:col-span-2">
-        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+        <FieldLabel required hint>
           Route name
-        </span>
+        </FieldLabel>
         <input
           name="name"
           placeholder="e.g. Moonlight Arête"
@@ -71,9 +78,9 @@ export default function AddRouteForm({
         onSystemChange={setSystemId}
       />
       <label>
-        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+        <FieldLabel required hint>
           Type
-        </span>
+        </FieldLabel>
         <Select
           name="style"
           value={style}
@@ -86,9 +93,7 @@ export default function AddRouteForm({
       </label>
       {fixedSectorId == null && sectors.length > 0 && (
         <label>
-          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Sector
-          </span>
+          <FieldLabel hint>Sector</FieldLabel>
           <Select name="sector_id">
             <option value="">— no sector —</option>
             {sectors.map((s) => (
@@ -100,9 +105,7 @@ export default function AddRouteForm({
         </label>
       )}
       <label>
-        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          Length (m)
-        </span>
+        <FieldLabel hint>Length (m)</FieldLabel>
         <input
           name="height_m"
           type="number"
@@ -114,9 +117,7 @@ export default function AddRouteForm({
       {style !== "boulder" && (
         <>
           <label>
-            <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-              Bolts
-            </span>
+            <FieldLabel hint>Bolts</FieldLabel>
             <input
               name="bolt_count"
               type="number"
@@ -126,9 +127,7 @@ export default function AddRouteForm({
             />
           </label>
           <label className="sm:col-span-2">
-            <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-              Bolting / protection
-            </span>
+            <FieldLabel hint>Bolting / protection</FieldLabel>
             <input
               name="protection"
               placeholder="e.g. Sport-bolted, stainless steel, lower-off (optional)"
@@ -138,9 +137,7 @@ export default function AddRouteForm({
         </>
       )}
       <label>
-        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          Pitches
-        </span>
+        <FieldLabel hint>Pitches</FieldLabel>
         <input
           name="pitches"
           type="number"
@@ -150,9 +147,7 @@ export default function AddRouteForm({
         />
       </label>
       <label>
-        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          First ascent year
-        </span>
+        <FieldLabel hint>First ascent year</FieldLabel>
         <input
           name="first_ascent_year"
           type="number"
@@ -162,9 +157,7 @@ export default function AddRouteForm({
         />
       </label>
       <label className="sm:col-span-2">
-        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          First ascensionist
-        </span>
+        <FieldLabel hint>First ascensionist</FieldLabel>
         <input
           name="first_ascensionist"
           placeholder="Who made the first ascent (optional)"
@@ -173,9 +166,7 @@ export default function AddRouteForm({
       </label>
       {style !== "boulder" && (
         <label className="sm:col-span-2">
-          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Gear / rack
-          </span>
+          <FieldLabel hint>Gear / rack</FieldLabel>
           <input
             name="gear_notes"
             placeholder="e.g. Single rack to 3 inches, 12 draws (optional)"
@@ -184,9 +175,7 @@ export default function AddRouteForm({
         </label>
       )}
       <label className="sm:col-span-2">
-        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          Description
-        </span>
+        <FieldLabel hint>Description</FieldLabel>
         <textarea
           name="description"
           placeholder="Beta, rock type, what makes it good… (optional)"
@@ -202,13 +191,6 @@ export default function AddRouteForm({
           {error}
         </p>
       )}
-      <button
-        type="submit"
-        disabled={mismatch}
-        className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-      >
-        Add route
-      </button>
-    </form>
+    </div>
   );
 }

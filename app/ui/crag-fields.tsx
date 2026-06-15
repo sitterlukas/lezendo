@@ -1,9 +1,12 @@
 import { inputClass } from "@/app/ui/style";
+import FieldLabel from "@/app/ui/field-label";
 
 // The guidebook info fields shared by the add + edit crag forms. Added
 // alongside the existing name/area/country/description inputs.
+// `showRequiredHints` adds optional markers (on for create); all here optional.
 export default function CragFields({
   defaults,
+  showRequiredHints = false,
 }: {
   defaults?: {
     rock_type?: string | null;
@@ -11,14 +14,13 @@ export default function CragFields({
     best_season?: string | null;
     access_notes?: string | null;
   };
+  showRequiredHints?: boolean;
 }) {
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:col-span-2">
         <label>
-          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Rock type
-          </span>
+          <FieldLabel hint={showRequiredHints}>Rock type</FieldLabel>
           <input
             name="rock_type"
             defaultValue={defaults?.rock_type ?? ""}
@@ -27,9 +29,7 @@ export default function CragFields({
           />
         </label>
         <label>
-          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Aspect
-          </span>
+          <FieldLabel hint={showRequiredHints}>Aspect</FieldLabel>
           <input
             name="aspect"
             defaultValue={defaults?.aspect ?? ""}
@@ -38,9 +38,7 @@ export default function CragFields({
           />
         </label>
         <label>
-          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Best season
-          </span>
+          <FieldLabel hint={showRequiredHints}>Best season</FieldLabel>
           <input
             name="best_season"
             defaultValue={defaults?.best_season ?? ""}
@@ -50,9 +48,7 @@ export default function CragFields({
         </label>
       </div>
       <label className="sm:col-span-2">
-        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          Access notes
-        </span>
+        <FieldLabel hint={showRequiredHints}>Access notes</FieldLabel>
         <textarea
           name="access_notes"
           defaultValue={defaults?.access_notes ?? ""}
