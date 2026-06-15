@@ -528,7 +528,7 @@ export default async function CragPage({
                                 message="Routes in this sector will remain but lose their sector assignment."
                                 confirmLabel="Delete sector"
                                 triggerAriaLabel={`Delete ${sector.name}`}
-                                triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-2 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
+                                triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-3 py-1.5 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
                               >
                                 Delete
                               </ConfirmSubmit>
