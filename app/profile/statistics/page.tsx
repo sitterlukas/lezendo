@@ -7,13 +7,37 @@ export const dynamic = "force-dynamic";
 
 // French/UIAA grades in ascending difficulty order
 const gradeOrder = [
-  "3", "3+",
-  "4a", "4b", "4c",
-  "5a", "5b", "5c",
-  "6a", "6a+", "6b", "6b+", "6c", "6c+",
-  "7a", "7a+", "7b", "7b+", "7c", "7c+",
-  "8a", "8a+", "8b", "8b+", "8c", "8c+",
-  "9a", "9a+", "9b", "9b+", "9c",
+  "3",
+  "3+",
+  "4a",
+  "4b",
+  "4c",
+  "5a",
+  "5b",
+  "5c",
+  "6a",
+  "6a+",
+  "6b",
+  "6b+",
+  "6c",
+  "6c+",
+  "7a",
+  "7a+",
+  "7b",
+  "7b+",
+  "7c",
+  "7c+",
+  "8a",
+  "8a+",
+  "8b",
+  "8b+",
+  "8c",
+  "8c+",
+  "9a",
+  "9a+",
+  "9b",
+  "9b+",
+  "9c",
 ];
 
 function gradeRank(grade: string): number {
@@ -26,7 +50,10 @@ function hardest(grades: string[]): string | null {
   let bestRank = -2;
   for (const g of grades) {
     const r = gradeRank(g);
-    if (r > bestRank) { bestRank = r; best = g; }
+    if (r > bestRank) {
+      bestRank = r;
+      best = g;
+    }
   }
   // If no grade matched the list return the first one (unknown format)
   return best ?? grades[0];
@@ -41,18 +68,25 @@ const tickLabel = {
 } as const;
 
 const tickBadge = {
-  onsight: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
+  onsight:
+    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
   flash: "bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300",
   redpoint: "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300",
   toprope: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-  attempt: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
+  attempt:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
 } as const;
 
-const styleLabel = { sport: "Sport", trad: "Trad", boulder: "Boulder" } as const;
+const styleLabel = {
+  sport: "Sport",
+  trad: "Trad",
+  boulder: "Boulder",
+} as const;
 const styleBadge = {
   sport: "bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300",
   trad: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
-  boulder: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
+  boulder:
+    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
 } as const;
 
 export default async function StatisticsPage() {
@@ -67,55 +101,68 @@ export default async function StatisticsPage() {
     .executeTakeFirst();
   if (!user) redirect("/login");
 
-  const [tickRows, styleRows, gradeRows, uniqueRoutes, uniqueCrags] = await Promise.all([
-    // Ascents grouped by tick type
-    db
-      .selectFrom("ascents")
-      .select((eb) => ["tick_type", eb.fn.count<number>("id").as("count")])
-      .where("user_id", "=", user.id)
-      .groupBy("tick_type")
-      .execute(),
+  const [tickRows, styleRows, gradeRows, uniqueRoutes, uniqueCrags] =
+    await Promise.all([
+      // Ascents grouped by tick type
+      db
+        .selectFrom("ascents")
+        .select((eb) => ["tick_type", eb.fn.count<number>("id").as("count")])
+        .where("user_id", "=", user.id)
+        .groupBy("tick_type")
+        .execute(),
 
-    // Sends (non-attempt) grouped by route style
-    db
-      .selectFrom("ascents")
-      .innerJoin("routes", "routes.id", "ascents.route_id")
-      .select((eb) => ["routes.style", eb.fn.count<number>("ascents.id").as("count")])
-      .where("ascents.user_id", "=", user.id)
-      .where("ascents.tick_type", "!=", "attempt")
-      .groupBy("routes.style")
-      .execute(),
+      // Sends (non-attempt) grouped by route style
+      db
+        .selectFrom("ascents")
+        .innerJoin("routes", "routes.id", "ascents.route_id")
+        .select((eb) => [
+          "routes.style",
+          eb.fn.count<number>("ascents.id").as("count"),
+        ])
+        .where("ascents.user_id", "=", user.id)
+        .where("ascents.tick_type", "!=", "attempt")
+        .groupBy("routes.style")
+        .execute(),
 
-    // Sends grouped by grade
-    db
-      .selectFrom("ascents")
-      .innerJoin("routes", "routes.id", "ascents.route_id")
-      .select((eb) => ["routes.grade", eb.fn.count<number>("ascents.id").as("count")])
-      .where("ascents.user_id", "=", user.id)
-      .where("ascents.tick_type", "!=", "attempt")
-      .groupBy("routes.grade")
-      .execute(),
+      // Sends grouped by grade
+      db
+        .selectFrom("ascents")
+        .innerJoin("routes", "routes.id", "ascents.route_id")
+        .select((eb) => [
+          "routes.grade",
+          eb.fn.count<number>("ascents.id").as("count"),
+        ])
+        .where("ascents.user_id", "=", user.id)
+        .where("ascents.tick_type", "!=", "attempt")
+        .groupBy("routes.grade")
+        .execute(),
 
-    // Unique routes climbed
-    db
-      .selectFrom("ascents")
-      .select((eb) => eb.fn.count<number>("route_id").distinct().as("count"))
-      .where("user_id", "=", user.id)
-      .where("tick_type", "!=", "attempt")
-      .executeTakeFirstOrThrow(),
+      // Unique routes climbed
+      db
+        .selectFrom("ascents")
+        .select((eb) => eb.fn.count<number>("route_id").distinct().as("count"))
+        .where("user_id", "=", user.id)
+        .where("tick_type", "!=", "attempt")
+        .executeTakeFirstOrThrow(),
 
-    // Unique crags visited
-    db
-      .selectFrom("ascents")
-      .innerJoin("routes", "routes.id", "ascents.route_id")
-      .select((eb) => eb.fn.count<number>("routes.crag_id").distinct().as("count"))
-      .where("ascents.user_id", "=", user.id)
-      .where("ascents.tick_type", "!=", "attempt")
-      .executeTakeFirstOrThrow(),
-  ]);
+      // Unique crags visited
+      db
+        .selectFrom("ascents")
+        .innerJoin("routes", "routes.id", "ascents.route_id")
+        .select((eb) =>
+          eb.fn.count<number>("routes.crag_id").distinct().as("count"),
+        )
+        .where("ascents.user_id", "=", user.id)
+        .where("ascents.tick_type", "!=", "attempt")
+        .executeTakeFirstOrThrow(),
+    ]);
 
-  const byTick = Object.fromEntries(tickRows.map((r) => [r.tick_type, Number(r.count)])) as Record<string, number>;
-  const byStyle = Object.fromEntries(styleRows.map((r) => [r.style, Number(r.count)])) as Record<string, number>;
+  const byTick = Object.fromEntries(
+    tickRows.map((r) => [r.tick_type, Number(r.count)]),
+  ) as Record<string, number>;
+  const byStyle = Object.fromEntries(
+    styleRows.map((r) => [r.style, Number(r.count)]),
+  ) as Record<string, number>;
 
   const totalSends = tickRows
     .filter((r) => r.tick_type !== "attempt")
@@ -123,7 +170,10 @@ export default async function StatisticsPage() {
   const totalAttempts = byTick["attempt"] ?? 0;
 
   // Grade breakdown sorted by difficulty (known grades) then alphabetically
-  const gradeCounts = gradeRows.map((r) => ({ grade: r.grade, count: Number(r.count) }));
+  const gradeCounts = gradeRows.map((r) => ({
+    grade: r.grade,
+    count: Number(r.count),
+  }));
   const sortedGrades = [...gradeCounts].sort((a, b) => {
     const ra = gradeRank(a.grade);
     const rb = gradeRank(b.grade);
@@ -143,11 +193,11 @@ export default async function StatisticsPage() {
   ];
 
   const sends = (["onsight", "flash", "redpoint", "toprope"] as const).filter(
-    (t) => byTick[t] !== undefined
+    (t) => byTick[t] !== undefined,
   );
 
   const styles = (["sport", "trad", "boulder"] as const).filter(
-    (s) => byStyle[s] !== undefined
+    (s) => byStyle[s] !== undefined,
   );
 
   return (
@@ -156,7 +206,9 @@ export default async function StatisticsPage() {
       <ProfileTabs active="statistics" />
 
       <div className="mt-8">
-        <h2 className="text-xl font-semibold tracking-tight">Your statistics</h2>
+        <h2 className="text-xl font-semibold tracking-tight">
+          Your statistics
+        </h2>
 
         {totalSends === 0 && totalAttempts === 0 ? (
           <p className="mt-6 text-sm text-zinc-500">No ascents logged yet.</p>
@@ -169,7 +221,9 @@ export default async function StatisticsPage() {
                   key={card.label}
                   className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50"
                 >
-                  <p className="text-2xl font-bold tabular-nums">{card.value}</p>
+                  <p className="text-2xl font-bold tabular-nums">
+                    {card.value}
+                  </p>
                   <p className="mt-0.5 text-xs text-zinc-500">{card.label}</p>
                 </div>
               ))}
@@ -178,7 +232,9 @@ export default async function StatisticsPage() {
             {hardestGrade && (
               <div className="mt-3 rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
                 <p className="text-xs text-zinc-500">Hardest send</p>
-                <p className="mt-1 font-mono text-3xl font-bold">{hardestGrade}</p>
+                <p className="mt-1 font-mono text-3xl font-bold">
+                  {hardestGrade}
+                </p>
               </div>
             )}
 
@@ -194,10 +250,14 @@ export default async function StatisticsPage() {
                       key={t}
                       className="flex items-center gap-2 rounded border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50"
                     >
-                      <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${tickBadge[t]}`}>
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${tickBadge[t]}`}
+                      >
                         {tickLabel[t]}
                       </span>
-                      <span className="text-sm font-semibold tabular-nums">{byTick[t]}</span>
+                      <span className="text-sm font-semibold tabular-nums">
+                        {byTick[t]}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -216,10 +276,14 @@ export default async function StatisticsPage() {
                       key={s}
                       className="flex items-center gap-2 rounded border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/50"
                     >
-                      <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${styleBadge[s]}`}>
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${styleBadge[s]}`}
+                      >
                         {styleLabel[s]}
                       </span>
-                      <span className="text-sm font-semibold tabular-nums">{byStyle[s]}</span>
+                      <span className="text-sm font-semibold tabular-nums">
+                        {byStyle[s]}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -249,12 +313,22 @@ export default async function StatisticsPage() {
                     </thead>
                     <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                       {sortedGrades.map((row) => {
-                        const pct = totalSends > 0 ? Math.round((row.count / totalSends) * 100) : 0;
+                        const pct =
+                          totalSends > 0
+                            ? Math.round((row.count / totalSends) * 100)
+                            : 0;
                         const isHardest = row.grade === hardestGrade;
                         return (
-                          <tr key={row.grade} className={isHardest ? "bg-zinc-50 dark:bg-zinc-900/40" : ""}>
+                          <tr
+                            key={row.grade}
+                            className={
+                              isHardest ? "bg-zinc-50 dark:bg-zinc-900/40" : ""
+                            }
+                          >
                             <td className="px-4 py-2.5">
-                              <span className="font-mono font-semibold">{row.grade}</span>
+                              <span className="font-mono font-semibold">
+                                {row.grade}
+                              </span>
                               {isHardest && (
                                 <span className="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800">
                                   hardest

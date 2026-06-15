@@ -178,18 +178,53 @@ export default async function RootLayout({
         {children}
         <footer className="border-t border-zinc-200 dark:border-zinc-800">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-5">
-            <Link href="/" className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+            <Link
+              href="/"
+              className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
+            >
               Lezendo
             </Link>
             <nav className="flex flex-wrap items-center gap-5 text-sm text-zinc-500">
-              <Link href="/crags" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">Crags</Link>
-              <Link href="/leaderboards" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">Leaderboards</Link>
-              <Link href="/forum" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">Forum</Link>
-              <Link href="/gear" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">Gear</Link>
-              <Link href="/profile/statistics" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">Profile</Link>
-              <Link href="/register" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">Register</Link>
+              <Link
+                href="/crags"
+                className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                Crags
+              </Link>
+              <Link
+                href="/leaderboards"
+                className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                Leaderboards
+              </Link>
+              <Link
+                href="/forum"
+                className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                Forum
+              </Link>
+              <Link
+                href="/gear"
+                className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                Gear
+              </Link>
+              <Link
+                href="/profile/statistics"
+                className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                Profile
+              </Link>
+              <Link
+                href="/register"
+                className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              >
+                Register
+              </Link>
             </nav>
-            <span className="text-xs text-zinc-400 dark:text-zinc-600">© {new Date().getFullYear()} Lezendo</span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-600">
+              © {new Date().getFullYear()} Lezendo
+            </span>
           </div>
         </footer>
       </body>

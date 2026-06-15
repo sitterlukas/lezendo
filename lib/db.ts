@@ -127,7 +127,6 @@ export interface CountriesTable {
   name: string;
 }
 
-
 export interface ForumTopicsTable {
   id: Generated<number>;
   title: string;

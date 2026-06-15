@@ -100,7 +100,10 @@ function GearRow({ item }: { item: GearItem }) {
               })}`
             : " · no purchase date"}
         </div>
-        <form action={retired ? unretireGearItem : retireGearItem} className="mt-1.5">
+        <form
+          action={retired ? unretireGearItem : retireGearItem}
+          className="mt-1.5"
+        >
           <input type="hidden" name="gear_id" value={item.id} />
           <button
             type="submit"

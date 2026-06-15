@@ -18,7 +18,11 @@ export default async function CragsPage({
 }) {
   const session = await auth();
   const currentUser = session?.user?.email
-    ? await db.selectFrom("users").select(["id", "role"]).where("email", "=", session.user.email.toLowerCase()).executeTakeFirst() ?? null
+    ? ((await db
+        .selectFrom("users")
+        .select(["id", "role"])
+        .where("email", "=", session.user.email.toLowerCase())
+        .executeTakeFirst()) ?? null)
     : null;
 
   const params = await searchParams;
@@ -51,7 +55,9 @@ export default async function CragsPage({
   let baseQuery = db
     .selectFrom("crags")
     .leftJoin("routes", (join) =>
-      join.onRef("routes.crag_id", "=", "crags.id").on("routes.deleted", "=", false)
+      join
+        .onRef("routes.crag_id", "=", "crags.id")
+        .on("routes.deleted", "=", false),
     )
     .select((eb) => [
       "crags.id",
@@ -73,7 +79,7 @@ export default async function CragsPage({
         eb("crags.area", "ilike", searchPattern),
         eb("crags.country", "ilike", searchPattern),
         eb("crags.description", "ilike", searchPattern),
-      ])
+      ]),
     );
   }
   if (countryFilter) {
@@ -100,7 +106,7 @@ export default async function CragsPage({
           eb("area", "ilike", searchPattern),
           eb("country", "ilike", searchPattern),
           eb("description", "ilike", searchPattern),
-        ])
+        ]),
       );
     }
     if (countryFilter) {
@@ -121,35 +127,40 @@ export default async function CragsPage({
     .execute();
 
   const deletedCragLog = await (async () => {
-    if (deletedCrags.length === 0) return new Map<number, { at: Date; by: string }>();
+    if (deletedCrags.length === 0)
+      return new Map<number, { at: Date; by: string }>();
     const entries = await db
       .selectFrom("deletion_log")
       .innerJoin("users", "users.id", "deletion_log.user_id")
-      .select(["deletion_log.entity_id", "deletion_log.created_at", "users.name as by"])
+      .select([
+        "deletion_log.entity_id",
+        "deletion_log.created_at",
+        "users.name as by",
+      ])
       .where("deletion_log.entity_type", "=", "crag")
       .where("deletion_log.action", "=", "delete")
       .orderBy("deletion_log.created_at", "desc")
       .execute();
     const map = new Map<number, { at: Date; by: string }>();
     for (const e of entries) {
-      if (!map.has(e.entity_id)) map.set(e.entity_id, { at: e.created_at as Date, by: e.by as string });
+      if (!map.has(e.entity_id))
+        map.set(e.entity_id, { at: e.created_at as Date, by: e.by as string });
     }
     return map;
   })();
 
   // Group crags by country for the default view
-  const groups = crags.reduce<{ country: string | null; items: typeof crags }[]>(
-    (acc, crag) => {
-      const last = acc[acc.length - 1];
-      if (last && last.country === crag.country) {
-        last.items.push(crag);
-      } else {
-        acc.push({ country: crag.country, items: [crag] });
-      }
-      return acc;
-    },
-    []
-  );
+  const groups = crags.reduce<
+    { country: string | null; items: typeof crags }[]
+  >((acc, crag) => {
+    const last = acc[acc.length - 1];
+    if (last && last.country === crag.country) {
+      last.items.push(crag);
+    } else {
+      acc.push({ country: crag.country, items: [crag] });
+    }
+    return acc;
+  }, []);
 
   function pageUrl(p: number) {
     const sp = new URLSearchParams();
@@ -182,7 +193,9 @@ export default async function CragsPage({
             <>
               {crags.length} {crags.length === 1 ? "crag" : "crags"} across{" "}
               {groups.filter((g) => g.country).length}{" "}
-              {groups.filter((g) => g.country).length === 1 ? "country" : "countries"}
+              {groups.filter((g) => g.country).length === 1
+                ? "country"
+                : "countries"}
             </>
           )}
         </p>
@@ -202,7 +215,13 @@ export default async function CragsPage({
               aria-hidden="true"
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
             >
-              <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
+              <circle
+                cx="9"
+                cy="9"
+                r="6"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
               <path
                 d="m13.5 13.5 4 4"
                 stroke="currentColor"
@@ -228,67 +247,69 @@ export default async function CragsPage({
           )}
         </form>
 
-      {currentUser && (
-        <div>
-          <Modal
-            triggerLabel="Add crag"
-            title="Add a crag"
-            subtitle="Found a new spot? Put it on the map."
-          >
-            <form action={addCrag} className="grid gap-4 sm:grid-cols-2">
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Crag name
-                </span>
-                <input
-                  name="name"
-                  placeholder="e.g. Hlubočepy"
-                  required
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Area
-                </span>
-                <input
-                  name="area"
-                  placeholder="e.g. Prague (optional)"
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Country
-                </span>
-                <Select name="country" defaultValue="">
-                  <option value="">— not specified —</option>
-                  {allCountries.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </Select>
-              </label>
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Description
-                </span>
-                <textarea
-                  name="description"
-                  placeholder="Rock type, approach, character… (optional)"
-                  rows={2}
-                  className={inputClass}
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-              >
-                Add crag
-              </button>
-            </form>
-          </Modal>
-        </div>
-      )}
+        {currentUser && (
+          <div>
+            <Modal
+              triggerLabel="Add crag"
+              title="Add a crag"
+              subtitle="Found a new spot? Put it on the map."
+            >
+              <form action={addCrag} className="grid gap-4 sm:grid-cols-2">
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Crag name
+                  </span>
+                  <input
+                    name="name"
+                    placeholder="e.g. Hlubočepy"
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Area
+                  </span>
+                  <input
+                    name="area"
+                    placeholder="e.g. Prague (optional)"
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Country
+                  </span>
+                  <Select name="country" defaultValue="">
+                    <option value="">— not specified —</option>
+                    {allCountries.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Description
+                  </span>
+                  <textarea
+                    name="description"
+                    placeholder="Rock type, approach, character… (optional)"
+                    rows={2}
+                    className={inputClass}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                >
+                  Add crag
+                </button>
+              </form>
+            </Modal>
+          </div>
+        )}
       </div>
 
       {/* Country filter tabs */}
@@ -324,11 +345,16 @@ export default async function CragsPage({
         <div className="mt-12 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
           <p className="font-medium">No crags found.</p>
           <p className="mt-1 text-sm text-zinc-500">
-            {q
-              ? <>Nothing matches &ldquo;{q}&rdquo; — try a different search or add the crag.</>
-              : countryFilter
-              ? <>No crags in {countryFilter} yet — add one.</>
-              : "Add your first crag."}
+            {q ? (
+              <>
+                Nothing matches &ldquo;{q}&rdquo; — try a different search or
+                add the crag.
+              </>
+            ) : countryFilter ? (
+              <>No crags in {countryFilter} yet — add one.</>
+            ) : (
+              "Add your first crag."
+            )}
           </p>
         </div>
       )}
@@ -395,9 +421,14 @@ export default async function CragsPage({
             {deletedCrags.map((crag) => {
               const log = deletedCragLog.get(crag.id);
               return (
-                <li key={crag.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <li
+                  key={crag.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                >
                   <div>
-                    <span className="font-medium text-zinc-500">{crag.name}</span>
+                    <span className="font-medium text-zinc-500">
+                      {crag.name}
+                    </span>
                     {(crag.area || crag.country) && (
                       <span className="ml-2 text-xs text-zinc-400">
                         {[crag.area, crag.country].filter(Boolean).join(", ")}
@@ -406,7 +437,11 @@ export default async function CragsPage({
                     {log && (
                       <span className="ml-3 text-xs text-zinc-400">
                         · Deleted by {log.by} on{" "}
-                        {log.at.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                        {log.at.toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </span>
                     )}
                   </div>
@@ -454,9 +489,7 @@ function CragCard({ crag }: CragCardProps) {
             {Number(crag.routeCount) === 1 ? "route" : "routes"}
           </span>
         </div>
-        {crag.area && (
-          <p className="mt-1 text-sm text-zinc-500">{crag.area}</p>
-        )}
+        {crag.area && <p className="mt-1 text-sm text-zinc-500">{crag.area}</p>}
         {crag.description && (
           <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
             {crag.description}

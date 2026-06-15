@@ -15,7 +15,12 @@ export async function POST(request: Request): Promise<NextResponse> {
           throw new Error("Unauthorized");
         }
         return {
-          allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+          allowedContentTypes: [
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/gif",
+          ],
           maximumSizeInBytes: 10 * 1024 * 1024,
         };
       },
@@ -28,7 +33,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   } catch (error) {
     return NextResponse.json(
       { error: (error as Error).message },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

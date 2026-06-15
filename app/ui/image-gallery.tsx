@@ -59,7 +59,13 @@ export default function ImageGallery({
                   aria-label="Delete photo"
                   className="flex h-6 w-6 items-center justify-center rounded bg-black/60 text-white transition hover:bg-red-600"
                 >
-                  <svg width="10" height="10" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    aria-hidden="true"
+                  >
                     <path
                       d="M4 4l12 12M16 4 4 16"
                       stroke="currentColor"
@@ -95,7 +101,13 @@ export default function ImageGallery({
               className="absolute -right-3 -top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-zinc-900 shadow"
               aria-label="Close"
             >
-              <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden="true"
+              >
                 <path
                   d="M4 4l12 12M16 4 4 16"
                   stroke="currentColor"

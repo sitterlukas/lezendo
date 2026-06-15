@@ -89,7 +89,10 @@ async function currentUserFull(): Promise<{ id: number; role: string } | null> {
   return user ?? null;
 }
 
-function canModify(user: { id: number; role: string } | null, createdBy: number | null) {
+function canModify(
+  user: { id: number; role: string } | null,
+  createdBy: number | null,
+) {
   if (!user) return false;
   return user.role === "admin" || user.id === createdBy;
 }
@@ -299,12 +302,21 @@ export async function updateCrag(formData: FormData) {
 
   if (!name || !Number.isInteger(cragId)) return;
 
-  const crag = await db.selectFrom("crags").select(["id", "created_by"]).where("id", "=", cragId).executeTakeFirst();
+  const crag = await db
+    .selectFrom("crags")
+    .select(["id", "created_by"])
+    .where("id", "=", cragId)
+    .executeTakeFirst();
   if (!crag || !canModify(user, crag.created_by)) return;
 
   await db
     .updateTable("crags")
-    .set({ name, area: area || null, country: country || null, description: description || null })
+    .set({
+      name,
+      area: area || null,
+      country: country || null,
+      description: description || null,
+    })
     .where("id", "=", cragId)
     .execute();
 
@@ -321,7 +333,11 @@ export async function updateSector(formData: FormData) {
 
   if (!name || !Number.isInteger(sectorId)) return;
 
-  const sector = await db.selectFrom("sectors").select(["id", "created_by"]).where("id", "=", sectorId).executeTakeFirst();
+  const sector = await db
+    .selectFrom("sectors")
+    .select(["id", "created_by"])
+    .where("id", "=", sectorId)
+    .executeTakeFirst();
   if (!sector || !canModify(user, sector.created_by)) return;
 
   await db
@@ -346,14 +362,25 @@ export async function updateRoute(formData: FormData) {
   const style = String(formData.get("style") ?? "") as ClimbStyle;
   const heightRaw = String(formData.get("height_m") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
-  const gradingSystemId = Number(String(formData.get("grading_system_id") ?? "").trim());
+  const gradingSystemId = Number(
+    String(formData.get("grading_system_id") ?? "").trim(),
+  );
 
-  if (!name || !grade || !Number.isInteger(routeId) || !styles.includes(style)) return;
+  if (!name || !grade || !Number.isInteger(routeId) || !styles.includes(style))
+    return;
   if (!Number.isInteger(gradingSystemId) || gradingSystemId <= 0) return;
-  const updateGradeError = await gradeSystemError(gradingSystemId, grade, style);
+  const updateGradeError = await gradeSystemError(
+    gradingSystemId,
+    grade,
+    style,
+  );
   if (updateGradeError) throw new Error(updateGradeError);
 
-  const route = await db.selectFrom("routes").select(["id", "created_by"]).where("id", "=", routeId).executeTakeFirst();
+  const route = await db
+    .selectFrom("routes")
+    .select(["id", "created_by"])
+    .where("id", "=", routeId)
+    .executeTakeFirst();
   if (!route || !canModify(user, route.created_by)) return;
 
   if (sectorId) {
@@ -435,11 +462,17 @@ async function logDeletion(
   entityId: number,
   entityName: string,
   action: DeletionAction,
-  userId: number
+  userId: number,
 ) {
   await db
     .insertInto("deletion_log")
-    .values({ entity_type: entityType, entity_id: entityId, entity_name: entityName, action, user_id: userId })
+    .values({
+      entity_type: entityType,
+      entity_id: entityId,
+      entity_name: entityName,
+      action,
+      user_id: userId,
+    })
     .execute();
 }
 
@@ -450,10 +483,18 @@ export async function deleteCrag(formData: FormData) {
   const cragId = Number(formData.get("crag_id"));
   if (!Number.isInteger(cragId)) return;
 
-  const crag = await db.selectFrom("crags").select(["id", "name", "created_by"]).where("id", "=", cragId).executeTakeFirst();
+  const crag = await db
+    .selectFrom("crags")
+    .select(["id", "name", "created_by"])
+    .where("id", "=", cragId)
+    .executeTakeFirst();
   if (!crag || !canModify(user, crag.created_by)) return;
 
-  await db.updateTable("crags").set({ deleted: true }).where("id", "=", cragId).execute();
+  await db
+    .updateTable("crags")
+    .set({ deleted: true })
+    .where("id", "=", cragId)
+    .execute();
   await logDeletion("crag", cragId, crag.name, "delete", user.id);
 
   redirect("/crags");
@@ -467,10 +508,18 @@ export async function deleteSector(formData: FormData) {
   const cragId = Number(formData.get("crag_id"));
   if (!Number.isInteger(sectorId) || !Number.isInteger(cragId)) return;
 
-  const sector = await db.selectFrom("sectors").select(["id", "name", "created_by"]).where("id", "=", sectorId).executeTakeFirst();
+  const sector = await db
+    .selectFrom("sectors")
+    .select(["id", "name", "created_by"])
+    .where("id", "=", sectorId)
+    .executeTakeFirst();
   if (!sector || !canModify(user, sector.created_by)) return;
 
-  await db.updateTable("sectors").set({ deleted: true }).where("id", "=", sectorId).execute();
+  await db
+    .updateTable("sectors")
+    .set({ deleted: true })
+    .where("id", "=", sectorId)
+    .execute();
   await logDeletion("sector", sectorId, sector.name, "delete", user.id);
 
   redirect(`/crags/${cragId}`);
@@ -484,10 +533,18 @@ export async function deleteRoute(formData: FormData) {
   const cragId = Number(formData.get("crag_id"));
   if (!Number.isInteger(routeId) || !Number.isInteger(cragId)) return;
 
-  const route = await db.selectFrom("routes").select(["id", "name", "created_by"]).where("id", "=", routeId).executeTakeFirst();
+  const route = await db
+    .selectFrom("routes")
+    .select(["id", "name", "created_by"])
+    .where("id", "=", routeId)
+    .executeTakeFirst();
   if (!route || !canModify(user, route.created_by)) return;
 
-  await db.updateTable("routes").set({ deleted: true }).where("id", "=", routeId).execute();
+  await db
+    .updateTable("routes")
+    .set({ deleted: true })
+    .where("id", "=", routeId)
+    .execute();
   await logDeletion("route", routeId, route.name, "delete", user.id);
 
   redirect(`/crags/${cragId}`);
@@ -500,10 +557,18 @@ export async function recoverCrag(formData: FormData) {
   const cragId = Number(formData.get("crag_id"));
   if (!Number.isInteger(cragId)) return;
 
-  const crag = await db.selectFrom("crags").select(["id", "name"]).where("id", "=", cragId).executeTakeFirst();
+  const crag = await db
+    .selectFrom("crags")
+    .select(["id", "name"])
+    .where("id", "=", cragId)
+    .executeTakeFirst();
   if (!crag) return;
 
-  await db.updateTable("crags").set({ deleted: false }).where("id", "=", cragId).execute();
+  await db
+    .updateTable("crags")
+    .set({ deleted: false })
+    .where("id", "=", cragId)
+    .execute();
   await logDeletion("crag", cragId, crag.name, "recover", userId);
 
   revalidatePath("/crags", "layout");
@@ -516,10 +581,18 @@ export async function recoverSector(formData: FormData) {
   const sectorId = Number(formData.get("sector_id"));
   if (!Number.isInteger(sectorId)) return;
 
-  const sector = await db.selectFrom("sectors").select(["id", "name"]).where("id", "=", sectorId).executeTakeFirst();
+  const sector = await db
+    .selectFrom("sectors")
+    .select(["id", "name"])
+    .where("id", "=", sectorId)
+    .executeTakeFirst();
   if (!sector) return;
 
-  await db.updateTable("sectors").set({ deleted: false }).where("id", "=", sectorId).execute();
+  await db
+    .updateTable("sectors")
+    .set({ deleted: false })
+    .where("id", "=", sectorId)
+    .execute();
   await logDeletion("sector", sectorId, sector.name, "recover", userId);
 
   revalidatePath("/crags", "layout");
@@ -532,10 +605,18 @@ export async function recoverRoute(formData: FormData) {
   const routeId = Number(formData.get("route_id"));
   if (!Number.isInteger(routeId)) return;
 
-  const route = await db.selectFrom("routes").select(["id", "name"]).where("id", "=", routeId).executeTakeFirst();
+  const route = await db
+    .selectFrom("routes")
+    .select(["id", "name"])
+    .where("id", "=", routeId)
+    .executeTakeFirst();
   if (!route) return;
 
-  await db.updateTable("routes").set({ deleted: false }).where("id", "=", routeId).execute();
+  await db
+    .updateTable("routes")
+    .set({ deleted: false })
+    .where("id", "=", routeId)
+    .execute();
   await logDeletion("route", routeId, route.name, "recover", userId);
 
   revalidatePath("/crags", "layout");
@@ -560,7 +641,12 @@ export async function addSector(formData: FormData) {
 
   await db
     .insertInto("sectors")
-    .values({ crag_id: cragId, name, description: description || null, created_by: userId })
+    .values({
+      crag_id: cragId,
+      name,
+      description: description || null,
+      created_by: userId,
+    })
     .execute();
 
   revalidatePath("/crags", "layout");
@@ -578,7 +664,9 @@ export async function addRoute(formData: FormData) {
   const style = String(formData.get("style") ?? "sport") as ClimbStyle;
   const heightRaw = String(formData.get("height_m") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
-  const gradingSystemId = Number(String(formData.get("grading_system_id") ?? "").trim());
+  const gradingSystemId = Number(
+    String(formData.get("grading_system_id") ?? "").trim(),
+  );
 
   if (!name || !grade || !Number.isInteger(cragId)) return;
   if (!styles.includes(style)) return;
@@ -626,14 +714,19 @@ export async function addRoute(formData: FormData) {
 export async function saveImage(
   url: string,
   entityType: ImageEntityType,
-  entityId: number
+  entityId: number,
 ) {
   const userId = await currentUserId();
   if (!userId) return;
 
   await db
     .insertInto("images")
-    .values({ entity_type: entityType, entity_id: entityId, url, uploaded_by: userId })
+    .values({
+      entity_type: entityType,
+      entity_id: entityId,
+      url,
+      uploaded_by: userId,
+    })
     .execute();
 
   revalidatePath("/crags", "layout");

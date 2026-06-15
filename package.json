@@ -7,6 +7,8 @@
     "build": "kysely migrate:latest && next build",
     "start": "next start",
     "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "migrate:make": "kysely migrate:make",
     "migrate:latest": "kysely migrate:latest",
     "migrate:down": "kysely migrate:down",
@@ -30,7 +32,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "eslint-config-prettier": "^10.1.8",
     "kysely-ctl": "^0.21.0",
+    "prettier": "^3.8.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

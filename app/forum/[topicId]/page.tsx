@@ -46,22 +46,27 @@ export default async function TopicPage({
     .execute();
 
   const currentUser = session?.user?.email
-    ? await db
+    ? ((await db
         .selectFrom("users")
         .select("id")
         .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst() ?? null
+        .executeTakeFirst()) ?? null)
     : null;
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-zinc-500">
-        <Link href="/forum" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">
+        <Link
+          href="/forum"
+          className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
+        >
           Forum
         </Link>
         <span>/</span>
-        <span className="truncate text-zinc-900 dark:text-zinc-100">{topic.title}</span>
+        <span className="truncate text-zinc-900 dark:text-zinc-100">
+          {topic.title}
+        </span>
       </nav>
 
       <h1 className="mt-4 text-3xl font-bold tracking-tight">{topic.title}</h1>
