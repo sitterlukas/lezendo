@@ -141,27 +141,26 @@ async function LocationCard({
   const coords = `${point.latitude!.toFixed(5)}, ${point.longitude!.toFixed(5)}`;
 
   return (
-    <div className="flex items-center gap-4 rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+    <div className="flex items-center gap-3 rounded border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900/50">
       <a
         href={mapsUrl}
         target="_blank"
         rel="noopener noreferrer"
         aria-label={`Open ${name} ${point.label.toLowerCase()} in Google Maps`}
-        className="block shrink-0 rounded bg-white p-2 ring-1 ring-zinc-200 transition hover:ring-zinc-400 dark:ring-zinc-700"
+        className="block shrink-0 rounded bg-white p-1.5 ring-1 ring-zinc-200 transition hover:ring-zinc-400 dark:ring-zinc-700"
       >
         {/* QR stays black-on-white so it scans in dark mode too. */}
         <div
-          className="h-24 w-24 [&>svg]:h-full [&>svg]:w-full"
+          className="h-16 w-16 [&>svg]:h-full [&>svg]:w-full"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       </a>
       <div className="min-w-0">
         <PointLabel point={point} />
-        <p className="mt-0.5 text-xs text-zinc-500">{point.blurb}</p>
-        <p className="mt-2 font-mono text-xs tabular-nums text-zinc-500">
+        <p className="mt-1 font-mono text-xs tabular-nums text-zinc-500">
           {coords}
         </p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
+        <div className="mt-1.5 flex flex-wrap items-center gap-3">
           <a
             href={mapsUrl}
             target="_blank"
@@ -203,7 +202,7 @@ function AddLocationPlaceholder({
   name: string;
 }) {
   return (
-    <div className="flex min-h-[8.5rem] flex-col items-center justify-center gap-2 rounded border border-dashed border-zinc-300 p-4 text-center dark:border-zinc-700">
+    <div className="flex min-h-[7rem] flex-col items-center justify-center gap-2 rounded border border-dashed border-zinc-300 p-4 text-center dark:border-zinc-700">
       <PointLabel point={point} />
       <p className="text-xs text-zinc-400 dark:text-zinc-500">
         No coordinates yet.
@@ -268,9 +267,7 @@ export default async function SectorMapQR({
 
   return (
     <section className="mt-8">
-      <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-        Location
-      </h2>
+      <h2 className="text-xl font-bold tracking-tight">Location</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {slots.map((point) =>
           point.latitude !== null && point.longitude !== null ? (

@@ -137,7 +137,7 @@ export default async function SectorPage({
     }
     return [...map.entries()]
       .map(([grade, v]) => ({ grade, count: v.count, rank: v.rank }))
-      .sort((a, b) => b.rank - a.rank)
+      .sort((a, b) => a.rank - b.rank)
       .map(({ grade, count }) => ({ grade, count }));
   })();
 
@@ -265,6 +265,8 @@ export default async function SectorPage({
         canUpload={!!currentUser}
       />
 
+      {gradeBuckets.length > 0 && <GradeHistogram data={gradeBuckets} />}
+
       <SectorMapQR
         sectorId={sector.id}
         name={sector.name}
@@ -274,8 +276,6 @@ export default async function SectorPage({
         parkingLatitude={sector.parking_latitude}
         parkingLongitude={sector.parking_longitude}
       />
-
-      {gradeBuckets.length > 0 && <GradeHistogram data={gradeBuckets} />}
 
       <div className="mt-12 flex items-baseline gap-3">
         <h2 className="text-xl font-bold tracking-tight">Routes</h2>
