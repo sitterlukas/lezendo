@@ -271,6 +271,22 @@ export default async function SectorPage({
               </form>
             </Modal>
           )}
+
+          {canEdit(sector.created_by) && (
+            <form action={deleteSector}>
+              <input type="hidden" name="sector_id" value={sector.id} />
+              <input type="hidden" name="crag_id" value={cragIdNum} />
+              <ConfirmSubmit
+                title={`Delete ${sector.name}?`}
+                message={`This will permanently delete the sector "${sector.name}". Routes inside it will remain but become unsectored.`}
+                confirmLabel="Delete sector"
+                triggerAriaLabel="Delete sector"
+                triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-3 py-1.5 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
+              >
+                Delete
+              </ConfirmSubmit>
+            </form>
+          )}
         </div>
       </header>
 
@@ -337,35 +353,6 @@ export default async function SectorPage({
       )}
 
       {/* Danger zone — only for sector author or admin */}
-      {canEdit(sector.created_by) && (
-        <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-            Danger zone
-          </h2>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded border border-red-200 p-4 dark:border-red-900/50">
-            <div>
-              <p className="text-sm font-medium">Delete this sector</p>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                Routes in this sector will remain but lose their sector
-                assignment.
-              </p>
-            </div>
-            <form action={deleteSector}>
-              <input type="hidden" name="sector_id" value={sector.id} />
-              <input type="hidden" name="crag_id" value={cragIdNum} />
-              <ConfirmSubmit
-                title={`Delete ${sector.name}?`}
-                message={`This will permanently delete the sector "${sector.name}". Routes inside it will remain but become unsectored.`}
-                confirmLabel="Delete sector"
-                triggerAriaLabel="Delete sector"
-                triggerClassName="rounded border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:hover:bg-red-950/30"
-              >
-                Delete sector
-              </ConfirmSubmit>
-            </form>
-          </div>
-        </section>
-      )}
     </main>
   );
 }
