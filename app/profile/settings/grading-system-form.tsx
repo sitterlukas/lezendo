@@ -19,15 +19,16 @@ export default function GradingSystemForm({
   const [state, action, pending] = useActionState(updateGradingSystem, {
     saved: false,
   });
-  const [showToast, setShowToast] = useState(false);
+  // Track which action result we've already auto-dismissed. `useActionState`
+  // returns a fresh object on every submit, so its identity tells saves apart.
+  const [dismissed, setDismissed] = useState(state);
+  const showToast = state.saved && !pending && state !== dismissed;
 
   useEffect(() => {
-    if (state.saved && !pending) {
-      setShowToast(true);
-      const t = setTimeout(() => setShowToast(false), 2500);
-      return () => clearTimeout(t);
-    }
-  }, [state.saved, pending]);
+    if (!showToast) return;
+    const t = setTimeout(() => setDismissed(state), 2500);
+    return () => clearTimeout(t);
+  }, [showToast, state]);
 
   const ropeSystems = gradingSystems.filter(
     (gs) => disciplineOf(gs.slug, equivalencies) === "rope",
