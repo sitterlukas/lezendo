@@ -16,8 +16,7 @@ import Modal from "@/app/ui/modal";
 import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageGallery from "@/app/ui/image-gallery";
 import ImageUpload from "@/app/ui/image-upload";
-import Select from "@/app/ui/select";
-import GradeSelect from "@/app/ui/grade-select";
+import AddRouteForm from "@/app/ui/add-route-form";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
 import { typeLabel, typeBadge, inputClass } from "@/app/ui/style";
@@ -349,83 +348,18 @@ export default async function CragPage({
               title={`Add a route at ${crag.name}`}
               subtitle="Know a line that's missing? Put it in the book."
             >
-              <form action={addRoute} className="grid gap-4 sm:grid-cols-2">
-                <input type="hidden" name="crag_id" value={crag.id} />
-                <label className="sm:col-span-2">
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Route name
-                  </span>
-                  <input
-                    name="name"
-                    placeholder="e.g. Moonlight Arête"
-                    required
-                    className={inputClass}
-                  />
-                </label>
-                <GradeSelect
-                  gradingSystems={gradingSystems}
-                  equivalencies={gradeEquivalencies}
-                  defaultSystemId={
-                    currentUser?.preferred_rope_grading_system_id ??
-                    currentUser?.preferred_boulder_grading_system_id
-                  }
-                  inputClass={inputClass}
-                />
-                <label>
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Type
-                  </span>
-                  <Select name="style" defaultValue="sport">
-                    <option value="sport">Sport climb</option>
-                    <option value="trad">Trad</option>
-                    <option value="boulder">Boulder</option>
-                  </Select>
-                </label>
-                {sectors.length > 0 && (
-                  <label>
-                    <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                      Sector
-                    </span>
-                    <Select name="sector_id">
-                      <option value="">— no sector —</option>
-                      {sectors.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </label>
-                )}
-                <label>
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Height (m)
-                  </span>
-                  <input
-                    name="height_m"
-                    type="number"
-                    min="1"
-                    placeholder="optional"
-                    className={inputClass}
-                  />
-                </label>
-                <label className="sm:col-span-2">
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Description
-                  </span>
-                  <textarea
-                    name="description"
-                    placeholder="Beta, rock type, what makes it good… (optional)"
-                    rows={2}
-                    className={inputClass}
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-                >
-                  Add route
-                </button>
-              </form>
+              <AddRouteForm
+                action={addRoute}
+                cragId={crag.id}
+                sectors={sectors}
+                gradingSystems={gradingSystems}
+                equivalencies={gradeEquivalencies}
+                defaultSystemId={
+                  currentUser?.preferred_rope_grading_system_id ??
+                  currentUser?.preferred_boulder_grading_system_id
+                }
+                inputClass={inputClass}
+              />
             </Modal>
           )}
           {canEdit(crag.created_by) && (
