@@ -1,5 +1,17 @@
-// Horizontal bar chart of a sector's route grades — how many routes at each
-// grade, ordered hardest-first. `data` must already be sorted.
+// Vertical column chart of a sector's route grades — how many routes at each
+// grade, easiest→hardest left to right. Bars are fixed-width (so a sector with
+// only a couple of grades doesn't stretch across the page) and shaded from
+// light blue (easy) to dark blue (hard) to form a gradient. `data` must already
+// be sorted easiest-first.
+const CHART_HEIGHT = 120; // px, tallest column
+
+// Light (easy) → dark (hard) blue gradient.
+function barColor(index: number, count: number): string {
+  if (count <= 1) return "hsl(217 91% 60%)";
+  const lightness = 76 - (index / (count - 1)) * (76 - 44);
+  return `hsl(217 91% ${lightness}%)`;
+}
+
 export default function GradeHistogram({
   data,
 }: {
@@ -11,28 +23,41 @@ export default function GradeHistogram({
 
   return (
     <section className="mt-8">
-      <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-        Grade distribution
-      </h2>
-      <ul className="mt-3 space-y-1.5">
-        {data.map((d) => (
-          <li key={d.grade} className="flex items-center gap-3">
-            <span className="w-12 shrink-0 text-right font-mono text-sm font-medium tabular-nums">
-              {d.grade}
-            </span>
-            <div className="h-5 flex-1 overflow-hidden rounded bg-zinc-100 dark:bg-zinc-800">
+      <h2 className="text-xl font-bold tracking-tight">Grade distribution</h2>
+
+      <div className="mt-4 w-fit">
+        {/* columns */}
+        <div className="flex items-end gap-2 sm:gap-3">
+          {data.map((d, i) => (
+            <div key={d.grade} className="flex w-10 flex-col items-center gap-1">
+              <span className="text-xs font-medium tabular-nums text-zinc-500">
+                {d.count}
+              </span>
               <div
-                className="h-full rounded bg-blue-500 dark:bg-blue-500/80"
-                style={{ width: `${Math.max(6, (d.count / max) * 100)}%` }}
+                className="w-full rounded-t"
+                style={{
+                  height: `${Math.max(4, (d.count / max) * CHART_HEIGHT)}px`,
+                  backgroundColor: barColor(i, data.length),
+                }}
+                title={`${d.count} ${d.count === 1 ? "route" : "routes"} at ${d.grade}`}
               />
             </div>
-            <span className="w-5 shrink-0 text-sm tabular-nums text-zinc-500">
-              {d.count}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-2 text-xs text-zinc-400">
+          ))}
+        </div>
+        {/* axis line + grade labels under each column */}
+        <div className="mt-2 flex gap-2 border-t border-zinc-300 pt-2 sm:gap-3 dark:border-zinc-700">
+          {data.map((d) => (
+            <div
+              key={d.grade}
+              className="w-10 text-center font-mono text-xs font-medium"
+            >
+              {d.grade}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <p className="mt-3 text-xs text-zinc-400">
         {total} {total === 1 ? "route" : "routes"} across {data.length}{" "}
         {data.length === 1 ? "grade" : "grades"}
       </p>
