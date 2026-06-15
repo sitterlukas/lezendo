@@ -29,6 +29,23 @@ export function disciplineOf(
 }
 
 /**
+ * Difficulty rank of a grade within a grading system (lower = easier), or null
+ * if the grade isn't known. Used to order grade-distribution charts.
+ */
+export function gradeRank(
+  grade: string,
+  gradingSystemId: number,
+  eqs: GradeEquivalency[],
+): number | null {
+  const match = eqs.find(
+    (e) =>
+      e.gradingSystemId === gradingSystemId &&
+      e.grade.toLowerCase() === grade.trim().toLowerCase(),
+  );
+  return match?.rank ?? null;
+}
+
+/**
  * Return all grades for a system in ascending difficulty order.
  */
 export function gradesForSystem(

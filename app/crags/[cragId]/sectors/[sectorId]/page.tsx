@@ -9,8 +9,9 @@ import ImageGallery from "@/app/ui/image-gallery";
 import SectorMapQR from "@/app/ui/sector-map-qr";
 import EntityReviews from "@/app/ui/entity-reviews";
 import RouteCard from "@/app/ui/route-card";
+import GradeHistogram from "@/app/ui/grade-histogram";
 import AddRouteForm from "@/app/ui/add-route-form";
-import { resolveGrade } from "@/lib/grade-conversion";
+import { resolveGrade, gradeRank } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
 import { inputClass } from "@/app/ui/style";
 
@@ -121,6 +122,24 @@ export default async function SectorPage({
       gradeEquivalencies,
     ),
   }));
+
+  // Grade distribution: count routes per displayed grade, ranked hardest-first
+  // using the route's own grading system.
+  const gradeBuckets = (() => {
+    const map = new Map<string, { count: number; rank: number }>();
+    for (const r of resolvedRoutes) {
+      const original = r.originalGrade ?? r.grade;
+      const rank =
+        gradeRank(original, r.grading_system_id, gradeEquivalencies) ?? -1;
+      const existing = map.get(r.grade);
+      if (existing) existing.count++;
+      else map.set(r.grade, { count: 1, rank });
+    }
+    return [...map.entries()]
+      .map(([grade, v]) => ({ grade, count: v.count, rank: v.rank }))
+      .sort((a, b) => a.rank - b.rank)
+      .map(({ grade, count }) => ({ grade, count }));
+  })();
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
@@ -245,6 +264,8 @@ export default async function SectorPage({
         entityId={sectorIdNum}
         canUpload={!!currentUser}
       />
+
+      {gradeBuckets.length > 0 && <GradeHistogram data={gradeBuckets} />}
 
       <SectorMapQR
         sectorId={sector.id}
