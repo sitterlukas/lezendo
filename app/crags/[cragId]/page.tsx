@@ -428,6 +428,20 @@ export default async function CragPage({
               </form>
             </Modal>
           )}
+          {canEdit(crag.created_by) && (
+            <form action={deleteCrag}>
+              <input type="hidden" name="crag_id" value={crag.id} />
+              <ConfirmSubmit
+                title={`Delete ${crag.name}?`}
+                message={`This will permanently delete ${crag.name}, all its sectors, and all its routes. This cannot be undone.`}
+                confirmLabel="Delete crag"
+                triggerAriaLabel="Delete crag"
+                triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-3 py-1.5 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
+              >
+                Delete
+              </ConfirmSubmit>
+            </form>
+          )}
         </div>
       </header>
 
@@ -700,36 +714,6 @@ export default async function CragPage({
               );
             })}
           </ul>
-        </section>
-      )}
-
-      {/* Danger zone — only for crag author or admin */}
-      {canEdit(crag.created_by) && (
-        <section className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-            Danger zone
-          </h2>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded border border-red-200 p-4 dark:border-red-900/50">
-            <div>
-              <p className="text-sm font-medium">Delete this crag</p>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                Permanently removes the crag, all its sectors, and all its
-                routes.
-              </p>
-            </div>
-            <form action={deleteCrag}>
-              <input type="hidden" name="crag_id" value={crag.id} />
-              <ConfirmSubmit
-                title={`Delete ${crag.name}?`}
-                message={`This will permanently delete ${crag.name}, all its sectors, and all its routes. This cannot be undone.`}
-                confirmLabel="Delete crag"
-                triggerAriaLabel="Delete crag"
-                triggerClassName="rounded border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:bg-transparent dark:hover:bg-red-950/30"
-              >
-                Delete crag
-              </ConfirmSubmit>
-            </form>
-          </div>
         </section>
       )}
     </main>
