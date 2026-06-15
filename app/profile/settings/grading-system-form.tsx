@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { updateGradingSystem } from "@/app/actions/auth";
 import Select from "@/app/ui/select";
 import { disciplineOf, type GradeEquivalency } from "@/lib/grade-conversion";
@@ -28,19 +29,23 @@ export default function GradingSystemForm({
   const [rope, setRope] = useState(String(ropeDefault ?? ""));
   const [boulder, setBoulder] = useState(String(boulderDefault ?? ""));
 
+  const router = useRouter();
   const [state, action, pending] = useActionState(updateGradingSystem, {
     saved: false,
   });
-  // Track which action result we've already auto-dismissed. `useActionState`
-  // returns a fresh object on every submit, so its identity tells saves apart.
+  // Track which action result we've already handled. `useActionState` returns a
+  // fresh object on every submit, so its identity tells saves apart.
   const [dismissed, setDismissed] = useState(state);
   const showToast = state.saved && !pending && state !== dismissed;
 
   useEffect(() => {
     if (!showToast) return;
+    // Re-fetch server components so the rest of the app (and the Router Cache)
+    // picks up the new preference without a manual page refresh.
+    router.refresh();
     const t = setTimeout(() => setDismissed(state), 2500);
     return () => clearTimeout(t);
-  }, [showToast, state]);
+  }, [showToast, state, router]);
 
   return (
     <>
