@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lezendo — Every route. Every ascent. Yours.",
+  title: "Whipperbook — Every route. Every ascent. Yours.",
   description:
     "A route database and personal climbing logbook. Explore crags, log ascents, track your progress.",
 };
@@ -56,7 +56,7 @@ export default async function RootLayout({
         <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-black/80">
           <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
             <Link href="/" className="text-lg font-bold tracking-tight">
-              Lezendo
+              Whipperbook
             </Link>
             <HeaderNav
               isAuthed={!!session?.user}
@@ -72,7 +72,7 @@ export default async function RootLayout({
               href="/"
               className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
             >
-              Lezendo
+              Whipperbook
             </Link>
             <nav className="flex flex-wrap items-center gap-5 text-sm text-zinc-500">
               <Link
@@ -113,7 +113,7 @@ export default async function RootLayout({
               </Link>
             </nav>
             <span className="text-xs text-zinc-400 dark:text-zinc-600">
-              © {new Date().getFullYear()} Lezendo
+              © {new Date().getFullYear()} Whipperbook
             </span>
           </div>
         </footer>

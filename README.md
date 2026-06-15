@@ -1,4 +1,4 @@
-Lezendo — a climbing route database and personal logbook, built with Next.js,
+Whipperbook — a climbing route database and personal logbook, built with Next.js,
 Kysely and PostgreSQL.
 
 ## Getting Started
