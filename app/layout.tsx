@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { auth } from "@/auth";
 import { logout } from "@/app/actions/auth";
 import ThemeToggle from "@/app/ui/theme-toggle";
@@ -227,6 +228,7 @@ export default async function RootLayout({
             </span>
           </div>
         </footer>
+        <Analytics />
       </body>
     </html>
   );

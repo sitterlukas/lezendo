@@ -3,6 +3,7 @@ import { Kysely, PostgresDialect, type Generated } from "kysely";
 export type DeletionEntityType = "crag" | "sector" | "route";
 export type DeletionAction = "delete" | "recover";
 export type ImageEntityType = "crag" | "sector" | "route";
+export type ReviewEntityType = "crag" | "sector" | "route";
 import { Pool } from "pg";
 
 export type ClimbStyle = "sport" | "trad" | "boulder";
@@ -24,6 +25,10 @@ export interface SectorsTable {
   crag_id: number;
   name: string;
   description: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  parking_latitude: number | null;
+  parking_longitude: number | null;
   deleted: Generated<boolean>;
   created_by: number | null;
   created_at: Generated<Date>;
@@ -151,6 +156,16 @@ export interface ForumPostsTable {
   created_at: Generated<Date>;
 }
 
+export interface EntityReviewsTable {
+  id: Generated<number>;
+  entity_type: ReviewEntityType;
+  entity_id: number;
+  user_id: number;
+  rating: number;
+  body: string | null;
+  created_at: Generated<Date>;
+}
+
 export interface Database {
   crags: CragsTable;
   sectors: SectorsTable;
@@ -166,6 +181,7 @@ export interface Database {
   images: ImagesTable;
   forum_topics: ForumTopicsTable;
   forum_posts: ForumPostsTable;
+  entity_reviews: EntityReviewsTable;
 }
 
 declare global {

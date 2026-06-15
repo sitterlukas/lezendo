@@ -6,11 +6,13 @@ import { addRoute, updateSector, deleteSector } from "@/app/actions";
 import Modal from "@/app/ui/modal";
 import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageGallery from "@/app/ui/image-gallery";
-import ImageUpload from "@/app/ui/image-upload";
+import SectorMapQR from "@/app/ui/sector-map-qr";
+import EntityReviews from "@/app/ui/entity-reviews";
+import RouteCard from "@/app/ui/route-card";
 import AddRouteForm from "@/app/ui/add-route-form";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
-import { typeLabel, typeBadge, inputClass } from "@/app/ui/style";
+import { inputClass } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
 
@@ -156,9 +158,6 @@ export default async function SectorPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {currentUser && (
-            <ImageUpload entityType="sector" entityId={sectorIdNum} />
-          )}
           {canEdit(sector.created_by) && (
             <Modal
               triggerLabel="Edit sector"
@@ -242,65 +241,54 @@ export default async function SectorPage({
         images={images}
         currentUserId={currentUser?.id ?? null}
         isAdmin={currentUser?.role === "admin"}
+        entityType="sector"
+        entityId={sectorIdNum}
+        canUpload={!!currentUser}
       />
 
+      <SectorMapQR
+        sectorId={sector.id}
+        name={sector.name}
+        canEdit={!!currentUser}
+        latitude={sector.latitude}
+        longitude={sector.longitude}
+        parkingLatitude={sector.parking_latitude}
+        parkingLongitude={sector.parking_longitude}
+      />
+
+      <div className="mt-12 flex items-baseline gap-3">
+        <h2 className="text-xl font-bold tracking-tight">Routes</h2>
+        <span className="text-sm text-zinc-500">
+          {routes.length} {routes.length === 1 ? "route" : "routes"}
+        </span>
+      </div>
+
       {routes.length === 0 ? (
-        <div className="mt-12 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
+        <div className="mt-6 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
           <p className="font-medium">No routes in this sector yet.</p>
           <p className="mt-1 text-sm text-zinc-500">
             Add the first route to get started.
           </p>
         </div>
       ) : (
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {resolvedRoutes.map((route) => (
-            <li key={route.id}>
-              <Link
-                href={`/crags/${cragIdNum}/routes/${route.id}`}
-                className="flex h-full flex-col rounded border border-zinc-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="font-semibold leading-snug">
-                    {route.name}
-                  </span>
-                  <span className="shrink-0 rounded bg-zinc-900 px-2 py-0.5 text-center font-mono text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
-                    {route.grade}
-                  </span>
-                </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}
-                  >
-                    {typeLabel[route.style]}
-                  </span>
-                  {route.systemName && (
-                    <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                      {route.systemName}
-                    </span>
-                  )}
-                  {route.height_m !== null && (
-                    <span className="text-xs text-zinc-500">
-                      {route.height_m} m
-                    </span>
-                  )}
-                  {tickedRouteIds.has(route.id) && (
-                    <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                      Climbed
-                    </span>
-                  )}
-                </div>
-                {route.description && (
-                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                    {route.description}
-                  </p>
-                )}
-              </Link>
-            </li>
+            <RouteCard
+              key={route.id}
+              route={route}
+              cragId={cragIdNum}
+              ticked={tickedRouteIds.has(route.id)}
+            />
           ))}
         </ul>
       )}
 
-      {/* Danger zone — only for sector author or admin */}
+      <EntityReviews
+        entityType="sector"
+        entityId={sectorIdNum}
+        currentUserId={currentUser?.id ?? null}
+        isAdmin={currentUser?.role === "admin"}
+      />
     </main>
   );
 }
