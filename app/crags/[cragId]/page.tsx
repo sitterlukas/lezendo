@@ -449,113 +449,126 @@ export default async function CragPage({
       {/* Sectors with their routes */}
       {sectors.length > 0 && (
         <div className="mt-10 space-y-10">
-          {sectors.map((sector) => {
-            const sectorRoutes = routesBySector.get(sector.id) ?? [];
-            return (
-              <section key={sector.id}>
-                <div className="flex items-baseline justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
-                  <div className="flex items-baseline gap-3">
-                    <h2 className="text-lg font-semibold">{sector.name}</h2>
-                    <span className="text-sm text-zinc-500">
-                      {sectorRoutes.length}{" "}
-                      {sectorRoutes.length === 1 ? "route" : "routes"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {canEdit(sector.created_by) && (
-                      <>
-                        <Modal
-                          triggerLabel="Edit"
-                          variant="ghost"
-                          title={`Edit sector: ${sector.name}`}
-                        >
-                          <form action={updateSector} className="grid gap-4">
-                            <input
-                              type="hidden"
-                              name="sector_id"
-                              value={sector.id}
-                            />
-                            <label>
-                              <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                                Name
-                              </span>
-                              <input
-                                name="name"
-                                defaultValue={sector.name}
-                                required
-                                className={inputClass}
-                              />
-                            </label>
-                            <label>
-                              <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                                Description
-                              </span>
-                              <textarea
-                                name="description"
-                                defaultValue={sector.description ?? ""}
-                                rows={2}
-                                className={inputClass}
-                              />
-                            </label>
-                            <button
-                              type="submit"
-                              className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          <div>
+            <div className="flex items-baseline gap-3">
+              <h2 className="text-xl font-bold tracking-tight">Sectors</h2>
+              <span className="text-sm text-zinc-500">
+                {sectors.length} {sectors.length === 1 ? "sector" : "sectors"}
+              </span>
+            </div>
+            <div className="mt-6 space-y-10">
+              {sectors.map((sector) => {
+                const sectorRoutes = routesBySector.get(sector.id) ?? [];
+                return (
+                  <section key={sector.id}>
+                    <div className="flex items-baseline justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
+                      <div className="flex items-baseline gap-3">
+                        <h3 className="text-lg font-semibold">{sector.name}</h3>
+                        <span className="text-sm text-zinc-500">
+                          {sectorRoutes.length}{" "}
+                          {sectorRoutes.length === 1 ? "route" : "routes"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {canEdit(sector.created_by) && (
+                          <>
+                            <Modal
+                              triggerLabel="Edit"
+                              variant="ghost"
+                              title={`Edit sector: ${sector.name}`}
                             >
-                              Save changes
-                            </button>
-                          </form>
-                        </Modal>
-                        <form action={deleteSector}>
-                          <input
-                            type="hidden"
-                            name="sector_id"
-                            value={sector.id}
-                          />
-                          <input type="hidden" name="crag_id" value={id} />
-                          <ConfirmSubmit
-                            title={`Delete ${sector.name}?`}
-                            message="Routes in this sector will remain but lose their sector assignment."
-                            confirmLabel="Delete sector"
-                            triggerAriaLabel={`Delete ${sector.name}`}
-                            triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-2 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
-                          >
-                            Delete
-                          </ConfirmSubmit>
-                        </form>
-                      </>
+                              <form
+                                action={updateSector}
+                                className="grid gap-4"
+                              >
+                                <input
+                                  type="hidden"
+                                  name="sector_id"
+                                  value={sector.id}
+                                />
+                                <label>
+                                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                    Name
+                                  </span>
+                                  <input
+                                    name="name"
+                                    defaultValue={sector.name}
+                                    required
+                                    className={inputClass}
+                                  />
+                                </label>
+                                <label>
+                                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                    Description
+                                  </span>
+                                  <textarea
+                                    name="description"
+                                    defaultValue={sector.description ?? ""}
+                                    rows={2}
+                                    className={inputClass}
+                                  />
+                                </label>
+                                <button
+                                  type="submit"
+                                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                                >
+                                  Save changes
+                                </button>
+                              </form>
+                            </Modal>
+                            <form action={deleteSector}>
+                              <input
+                                type="hidden"
+                                name="sector_id"
+                                value={sector.id}
+                              />
+                              <input type="hidden" name="crag_id" value={id} />
+                              <ConfirmSubmit
+                                title={`Delete ${sector.name}?`}
+                                message="Routes in this sector will remain but lose their sector assignment."
+                                confirmLabel="Delete sector"
+                                triggerAriaLabel={`Delete ${sector.name}`}
+                                triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-2 py-1 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
+                              >
+                                Delete
+                              </ConfirmSubmit>
+                            </form>
+                          </>
+                        )}
+                        <Link
+                          href={`/crags/${id}/sectors/${sector.id}`}
+                          className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
+                        >
+                          View sector →
+                        </Link>
+                      </div>
+                    </div>
+                    {sector.description && (
+                      <p className="mt-2 text-sm text-zinc-500">
+                        {sector.description}
+                      </p>
                     )}
-                    <Link
-                      href={`/crags/${id}/sectors/${sector.id}`}
-                      className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
-                    >
-                      View sector →
-                    </Link>
-                  </div>
-                </div>
-                {sector.description && (
-                  <p className="mt-2 text-sm text-zinc-500">
-                    {sector.description}
-                  </p>
-                )}
-                {sectorRoutes.length === 0 ? (
-                  <p className="mt-4 text-sm text-zinc-400 dark:text-zinc-600">
-                    No routes in this sector yet.
-                  </p>
-                ) : (
-                  <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {sectorRoutes.map((route) => (
-                      <RouteCard
-                        key={route.id}
-                        route={route}
-                        cragId={id}
-                        ticked={tickedRouteIds.has(route.id)}
-                      />
-                    ))}
-                  </ul>
-                )}
-              </section>
-            );
-          })}
+                    {sectorRoutes.length === 0 ? (
+                      <p className="mt-4 text-sm text-zinc-400 dark:text-zinc-600">
+                        No routes in this sector yet.
+                      </p>
+                    ) : (
+                      <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {sectorRoutes.map((route) => (
+                          <RouteCard
+                            key={route.id}
+                            route={route}
+                            cragId={id}
+                            ticked={tickedRouteIds.has(route.id)}
+                          />
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Routes without a sector */}
           {unsectoredRoutes.length > 0 && (
