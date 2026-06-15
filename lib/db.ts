@@ -57,6 +57,8 @@ export interface RoutesTable {
   grading_system_id: number;
   style: ClimbStyle;
   height_m: number | null;
+  bolt_count: number | null;
+  protection: string | null;
   description: string | null;
   deleted: Generated<boolean>;
   created_by: number | null;
