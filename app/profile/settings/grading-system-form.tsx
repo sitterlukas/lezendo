@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateGradingSystem } from "@/app/actions/auth";
 import Select from "@/app/ui/select";
@@ -17,6 +17,7 @@ export default function GradingSystemForm({
   ropeDefault: number | null;
   boulderDefault: number | null;
 }) {
+  const router = useRouter();
   const ropeSystems = gradingSystems.filter(
     (gs) => disciplineOf(gs.slug, equivalencies) === "rope",
   );
@@ -28,29 +29,31 @@ export default function GradingSystemForm({
   // cleared by this form, so the incoming values are always set.
   const [rope, setRope] = useState(String(ropeDefault ?? ""));
   const [boulder, setBoulder] = useState(String(boulderDefault ?? ""));
+  const [pending, startTransition] = useTransition();
+  const [showToast, setShowToast] = useState(false);
 
-  const router = useRouter();
-  const [state, action, pending] = useActionState(updateGradingSystem, {
-    saved: false,
-  });
-  // Track which action result we've already handled. `useActionState` returns a
-  // fresh object on every submit, so its identity tells saves apart.
-  const [dismissed, setDismissed] = useState(state);
-  const showToast = state.saved && !pending && state !== dismissed;
-
-  useEffect(() => {
-    if (!showToast) return;
-    // Re-fetch server components so the rest of the app (and the Router Cache)
-    // picks up the new preference without a manual page refresh.
-    router.refresh();
-    const t = setTimeout(() => setDismissed(state), 2500);
-    return () => clearTimeout(t);
-  }, [showToast, state, router]);
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    // Submit manually instead of via a form action: React's automatic form
+    // reset after an action briefly flips the controlled selects back to their
+    // first option before our state re-applies, which reads as a flicker.
+    e.preventDefault();
+    const data = new FormData();
+    data.set("preferred_rope_grading_system_id", rope);
+    data.set("preferred_boulder_grading_system_id", boulder);
+    startTransition(async () => {
+      await updateGradingSystem(data);
+      // Re-fetch server components so the new preference shows everywhere
+      // without a manual page refresh.
+      router.refresh();
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2500);
+    });
+  }
 
   return (
     <>
       <form
-        action={action}
+        onSubmit={handleSubmit}
         className="flex flex-wrap items-end gap-3 border-b border-zinc-200 px-6 py-4 dark:border-zinc-800"
       >
         <label className="min-w-[10rem] flex-1">
