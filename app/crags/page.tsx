@@ -6,6 +6,7 @@ import { addCrag, recoverCrag } from "@/app/actions";
 import Modal from "@/app/ui/modal";
 import Select from "@/app/ui/select";
 import FilterPill from "@/app/ui/filter-pill";
+import CragFields from "@/app/ui/crag-fields";
 import { inputClass } from "@/app/ui/style";
 
 const PAGE_SIZE = 24;
@@ -301,6 +302,7 @@ export default async function CragsPage({
                     className={inputClass}
                   />
                 </label>
+                <CragFields />
                 <button
                   type="submit"
                   className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"

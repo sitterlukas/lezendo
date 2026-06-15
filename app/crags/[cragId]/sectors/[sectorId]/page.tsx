@@ -10,10 +10,13 @@ import SectorMapQR from "@/app/ui/sector-map-qr";
 import EntityReviews from "@/app/ui/entity-reviews";
 import RouteCard from "@/app/ui/route-card";
 import GradeHistogram from "@/app/ui/grade-histogram";
+import SectorFields from "@/app/ui/sector-fields";
 import AddRouteForm from "@/app/ui/add-route-form";
-import { resolveGrade, gradeRank } from "@/lib/grade-conversion";
+import FactList from "@/app/ui/fact-list";
+import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
-import { inputClass } from "@/app/ui/style";
+import { gradeBuckets, gradeRange, stylesPresent } from "@/lib/route-stats";
+import { inputClass, typeLabel, typeBadge } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
 
@@ -123,23 +126,9 @@ export default async function SectorPage({
     ),
   }));
 
-  // Grade distribution: count routes per displayed grade, ranked hardest-first
-  // using the route's own grading system.
-  const gradeBuckets = (() => {
-    const map = new Map<string, { count: number; rank: number }>();
-    for (const r of resolvedRoutes) {
-      const original = r.originalGrade ?? r.grade;
-      const rank =
-        gradeRank(original, r.grading_system_id, gradeEquivalencies) ?? -1;
-      const existing = map.get(r.grade);
-      if (existing) existing.count++;
-      else map.set(r.grade, { count: 1, rank });
-    }
-    return [...map.entries()]
-      .map(([grade, v]) => ({ grade, count: v.count, rank: v.rank }))
-      .sort((a, b) => a.rank - b.rank)
-      .map(({ grade, count }) => ({ grade, count }));
-  })();
+  const buckets = gradeBuckets(resolvedRoutes, gradeEquivalencies);
+  const range = gradeRange(resolvedRoutes, gradeEquivalencies);
+  const styles = stylesPresent(resolvedRoutes);
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
@@ -171,9 +160,6 @@ export default async function SectorPage({
               {sector.description}
             </p>
           )}
-          <p className="mt-3 text-sm text-zinc-500">
-            {routes.length} {routes.length === 1 ? "route" : "routes"}
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -185,28 +171,14 @@ export default async function SectorPage({
             >
               <form action={updateSector} className="grid gap-4">
                 <input type="hidden" name="sector_id" value={sector.id} />
-                <label>
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Name
-                  </span>
-                  <input
-                    name="name"
-                    defaultValue={sector.name}
-                    required
-                    className={inputClass}
-                  />
-                </label>
-                <label>
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Description
-                  </span>
-                  <textarea
-                    name="description"
-                    defaultValue={sector.description ?? ""}
-                    rows={2}
-                    className={inputClass}
-                  />
-                </label>
+                <SectorFields
+                  defaults={{
+                    name: sector.name,
+                    description: sector.description,
+                    approach_minutes: sector.approach_minutes,
+                    aspect: sector.aspect,
+                  }}
+                />
                 <button
                   type="submit"
                   className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
@@ -256,6 +228,46 @@ export default async function SectorPage({
         </div>
       </header>
 
+      {/* Quick facts */}
+      <FactList
+        className="mt-6"
+        variant="inline"
+        items={[
+          { label: "Routes", value: routes.length || null },
+          {
+            label: "Grades",
+            value: range
+              ? range.minGrade === range.maxGrade
+                ? range.minGrade
+                : `${range.minGrade}–${range.maxGrade}`
+              : null,
+          },
+          {
+            label: "Styles",
+            value: styles.length ? (
+              <span className="flex flex-wrap gap-1">
+                {styles.map((s) => (
+                  <span
+                    key={s}
+                    className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[s]}`}
+                  >
+                    {typeLabel[s]}
+                  </span>
+                ))}
+              </span>
+            ) : null,
+          },
+          { label: "Aspect", value: sector.aspect },
+          {
+            label: "Approach",
+            value:
+              sector.approach_minutes !== null
+                ? `${sector.approach_minutes} min`
+                : null,
+          },
+        ]}
+      />
+
       <ImageGallery
         images={images}
         currentUserId={currentUser?.id ?? null}
@@ -265,17 +277,19 @@ export default async function SectorPage({
         canUpload={!!currentUser}
       />
 
-      {gradeBuckets.length > 0 && <GradeHistogram data={gradeBuckets} />}
-
-      <SectorMapQR
-        sectorId={sector.id}
-        name={sector.name}
-        canEdit={!!currentUser}
-        latitude={sector.latitude}
-        longitude={sector.longitude}
-        parkingLatitude={sector.parking_latitude}
-        parkingLongitude={sector.parking_longitude}
-      />
+      {/* Grade distribution + location side by side, matched heights */}
+      <div className="mt-8 grid items-stretch gap-6 md:grid-cols-2">
+        {buckets.length > 0 && <GradeHistogram data={buckets} />}
+        <SectorMapQR
+          sectorId={sector.id}
+          name={sector.name}
+          canEdit={!!currentUser}
+          latitude={sector.latitude}
+          longitude={sector.longitude}
+          parkingLatitude={sector.parking_latitude}
+          parkingLongitude={sector.parking_longitude}
+        />
+      </div>
 
       <div className="mt-12 flex items-baseline gap-3">
         <h2 className="text-xl font-bold tracking-tight">Routes</h2>

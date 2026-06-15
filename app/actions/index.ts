@@ -111,6 +111,66 @@ function parseBolting(formData: FormData): {
   };
 }
 
+// Shared parsing for a crag's guidebook fields.
+function parseCragDetails(formData: FormData): {
+  rock_type: string | null;
+  aspect: string | null;
+  best_season: string | null;
+  access_notes: string | null;
+} {
+  const str = (k: string) => String(formData.get(k) ?? "").trim() || null;
+  return {
+    rock_type: str("rock_type"),
+    aspect: str("aspect"),
+    best_season: str("best_season"),
+    access_notes: str("access_notes"),
+  };
+}
+
+// Shared parsing for a sector's approach time + aspect.
+function parseSectorDetails(formData: FormData): {
+  approach_minutes: number | null;
+  aspect: string | null;
+} {
+  const approachRaw = String(formData.get("approach_minutes") ?? "").trim();
+  const approach = approachRaw ? Number.parseInt(approachRaw, 10) : null;
+  const aspect = String(formData.get("aspect") ?? "").trim();
+  return {
+    approach_minutes:
+      approach !== null && Number.isInteger(approach) && approach >= 0
+        ? approach
+        : null,
+    aspect: aspect || null,
+  };
+}
+
+// Shared parsing for a route's guidebook details (first ascent, pitches, gear).
+function parseRouteDetails(formData: FormData): {
+  firstAscensionist: string | null;
+  firstAscentYear: number | null;
+  pitches: number | null;
+  gearNotes: string | null;
+} {
+  const firstAscensionist = String(formData.get("first_ascensionist") ?? "").trim();
+  const yearRaw = String(formData.get("first_ascent_year") ?? "").trim();
+  const pitchesRaw = String(formData.get("pitches") ?? "").trim();
+  const gearNotes = String(formData.get("gear_notes") ?? "").trim();
+
+  const year = yearRaw ? Number.parseInt(yearRaw, 10) : null;
+  const pitches = pitchesRaw ? Number.parseInt(pitchesRaw, 10) : null;
+  const thisYear = 2026;
+
+  return {
+    firstAscensionist: firstAscensionist || null,
+    firstAscentYear:
+      year !== null && Number.isInteger(year) && year >= 1900 && year <= thisYear + 1
+        ? year
+        : null,
+    pitches: pitches !== null && Number.isInteger(pitches) && pitches >= 1 ? pitches : null,
+    gearNotes: gearNotes || null,
+  };
+}
+
 export async function logAscent(formData: FormData) {
   const userId = await currentUserId();
   if (userId === null) return;
@@ -336,6 +396,7 @@ export async function addCrag(formData: FormData) {
   const area = String(formData.get("area") ?? "").trim();
   const country = String(formData.get("country") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const details = parseCragDetails(formData);
 
   if (!name) return;
 
@@ -346,6 +407,7 @@ export async function addCrag(formData: FormData) {
       area: area || null,
       country: country || null,
       description: description || null,
+      ...details,
       created_by: userId,
     })
     .onConflict((oc) => oc.column("name").doNothing())
@@ -364,6 +426,7 @@ export async function updateCrag(formData: FormData) {
   const area = String(formData.get("area") ?? "").trim();
   const country = String(formData.get("country") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const details = parseCragDetails(formData);
 
   if (!name || !Number.isInteger(cragId)) return;
 
@@ -381,6 +444,7 @@ export async function updateCrag(formData: FormData) {
       area: area || null,
       country: country || null,
       description: description || null,
+      ...details,
     })
     .where("id", "=", cragId)
     .execute();
@@ -395,6 +459,7 @@ export async function updateSector(formData: FormData) {
   const sectorId = Number(formData.get("sector_id"));
   const name = String(formData.get("name") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const details = parseSectorDetails(formData);
 
   if (!name || !Number.isInteger(sectorId)) return;
 
@@ -407,7 +472,7 @@ export async function updateSector(formData: FormData) {
 
   await db
     .updateTable("sectors")
-    .set({ name, description: description || null })
+    .set({ name, description: description || null, ...details })
     .where("id", "=", sectorId)
     .execute();
 
@@ -501,6 +566,8 @@ export async function updateRoute(formData: FormData) {
 
   const height = heightRaw ? Number.parseInt(heightRaw, 10) : null;
   const { boltCount, protection } = parseBolting(formData);
+  const { firstAscensionist, firstAscentYear, pitches, gearNotes } =
+    parseRouteDetails(formData);
 
   await db
     .updateTable("routes")
@@ -513,6 +580,10 @@ export async function updateRoute(formData: FormData) {
       height_m: height && !Number.isNaN(height) ? height : null,
       bolt_count: boltCount,
       protection,
+      first_ascensionist: firstAscensionist,
+      first_ascent_year: firstAscentYear,
+      pitches,
+      gear_notes: gearNotes,
       description: description || null,
     })
     .where("id", "=", routeId)
@@ -738,6 +809,7 @@ export async function addSector(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const cragId = Number(formData.get("crag_id"));
   const description = String(formData.get("description") ?? "").trim();
+  const details = parseSectorDetails(formData);
 
   if (!name || !Number.isInteger(cragId)) return;
 
@@ -754,6 +826,7 @@ export async function addSector(formData: FormData) {
       crag_id: cragId,
       name,
       description: description || null,
+      ...details,
       created_by: userId,
     })
     .execute();
@@ -802,6 +875,8 @@ export async function addRoute(formData: FormData) {
 
   const height = heightRaw ? Number.parseInt(heightRaw, 10) : null;
   const { boltCount, protection } = parseBolting(formData);
+  const { firstAscensionist, firstAscentYear, pitches, gearNotes } =
+    parseRouteDetails(formData);
 
   await db
     .insertInto("routes")
@@ -815,6 +890,10 @@ export async function addRoute(formData: FormData) {
       height_m: Number.isNaN(height) ? null : height,
       bolt_count: boltCount,
       protection,
+      first_ascensionist: firstAscensionist,
+      first_ascent_year: firstAscentYear,
+      pitches,
+      gear_notes: gearNotes,
       description: description || null,
       created_by: userId,
     })
