@@ -5,6 +5,50 @@ import { useRef, useState, useTransition } from "react";
 import { saveImage } from "@/app/actions";
 import type { ImageEntityType } from "@/lib/db";
 
+// Downscale + re-encode in the browser before upload so we don't store huge
+// originals. Photos are only ever shown up to ~1280px wide, so 1600px on the
+// long edge at JPEG q0.82 is plenty. Falls back to the original file if the
+// image can't be processed (or isn't a re-encodable raster type).
+const MAX_EDGE = 1600;
+const JPEG_QUALITY = 0.82;
+
+async function downscaleImage(
+  file: File,
+): Promise<{ body: Blob; filename: string }> {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+    return { body: file, filename: file.name };
+  }
+  try {
+    // `from-image` honours EXIF orientation so phone photos aren't sideways.
+    const bitmap = await createImageBitmap(file, {
+      imageOrientation: "from-image",
+    });
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return { body: file, filename: file.name };
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close?.();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY),
+    );
+    // Keep the original if re-encoding somehow produced something larger.
+    if (!blob || blob.size >= file.size) {
+      return { body: file, filename: file.name };
+    }
+    const filename = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    return { body: blob, filename };
+  } catch {
+    return { body: file, filename: file.name };
+  }
+}
+
 export default function ImageUpload({
   entityType,
   entityId,
@@ -29,7 +73,8 @@ export default function ImageUpload({
     setError(null);
 
     try {
-      const blob = await upload(file.name, file, {
+      const { body, filename } = await downscaleImage(file);
+      const blob = await upload(filename, body, {
         access: "public",
         handleUploadUrl: "/api/images/upload",
       });

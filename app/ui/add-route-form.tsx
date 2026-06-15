@@ -137,6 +137,52 @@ export default function AddRouteForm({
           </label>
         </>
       )}
+      <label>
+        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+          Pitches
+        </span>
+        <input
+          name="pitches"
+          type="number"
+          min="1"
+          placeholder="1"
+          className={inputClass}
+        />
+      </label>
+      <label>
+        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+          First ascent year
+        </span>
+        <input
+          name="first_ascent_year"
+          type="number"
+          min="1900"
+          placeholder="optional"
+          className={inputClass}
+        />
+      </label>
+      <label className="sm:col-span-2">
+        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+          First ascensionist
+        </span>
+        <input
+          name="first_ascensionist"
+          placeholder="Who made the first ascent (optional)"
+          className={inputClass}
+        />
+      </label>
+      {style !== "boulder" && (
+        <label className="sm:col-span-2">
+          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+            Gear / rack
+          </span>
+          <input
+            name="gear_notes"
+            placeholder="e.g. Single rack to 3 inches, 12 draws (optional)"
+            className={inputClass}
+          />
+        </label>
+      )}
       <label className="sm:col-span-2">
         <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
           Description

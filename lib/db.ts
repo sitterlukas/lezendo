@@ -15,6 +15,10 @@ export interface CragsTable {
   area: string | null;
   country: string | null;
   description: string | null;
+  rock_type: string | null;
+  aspect: string | null;
+  best_season: string | null;
+  access_notes: string | null;
   deleted: Generated<boolean>;
   created_by: number | null;
   created_at: Generated<Date>;
@@ -29,6 +33,8 @@ export interface SectorsTable {
   longitude: number | null;
   parking_latitude: number | null;
   parking_longitude: number | null;
+  approach_minutes: number | null;
+  aspect: string | null;
   deleted: Generated<boolean>;
   created_by: number | null;
   created_at: Generated<Date>;
@@ -59,6 +65,10 @@ export interface RoutesTable {
   height_m: number | null;
   bolt_count: number | null;
   protection: string | null;
+  first_ascensionist: string | null;
+  first_ascent_year: number | null;
+  pitches: number | null;
+  gear_notes: string | null;
   description: string | null;
   deleted: Generated<boolean>;
   created_by: number | null;

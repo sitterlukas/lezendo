@@ -8,8 +8,10 @@ import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageGallery from "@/app/ui/image-gallery";
 import EntityReviews from "@/app/ui/entity-reviews";
 import Select from "@/app/ui/select";
+import FactList from "@/app/ui/fact-list";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
+import { tickStats } from "@/lib/route-stats";
 import GradeSelect from "@/app/ui/grade-select";
 import { typeLabel, typeBadge } from "@/app/ui/style";
 
@@ -126,6 +128,13 @@ export default async function RoutePage({
   const communityAscents = allAscents.filter(
     (a) => !currentUser || a.user_id !== currentUser.id,
   );
+  const stats = tickStats(allAscents);
+  const firstAscent =
+    route.first_ascensionist || route.first_ascent_year
+      ? [route.first_ascensionist, route.first_ascent_year]
+          .filter(Boolean)
+          .join(", ")
+      : null;
 
   function canEdit(createdBy: number | null) {
     if (!currentUser) return false;
@@ -144,7 +153,7 @@ export default async function RoutePage({
   );
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
+    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
       {/* Breadcrumb */}
       <nav className="flex flex-wrap items-center gap-2 text-sm text-zinc-500">
         <Link
@@ -179,7 +188,8 @@ export default async function RoutePage({
       <div className="mt-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">{route.name}</h1>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          {/* Consolidated spec row */}
+          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-zinc-500">
             <span
               className={`rounded px-2 py-0.5 text-xs font-medium ${typeBadge[route.style]}`}
             >
@@ -190,51 +200,33 @@ export default async function RoutePage({
                 {displaySystemName}
               </span>
             )}
-            <span className="text-sm text-zinc-500">
-              {[crag.area, crag.country].filter(Boolean).join(", ")}
-            </span>
+            {route.height_m !== null && (
+              <>
+                <span className="text-zinc-300 dark:text-zinc-700">·</span>
+                <span className="tabular-nums">{route.height_m} m</span>
+              </>
+            )}
+            {route.pitches !== null && route.pitches > 1 && (
+              <>
+                <span className="text-zinc-300 dark:text-zinc-700">·</span>
+                <span className="tabular-nums">{route.pitches} pitches</span>
+              </>
+            )}
+            {route.bolt_count !== null && (
+              <>
+                <span className="text-zinc-300 dark:text-zinc-700">·</span>
+                <span className="tabular-nums">{route.bolt_count} bolts</span>
+              </>
+            )}
+            {(crag.area || crag.country) && (
+              <>
+                <span className="text-zinc-300 dark:text-zinc-700">·</span>
+                <span>
+                  {[crag.area, crag.country].filter(Boolean).join(", ")}
+                </span>
+              </>
+            )}
           </div>
-          {route.description && (
-            <p className="mt-4 max-w-xl text-zinc-600 dark:text-zinc-400">
-              {route.description}
-            </p>
-          )}
-          {(route.height_m !== null ||
-            route.bolt_count !== null ||
-            route.protection) && (
-            <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
-              {route.height_m !== null && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wider text-zinc-400">
-                    Length
-                  </dt>
-                  <dd className="mt-0.5 font-medium tabular-nums">
-                    {route.height_m} m
-                  </dd>
-                </div>
-              )}
-              {route.bolt_count !== null && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wider text-zinc-400">
-                    Bolts
-                  </dt>
-                  <dd className="mt-0.5 font-medium tabular-nums">
-                    {route.bolt_count}
-                  </dd>
-                </div>
-              )}
-              {route.protection && (
-                <div>
-                  <dt className="text-xs uppercase tracking-wider text-zinc-400">
-                    Bolting
-                  </dt>
-                  <dd className="mt-0.5 max-w-xs font-medium">
-                    {route.protection}
-                  </dd>
-                </div>
-              )}
-            </dl>
-          )}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-3">
           <span className="rounded bg-zinc-900 px-3 py-1 text-center font-mono text-lg font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
@@ -353,6 +345,54 @@ export default async function RoutePage({
                         className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
                       />
                     </label>
+                    <label>
+                      <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        Pitches
+                      </span>
+                      <input
+                        name="pitches"
+                        type="number"
+                        min="1"
+                        defaultValue={route.pitches ?? ""}
+                        placeholder="1"
+                        className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                      />
+                    </label>
+                    <label>
+                      <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        First ascent year
+                      </span>
+                      <input
+                        name="first_ascent_year"
+                        type="number"
+                        min="1900"
+                        defaultValue={route.first_ascent_year ?? ""}
+                        placeholder="optional"
+                        className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                      />
+                    </label>
+                    <label className="sm:col-span-2">
+                      <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        First ascensionist
+                      </span>
+                      <input
+                        name="first_ascensionist"
+                        defaultValue={route.first_ascensionist ?? ""}
+                        placeholder="Who made the first ascent (optional)"
+                        className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                      />
+                    </label>
+                    <label className="sm:col-span-2">
+                      <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                        Gear / rack
+                      </span>
+                      <input
+                        name="gear_notes"
+                        defaultValue={route.gear_notes ?? ""}
+                        placeholder="e.g. Single rack to 3 inches, 12 draws (optional)"
+                        className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
+                      />
+                    </label>
                     <label className="sm:col-span-2">
                       <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                         Description
@@ -377,6 +417,68 @@ export default async function RoutePage({
           </div>
         </div>
       </div>
+
+      {/* Facts + ascent stats. Trad routes show Gear/rack instead of Bolting
+          (the two would otherwise overlap). */}
+      {(() => {
+        const bolting = route.style === "trad" ? null : route.protection;
+        const hasFacts = !!(firstAscent || bolting || route.gear_notes);
+        if (!hasFacts && stats.totalSends === 0) return null;
+        return (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {hasFacts && (
+              <div className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+                <FactList
+                  items={[
+                    { label: "First ascent", value: firstAscent },
+                    { label: "Bolting", value: bolting },
+                    { label: "Gear / rack", value: route.gear_notes },
+                  ]}
+                />
+              </div>
+            )}
+            {stats.totalSends > 0 && (
+              <div className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+                <p className="text-xs uppercase tracking-wider text-zinc-400">
+                  Ascents
+                </p>
+                <p className="mt-0.5 text-2xl font-bold tabular-nums">
+                  {stats.totalSends}{" "}
+                  <span className="text-sm font-normal text-zinc-500">
+                    {stats.totalSends === 1 ? "send" : "sends"}
+                  </span>
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      "onsight",
+                      "flash",
+                      "redpoint",
+                      "toprope",
+                      "attempt",
+                    ] as TickType[]
+                  ).map((t) =>
+                    stats.counts[t] ? (
+                      <span
+                        key={t}
+                        className={`rounded px-2 py-0.5 text-xs font-medium ${tickBadge[t]}`}
+                      >
+                        {tickLabel[t]} {stats.counts[t]}
+                      </span>
+                    ) : null,
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {route.description && (
+        <p className="mt-6 max-w-2xl leading-relaxed text-zinc-600 dark:text-zinc-400">
+          {route.description}
+        </p>
+      )}
 
       <ImageGallery
         images={images}
