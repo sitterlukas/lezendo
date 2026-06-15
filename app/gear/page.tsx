@@ -9,10 +9,9 @@ import {
 } from "@/app/actions";
 import Modal from "@/app/ui/modal";
 import Select from "@/app/ui/select";
-import ConfirmSubmit from "@/app/ui/confirm-submit";
+import DeleteButton from "@/app/ui/delete-button";
 import Stars from "@/app/ui/stars";
 import StarRatingInput from "@/app/ui/star-rating-input";
-import TrashIcon from "@/app/ui/trash-icon";
 import { inputClass } from "@/app/ui/style";
 
 const categoryMeta: Record<GearCategory, { label: string }> = {
@@ -25,9 +24,6 @@ const categoryMeta: Record<GearCategory, { label: string }> = {
   safety: { label: "Safety" },
   other: { label: "Other" },
 };
-
-const trashTriggerClass =
-  "rounded-md p-1 text-zinc-300 transition hover:bg-red-50 hover:text-red-600 group-hover:text-zinc-400 dark:text-zinc-600 dark:hover:bg-red-950/50 dark:hover:text-red-400";
 
 export const dynamic = "force-dynamic";
 
@@ -109,64 +105,68 @@ export default async function GearPage() {
               title="Add gear"
               subtitle="Track what's in your pack and how old it is."
             >
-            <form action={addGearItem} className="grid gap-4 sm:grid-cols-2">
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Name
-                </span>
-                <input
-                  name="name"
-                  placeholder="e.g. 70m Mammut Crag Classic"
-                  required
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Category
-                </span>
-                <Select name="category" defaultValue="rope">
-                  {Object.entries(categoryMeta).map(([value, meta]) => (
-                    <option key={value} value={value}>
-                      {meta.label}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Brand
-                </span>
-                <input
-                  name="brand"
-                  placeholder="optional"
-                  className={inputClass}
-                />
-              </label>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Purchased on
-                </span>
-                <input type="date" name="purchased_on" className={inputClass} />
-              </label>
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Notes
-                </span>
-                <textarea
-                  name="notes"
-                  placeholder="Wear, falls taken, retirement plans… (optional)"
-                  rows={2}
-                  className={inputClass}
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-              >
-                Add gear
-              </button>
-            </form>
+              <form action={addGearItem} className="grid gap-4 sm:grid-cols-2">
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Name
+                  </span>
+                  <input
+                    name="name"
+                    placeholder="e.g. 70m Mammut Crag Classic"
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Category
+                  </span>
+                  <Select name="category" defaultValue="rope">
+                    {Object.entries(categoryMeta).map(([value, meta]) => (
+                      <option key={value} value={value}>
+                        {meta.label}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Brand
+                  </span>
+                  <input
+                    name="brand"
+                    placeholder="optional"
+                    className={inputClass}
+                  />
+                </label>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Purchased on
+                  </span>
+                  <input
+                    type="date"
+                    name="purchased_on"
+                    className={inputClass}
+                  />
+                </label>
+                <label className="sm:col-span-2">
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Notes
+                  </span>
+                  <textarea
+                    name="notes"
+                    placeholder="Wear, falls taken, retirement plans… (optional)"
+                    rows={2}
+                    className={inputClass}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                >
+                  Add gear
+                </button>
+              </form>
             </Modal>
           )}
         </div>
@@ -206,15 +206,13 @@ export default async function GearPage() {
                   </div>
                   <form action={deleteGearItem}>
                     <input type="hidden" name="gear_id" value={item.id} />
-                    <ConfirmSubmit
+                    <DeleteButton
+                      variant="icon"
                       title="Remove gear?"
                       message={`This removes “${item.name}” from your rack. This can't be undone.`}
                       confirmLabel="Remove gear"
-                      triggerAriaLabel={`Remove ${item.name}`}
-                      triggerClassName={trashTriggerClass}
-                    >
-                      <TrashIcon />
-                    </ConfirmSubmit>
+                      ariaLabel={`Remove ${item.name}`}
+                    />
                   </form>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
@@ -273,43 +271,43 @@ export default async function GearPage() {
               title="Write a review"
               subtitle="Help other climbers pick their next piece of gear."
             >
-            <form action={addGearReview} className="grid gap-4">
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Product
-                </span>
-                <input
-                  name="product"
-                  placeholder="e.g. La Sportiva Solution"
-                  required
-                  className={inputClass}
-                />
-              </label>
-              <div>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Rating
-                </span>
-                <StarRatingInput defaultValue={5} />
-              </div>
-              <label>
-                <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                  Review
-                </span>
-                <textarea
-                  name="body"
-                  placeholder="How does it climb? How has it held up?"
-                  required
-                  rows={4}
-                  className={inputClass}
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-              >
-                Publish review
-              </button>
-            </form>
+              <form action={addGearReview} className="grid gap-4">
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Product
+                  </span>
+                  <input
+                    name="product"
+                    placeholder="e.g. La Sportiva Solution"
+                    required
+                    className={inputClass}
+                  />
+                </label>
+                <div>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Rating
+                  </span>
+                  <StarRatingInput defaultValue={5} />
+                </div>
+                <label>
+                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    Review
+                  </span>
+                  <textarea
+                    name="body"
+                    placeholder="How does it climb? How has it held up?"
+                    required
+                    rows={4}
+                    className={inputClass}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                >
+                  Publish review
+                </button>
+              </form>
             </Modal>
           )}
         </div>
@@ -342,15 +340,13 @@ export default async function GearPage() {
                   {user && review.user_id === user.id && (
                     <form action={deleteGearReview}>
                       <input type="hidden" name="review_id" value={review.id} />
-                      <ConfirmSubmit
+                      <DeleteButton
+                        variant="icon"
                         title="Delete review?"
                         message={`This deletes your review of “${review.product}”. This can't be undone.`}
                         confirmLabel="Delete review"
-                        triggerAriaLabel={`Delete review of ${review.product}`}
-                        triggerClassName={trashTriggerClass}
-                      >
-                        <TrashIcon />
-                      </ConfirmSubmit>
+                        ariaLabel={`Delete review of ${review.product}`}
+                      />
                     </form>
                   )}
                 </div>

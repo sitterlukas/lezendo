@@ -3,7 +3,7 @@ import db, { type ReviewEntityType } from "@/lib/db";
 import { addEntityReview, deleteEntityReview } from "@/app/actions";
 import Stars from "@/app/ui/stars";
 import StarRatingInput from "@/app/ui/star-rating-input";
-import TrashIcon from "@/app/ui/trash-icon";
+import DeleteButton from "@/app/ui/delete-button";
 import { inputClass } from "@/app/ui/style";
 
 const dateOpts: Intl.DateTimeFormatOptions = {
@@ -98,12 +98,13 @@ export default async function EntityReviews({
           {myReview && (
             <form action={deleteEntityReview} className="mt-2">
               <input type="hidden" name="review_id" value={myReview.id} />
-              <button
-                type="submit"
-                className="text-xs font-medium text-red-600 transition hover:text-red-500 dark:text-red-400"
-              >
-                Remove your review
-              </button>
+              <DeleteButton
+                title="Remove your review?"
+                message="This permanently deletes your review."
+                confirmLabel="Remove review"
+                ariaLabel="Remove your review"
+                label="Remove review"
+              />
             </form>
           )}
         </div>
@@ -136,13 +137,13 @@ export default async function EntityReviews({
                 {isAdmin && (
                   <form action={deleteEntityReview}>
                     <input type="hidden" name="review_id" value={review.id} />
-                    <button
-                      type="submit"
-                      aria-label="Delete review"
-                      className="rounded-md p-1 text-zinc-300 transition hover:bg-red-50 hover:text-red-600 dark:text-zinc-600 dark:hover:bg-red-950/50 dark:hover:text-red-400"
-                    >
-                      <TrashIcon size={14} />
-                    </button>
+                    <DeleteButton
+                      variant="icon"
+                      title="Delete review?"
+                      message="This permanently deletes this review."
+                      confirmLabel="Delete review"
+                      ariaLabel="Delete review"
+                    />
                   </form>
                 )}
               </div>
