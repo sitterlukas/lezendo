@@ -388,9 +388,14 @@ export async function deleteEntityReview(formData: FormData) {
   revalidatePath("/crags", "layout");
 }
 
-export async function addCrag(formData: FormData) {
+// Result of a create action: the new row's id, or a message to show inline.
+export type CreateResult =
+  | { ok: true; id: number }
+  | { ok: false; error: string };
+
+export async function addCrag(formData: FormData): Promise<CreateResult> {
   const userId = await currentUserId();
-  if (!userId) return;
+  if (!userId) return { ok: false, error: "You must be signed in." };
 
   const name = String(formData.get("name") ?? "").trim();
   const area = String(formData.get("area") ?? "").trim();
@@ -398,9 +403,9 @@ export async function addCrag(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const details = parseCragDetails(formData);
 
-  if (!name) return;
+  if (!name) return { ok: false, error: "Name is required." };
 
-  await db
+  const row = await db
     .insertInto("crags")
     .values({
       name,
@@ -411,10 +416,14 @@ export async function addCrag(formData: FormData) {
       created_by: userId,
     })
     .onConflict((oc) => oc.column("name").doNothing())
-    .execute();
+    .returning("id")
+    .executeTakeFirst();
+
+  if (!row) return { ok: false, error: "A crag with that name already exists." };
 
   revalidatePath("/crags");
   revalidatePath("/");
+  return { ok: true, id: row.id };
 }
 
 export async function updateCrag(formData: FormData) {
@@ -802,25 +811,26 @@ export async function recoverRoute(formData: FormData) {
   revalidatePath("/crags", "layout");
 }
 
-export async function addSector(formData: FormData) {
+export async function addSector(formData: FormData): Promise<CreateResult> {
   const userId = await currentUserId();
-  if (userId === null) return;
+  if (userId === null) return { ok: false, error: "You must be signed in." };
 
   const name = String(formData.get("name") ?? "").trim();
   const cragId = Number(formData.get("crag_id"));
   const description = String(formData.get("description") ?? "").trim();
   const details = parseSectorDetails(formData);
 
-  if (!name || !Number.isInteger(cragId)) return;
+  if (!name) return { ok: false, error: "Name is required." };
+  if (!Number.isInteger(cragId)) return { ok: false, error: "Invalid crag." };
 
   const crag = await db
     .selectFrom("crags")
     .select("id")
     .where("id", "=", cragId)
     .executeTakeFirst();
-  if (!crag) return;
+  if (!crag) return { ok: false, error: "Crag not found." };
 
-  await db
+  const row = await db
     .insertInto("sectors")
     .values({
       crag_id: cragId,
@@ -829,14 +839,16 @@ export async function addSector(formData: FormData) {
       ...details,
       created_by: userId,
     })
-    .execute();
+    .returning("id")
+    .executeTakeFirstOrThrow();
 
   revalidatePath("/crags", "layout");
+  return { ok: true, id: row.id };
 }
 
-export async function addRoute(formData: FormData) {
+export async function addRoute(formData: FormData): Promise<CreateResult> {
   const userId = await currentUserId();
-  if (userId === null) return;
+  if (userId === null) return { ok: false, error: "You must be signed in." };
 
   const name = String(formData.get("name") ?? "").trim();
   const cragId = Number(formData.get("crag_id"));
@@ -850,18 +862,21 @@ export async function addRoute(formData: FormData) {
     String(formData.get("grading_system_id") ?? "").trim(),
   );
 
-  if (!name || !grade || !Number.isInteger(cragId)) return;
-  if (!styles.includes(style)) return;
-  if (!Number.isInteger(gradingSystemId) || gradingSystemId <= 0) return;
+  if (!name) return { ok: false, error: "Name is required." };
+  if (!grade) return { ok: false, error: "Grade is required." };
+  if (!Number.isInteger(cragId)) return { ok: false, error: "Invalid crag." };
+  if (!styles.includes(style)) return { ok: false, error: "Invalid type." };
+  if (!Number.isInteger(gradingSystemId) || gradingSystemId <= 0)
+    return { ok: false, error: "Pick a grading system." };
   const addGradeError = await gradeSystemError(gradingSystemId, grade, style);
-  if (addGradeError) throw new Error(addGradeError);
+  if (addGradeError) return { ok: false, error: addGradeError };
 
   const crag = await db
     .selectFrom("crags")
     .select("id")
     .where("id", "=", cragId)
     .executeTakeFirst();
-  if (!crag) return;
+  if (!crag) return { ok: false, error: "Crag not found." };
 
   if (sectorId) {
     const sector = await db
@@ -870,7 +885,7 @@ export async function addRoute(formData: FormData) {
       .where("id", "=", sectorId)
       .where("crag_id", "=", cragId)
       .executeTakeFirst();
-    if (!sector) return;
+    if (!sector) return { ok: false, error: "Sector not found." };
   }
 
   const height = heightRaw ? Number.parseInt(heightRaw, 10) : null;
@@ -878,7 +893,7 @@ export async function addRoute(formData: FormData) {
   const { firstAscensionist, firstAscentYear, pitches, gearNotes } =
     parseRouteDetails(formData);
 
-  await db
+  const row = await db
     .insertInto("routes")
     .values({
       name,
@@ -897,10 +912,12 @@ export async function addRoute(formData: FormData) {
       description: description || null,
       created_by: userId,
     })
-    .execute();
+    .returning("id")
+    .executeTakeFirstOrThrow();
 
   revalidatePath("/crags", "layout");
   revalidatePath("/");
+  return { ok: true, id: row.id };
 }
 export async function saveImage(
   url: string,
