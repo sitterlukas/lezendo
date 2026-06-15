@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { logout, updateName } from "@/app/auth-actions";
+import { logout, updateName } from "@/app/actions/auth";
 import ProfileTabs from "@/app/profile/tabs";
 import GradingSystemForm from "./grading-system-form";
 import db from "@/lib/db";

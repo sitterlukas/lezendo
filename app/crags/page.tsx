@@ -3,11 +3,9 @@ import { auth } from "@/auth";
 import db from "@/lib/db";
 import { sql } from "kysely";
 import { addCrag, recoverCrag } from "@/app/actions";
-import Modal from "@/app/modal";
+import Modal from "@/app/ui/modal";
 import Select from "@/app/ui/select";
-
-const inputClass =
-  "w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900";
+import { inputClass } from "@/app/ui/style";
 
 const PAGE_SIZE = 24;
 

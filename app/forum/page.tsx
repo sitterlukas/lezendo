@@ -3,12 +3,10 @@ import { auth } from "@/auth";
 import { sql } from "kysely";
 import db from "@/lib/db";
 import { createTopic } from "@/app/actions";
-import Modal from "@/app/modal";
+import Modal from "@/app/ui/modal";
+import { inputClass } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
-
-const inputClass =
-  "w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900";
 
 export default async function ForumPage() {
   const session = await auth();

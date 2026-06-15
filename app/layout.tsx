@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import { auth } from "@/auth";
-import { logout } from "@/app/auth-actions";
-import ThemeToggle from "@/app/theme-toggle";
+import { logout } from "@/app/actions/auth";
+import ThemeToggle from "@/app/ui/theme-toggle";
 import db from "@/lib/db";
 import "./globals.css";
 

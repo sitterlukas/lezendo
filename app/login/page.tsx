@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { login } from "@/app/auth-actions";
-import OAuthButtons from "@/app/oauth-buttons";
+import { login } from "@/app/actions/auth";
+import OAuthButtons from "@/app/ui/oauth-buttons";
 
 export default async function LoginPage({
   searchParams,

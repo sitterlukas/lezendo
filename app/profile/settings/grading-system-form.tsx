@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { updateGradingSystem } from "@/app/auth-actions";
+import { updateGradingSystem } from "@/app/actions/auth";
 import Select from "@/app/ui/select";
 import { disciplineOf, type GradeEquivalency } from "@/lib/grade-conversion";
 

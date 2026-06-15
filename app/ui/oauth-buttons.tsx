@@ -1,5 +1,5 @@
 import { oauthProviders } from "@/auth";
-import { oauthLogin } from "@/app/auth-actions";
+import { oauthLogin } from "@/app/actions/auth";
 
 function GoogleIcon() {
   return (

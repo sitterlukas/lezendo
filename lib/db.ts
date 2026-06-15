@@ -1,4 +1,4 @@
-import { Kysely, PostgresDialect, type Generated, type Selectable, type Insertable } from "kysely";
+import { Kysely, PostgresDialect, type Generated } from "kysely";
 
 export type DeletionEntityType = "crag" | "sector" | "route";
 export type DeletionAction = "delete" | "recover";
@@ -127,6 +127,7 @@ export interface CountriesTable {
   name: string;
 }
 
+
 export interface ForumTopicsTable {
   id: Generated<number>;
   title: string;
@@ -167,13 +168,6 @@ export interface Database {
   forum_topics: ForumTopicsTable;
   forum_posts: ForumPostsTable;
 }
-
-export type Crag = Selectable<CragsTable>;
-export type NewCrag = Insertable<CragsTable>;
-export type Route = Selectable<RoutesTable>;
-export type NewRoute = Insertable<RoutesTable>;
-export type Ascent = Selectable<AscentsTable>;
-export type NewAscent = Insertable<AscentsTable>;
 
 declare global {
   // eslint-disable-next-line no-var
