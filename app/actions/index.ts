@@ -97,6 +97,20 @@ function canModify(
   return user.role === "admin" || user.id === createdBy;
 }
 
+// Shared parsing for a route's bolt count + bolting/protection note.
+function parseBolting(formData: FormData): {
+  boltCount: number | null;
+  protection: string | null;
+} {
+  const boltRaw = String(formData.get("bolt_count") ?? "").trim();
+  const bolts = boltRaw ? Number.parseInt(boltRaw, 10) : null;
+  const protection = String(formData.get("protection") ?? "").trim();
+  return {
+    boltCount: bolts !== null && Number.isInteger(bolts) && bolts >= 0 ? bolts : null,
+    protection: protection || null,
+  };
+}
+
 export async function logAscent(formData: FormData) {
   const userId = await currentUserId();
   if (userId === null) return;
@@ -486,6 +500,7 @@ export async function updateRoute(formData: FormData) {
   }
 
   const height = heightRaw ? Number.parseInt(heightRaw, 10) : null;
+  const { boltCount, protection } = parseBolting(formData);
 
   await db
     .updateTable("routes")
@@ -496,6 +511,8 @@ export async function updateRoute(formData: FormData) {
       style,
       sector_id: sectorId,
       height_m: height && !Number.isNaN(height) ? height : null,
+      bolt_count: boltCount,
+      protection,
       description: description || null,
     })
     .where("id", "=", routeId)
@@ -784,6 +801,7 @@ export async function addRoute(formData: FormData) {
   }
 
   const height = heightRaw ? Number.parseInt(heightRaw, 10) : null;
+  const { boltCount, protection } = parseBolting(formData);
 
   await db
     .insertInto("routes")
@@ -795,6 +813,8 @@ export async function addRoute(formData: FormData) {
       grading_system_id: gradingSystemId,
       style,
       height_m: Number.isNaN(height) ? null : height,
+      bolt_count: boltCount,
+      protection,
       description: description || null,
       created_by: userId,
     })
