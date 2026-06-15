@@ -2,12 +2,9 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import { sql } from "kysely";
-import { addCrag, recoverCrag } from "@/app/actions";
-import Modal from "@/app/ui/modal";
-import Select from "@/app/ui/select";
+import { recoverCrag } from "@/app/actions";
 import FilterPill from "@/app/ui/filter-pill";
-import CragFields from "@/app/ui/crag-fields";
-import { inputClass } from "@/app/ui/style";
+import { CreateCragModal } from "@/app/ui/create-modals";
 
 const PAGE_SIZE = 24;
 
@@ -251,66 +248,7 @@ export default async function CragsPage({
 
         {currentUser && (
           <div>
-            <Modal
-              triggerLabel="Add crag"
-              title="Add a crag"
-              subtitle="Found a new spot? Put it on the map."
-            >
-              <form action={addCrag} className="grid gap-4 sm:grid-cols-2">
-                <label className="sm:col-span-2">
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Crag name
-                  </span>
-                  <input
-                    name="name"
-                    placeholder="e.g. Hlubočepy"
-                    required
-                    className={inputClass}
-                  />
-                </label>
-                <label>
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Area
-                  </span>
-                  <input
-                    name="area"
-                    placeholder="e.g. Prague (optional)"
-                    className={inputClass}
-                  />
-                </label>
-                <label>
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Country
-                  </span>
-                  <Select name="country" defaultValue="">
-                    <option value="">— not specified —</option>
-                    {allCountries.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </Select>
-                </label>
-                <label className="sm:col-span-2">
-                  <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                    Description
-                  </span>
-                  <textarea
-                    name="description"
-                    placeholder="Rock type, approach, character… (optional)"
-                    rows={2}
-                    className={inputClass}
-                  />
-                </label>
-                <CragFields />
-                <button
-                  type="submit"
-                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-                >
-                  Add crag
-                </button>
-              </form>
-            </Modal>
+            <CreateCragModal allCountries={allCountries} />
           </div>
         )}
       </div>

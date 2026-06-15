@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import db from "@/lib/db";
-import { addRoute, updateSector, deleteSector } from "@/app/actions";
+import { updateSector, deleteSector } from "@/app/actions";
 import Modal from "@/app/ui/modal";
 import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageGallery from "@/app/ui/image-gallery";
@@ -11,12 +11,12 @@ import EntityReviews from "@/app/ui/entity-reviews";
 import RouteCard from "@/app/ui/route-card";
 import GradeHistogram from "@/app/ui/grade-histogram";
 import SectorFields from "@/app/ui/sector-fields";
-import AddRouteForm from "@/app/ui/add-route-form";
+import { CreateRouteModal } from "@/app/ui/create-modals";
 import FactList from "@/app/ui/fact-list";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
 import { gradeBuckets, gradeRange, stylesPresent } from "@/lib/route-stats";
-import { inputClass, typeLabel, typeBadge } from "@/app/ui/style";
+import { typeLabel, typeBadge } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
 
@@ -190,24 +190,16 @@ export default async function SectorPage({
           )}
 
           {currentUser && (
-            <Modal
-              triggerLabel="Add route"
-              title={`Add a route in ${sector.name}`}
-              subtitle={`Routes here will be assigned to the ${sector.name} sector.`}
-            >
-              <AddRouteForm
-                action={addRoute}
-                cragId={crag.id}
-                fixedSectorId={sector.id}
-                gradingSystems={gradingSystems}
-                equivalencies={gradeEquivalencies}
-                defaultSystemId={
-                  currentUser?.preferred_rope_grading_system_id ??
-                  currentUser?.preferred_boulder_grading_system_id
-                }
-                inputClass={inputClass}
-              />
-            </Modal>
+            <CreateRouteModal
+              cragId={crag.id}
+              fixedSectorId={sector.id}
+              gradingSystems={gradingSystems}
+              equivalencies={gradeEquivalencies}
+              defaultSystemId={
+                currentUser?.preferred_rope_grading_system_id ??
+                currentUser?.preferred_boulder_grading_system_id
+              }
+            />
           )}
 
           {canEdit(sector.created_by) && (

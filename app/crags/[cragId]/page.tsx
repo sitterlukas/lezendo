@@ -3,8 +3,6 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import db, { type ClimbStyle } from "@/lib/db";
 import {
-  addRoute,
-  addSector,
   updateCrag,
   deleteCrag,
   recoverSector,
@@ -14,10 +12,9 @@ import Modal from "@/app/ui/modal";
 import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageGallery from "@/app/ui/image-gallery";
 import EntityReviews from "@/app/ui/entity-reviews";
-import AddRouteForm from "@/app/ui/add-route-form";
 import RouteCard from "@/app/ui/route-card";
 import CragFields from "@/app/ui/crag-fields";
-import SectorFields from "@/app/ui/sector-fields";
+import { CreateSectorModal, CreateRouteModal } from "@/app/ui/create-modals";
 import FactList from "@/app/ui/fact-list";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
@@ -307,44 +304,19 @@ export default async function CragPage({
             </Modal>
           )}
 
-          {currentUser && (
-            <Modal
-              triggerLabel="Add sector"
-              title={`Add a sector at ${crag.name}`}
-              subtitle="Group routes by wall, face, or area."
-            >
-              <form action={addSector} className="grid gap-4">
-                <input type="hidden" name="crag_id" value={crag.id} />
-                <SectorFields />
-                <button
-                  type="submit"
-                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-                >
-                  Add sector
-                </button>
-              </form>
-            </Modal>
-          )}
+          {currentUser && <CreateSectorModal cragId={crag.id} />}
 
           {currentUser && (
-            <Modal
-              triggerLabel="Add route"
-              title={`Add a route at ${crag.name}`}
-              subtitle="Know a line that's missing? Put it in the book."
-            >
-              <AddRouteForm
-                action={addRoute}
-                cragId={crag.id}
-                sectors={sectors}
-                gradingSystems={gradingSystems}
-                equivalencies={gradeEquivalencies}
-                defaultSystemId={
-                  currentUser?.preferred_rope_grading_system_id ??
-                  currentUser?.preferred_boulder_grading_system_id
-                }
-                inputClass={inputClass}
-              />
-            </Modal>
+            <CreateRouteModal
+              cragId={crag.id}
+              sectors={sectors}
+              gradingSystems={gradingSystems}
+              equivalencies={gradeEquivalencies}
+              defaultSystemId={
+                currentUser?.preferred_rope_grading_system_id ??
+                currentUser?.preferred_boulder_grading_system_id
+              }
+            />
           )}
           {canEdit(crag.created_by) && (
             <form action={deleteCrag}>

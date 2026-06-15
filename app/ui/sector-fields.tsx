@@ -1,10 +1,13 @@
 import { inputClass } from "@/app/ui/style";
+import FieldLabel from "@/app/ui/field-label";
 
 // Shared sector form fields (name, description, approach, aspect), used by the
 // add + edit sector modals on both the crag and sector pages. The parent
 // supplies the <form>, any hidden inputs and the submit button.
+// `showRequiredHints` adds required(*)/optional markers (on for create).
 export default function SectorFields({
   defaults,
+  showRequiredHints = false,
 }: {
   defaults?: {
     name?: string;
@@ -12,13 +15,14 @@ export default function SectorFields({
     approach_minutes?: number | null;
     aspect?: string | null;
   };
+  showRequiredHints?: boolean;
 }) {
   return (
     <>
       <label>
-        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+        <FieldLabel required hint={showRequiredHints}>
           Name
-        </span>
+        </FieldLabel>
         <input
           name="name"
           defaultValue={defaults?.name ?? ""}
@@ -27,9 +31,7 @@ export default function SectorFields({
         />
       </label>
       <label>
-        <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          Description
-        </span>
+        <FieldLabel hint={showRequiredHints}>Description</FieldLabel>
         <textarea
           name="description"
           defaultValue={defaults?.description ?? ""}
@@ -39,9 +41,7 @@ export default function SectorFields({
       </label>
       <div className="grid grid-cols-2 gap-3">
         <label>
-          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Approach (min)
-          </span>
+          <FieldLabel hint={showRequiredHints}>Approach (min)</FieldLabel>
           <input
             name="approach_minutes"
             type="number"
@@ -52,9 +52,7 @@ export default function SectorFields({
           />
         </label>
         <label>
-          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Aspect
-          </span>
+          <FieldLabel hint={showRequiredHints}>Aspect</FieldLabel>
           <input
             name="aspect"
             defaultValue={defaults?.aspect ?? ""}
