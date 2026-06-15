@@ -12,6 +12,7 @@ import RouteCard from "@/app/ui/route-card";
 import GradeHistogram from "@/app/ui/grade-histogram";
 import SectorFields from "@/app/ui/sector-fields";
 import { CreateRouteModal } from "@/app/ui/create-modals";
+import LoginToAdd from "@/app/ui/login-to-add";
 import FactList from "@/app/ui/fact-list";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
@@ -189,7 +190,7 @@ export default async function SectorPage({
             </Modal>
           )}
 
-          {currentUser && (
+          {currentUser ? (
             <CreateRouteModal
               cragId={crag.id}
               fixedSectorId={sector.id}
@@ -200,6 +201,8 @@ export default async function SectorPage({
                 currentUser?.preferred_boulder_grading_system_id
               }
             />
+          ) : (
+            <LoginToAdd label="Log in to add a route" />
           )}
 
           {canEdit(sector.created_by) && (

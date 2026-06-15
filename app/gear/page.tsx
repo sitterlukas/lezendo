@@ -10,6 +10,7 @@ import {
 import Modal from "@/app/ui/modal";
 import Select from "@/app/ui/select";
 import DeleteButton from "@/app/ui/delete-button";
+import LoginToAdd from "@/app/ui/login-to-add";
 import Stars from "@/app/ui/stars";
 import StarRatingInput from "@/app/ui/star-rating-input";
 import { inputClass } from "@/app/ui/style";
@@ -93,12 +94,7 @@ export default async function GearPage() {
             </p>
           </div>
           {!user ? (
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1 rounded border border-zinc-300 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
-            >
-              Log in to add gear
-            </Link>
+            <LoginToAdd label="Log in to add gear" />
           ) : (
             <Modal
               triggerLabel="Add gear"
@@ -259,12 +255,7 @@ export default async function GearPage() {
             </p>
           </div>
           {!user ? (
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1 rounded border border-zinc-300 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
-            >
-              Log in to write a review
-            </Link>
+            <LoginToAdd label="Log in to write a review" />
           ) : (
             <Modal
               triggerLabel="Write review"

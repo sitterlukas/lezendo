@@ -15,6 +15,7 @@ import EntityReviews from "@/app/ui/entity-reviews";
 import RouteCard from "@/app/ui/route-card";
 import CragFields from "@/app/ui/crag-fields";
 import { CreateSectorModal, CreateRouteModal } from "@/app/ui/create-modals";
+import LoginToAdd from "@/app/ui/login-to-add";
 import FactList from "@/app/ui/fact-list";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
@@ -304,19 +305,22 @@ export default async function CragPage({
             </Modal>
           )}
 
-          {currentUser && <CreateSectorModal cragId={crag.id} />}
-
-          {currentUser && (
-            <CreateRouteModal
-              cragId={crag.id}
-              sectors={sectors}
-              gradingSystems={gradingSystems}
-              equivalencies={gradeEquivalencies}
-              defaultSystemId={
-                currentUser?.preferred_rope_grading_system_id ??
-                currentUser?.preferred_boulder_grading_system_id
-              }
-            />
+          {currentUser ? (
+            <>
+              <CreateSectorModal cragId={crag.id} />
+              <CreateRouteModal
+                cragId={crag.id}
+                sectors={sectors}
+                gradingSystems={gradingSystems}
+                equivalencies={gradeEquivalencies}
+                defaultSystemId={
+                  currentUser?.preferred_rope_grading_system_id ??
+                  currentUser?.preferred_boulder_grading_system_id
+                }
+              />
+            </>
+          ) : (
+            <LoginToAdd label="Log in to add sectors & routes" />
           )}
           {canEdit(crag.created_by) && (
             <form action={deleteCrag}>

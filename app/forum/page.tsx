@@ -4,6 +4,7 @@ import { sql } from "kysely";
 import db from "@/lib/db";
 import { createTopic } from "@/app/actions";
 import Modal from "@/app/ui/modal";
+import LoginToAdd from "@/app/ui/login-to-add";
 import { inputClass } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +52,7 @@ export default async function ForumPage() {
           </p>
         </div>
 
-        {currentUser && (
+        {currentUser ? (
           <Modal
             triggerLabel="New topic"
             title="Start a new topic"
@@ -89,6 +90,8 @@ export default async function ForumPage() {
               </button>
             </form>
           </Modal>
+        ) : (
+          <LoginToAdd label="Log in to start a topic" />
         )}
       </header>
 
