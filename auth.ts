@@ -60,15 +60,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const email = user.email?.trim().toLowerCase();
       if (!email) return false;
 
-      await db
-        .insertInto("users")
-        .values({
-          email,
-          name: user.name ?? email.split("@")[0],
-          password_hash: null,
-        })
-        .onConflict((oc) => oc.column("email").doNothing())
-        .execute();
+      try {
+        await db
+          .insertInto("users")
+          .values({
+            email,
+            name: user.name ?? email.split("@")[0],
+            password_hash: null,
+          })
+          .onConflict((oc) => oc.column("email").doNothing())
+          .execute();
+      } catch (error) {
+        // Without this, any DB failure here is swallowed by NextAuth as a
+        // generic "AccessDenied", hiding the real cause (e.g. a NOT NULL or
+        // connection error). Log it, then let it surface as a sign-in failure.
+        console.error("[auth] failed to provision OAuth user", email, error);
+        throw error;
+      }
 
       return true;
     },
