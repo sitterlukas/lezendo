@@ -26,7 +26,9 @@ export default function GradeSelect({
   inputClass,
 }: Props) {
   const [systemId, setSystemId] = useState(
-    defaultSystemId ? String(defaultSystemId) : "",
+    defaultSystemId
+      ? String(defaultSystemId)
+      : (gradingSystems[0] && String(gradingSystems[0].id)) || "",
   );
   const [grade, setGrade] = useState(defaultGrade ?? "");
 
@@ -52,7 +54,6 @@ export default function GradeSelect({
           value={systemId}
           onChange={handleSystemChange}
         >
-          <option value="">— pick system —</option>
           {gradingSystems.map((gs) => (
             <option key={gs.id} value={gs.id}>
               {gs.name}
