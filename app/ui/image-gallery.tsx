@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { deleteImage } from "@/app/actions";
+import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageUpload from "@/app/ui/image-upload";
 import type { ImageEntityType } from "@/lib/db";
 
@@ -111,10 +112,12 @@ export default function ImageGallery({
                   });
                 }}
               >
-                <button
-                  type="submit"
-                  aria-label="Delete photo"
-                  className="flex h-6 w-6 items-center justify-center rounded bg-black/60 text-white transition hover:bg-red-600"
+                <ConfirmSubmit
+                  title="Delete photo?"
+                  message="This photo will be permanently removed. This cannot be undone."
+                  confirmLabel="Delete"
+                  triggerAriaLabel="Delete photo"
+                  triggerClassName="flex h-6 w-6 items-center justify-center rounded bg-black/60 text-white transition hover:bg-red-600"
                 >
                   <svg
                     width="10"
@@ -130,7 +133,7 @@ export default function ImageGallery({
                       strokeLinecap="round"
                     />
                   </svg>
-                </button>
+                </ConfirmSubmit>
               </form>
             )}
           </li>
