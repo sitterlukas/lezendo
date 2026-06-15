@@ -70,7 +70,21 @@ export async function register(formData: FormData) {
   }
 
   const password_hash = await hash(password, 12);
-  await db.insertInto("users").values({ name, email, password_hash }).execute();
+  try {
+    await db.insertInto("users").values({ name, email, password_hash }).execute();
+  } catch (error) {
+    // Backstop for the check-then-insert race: the DB's unique constraint on
+    // email (Postgres error 23505) means a concurrent signup got there first.
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      redirect("/register?error=exists");
+    }
+    throw error;
+  }
 
   await signIn("credentials", { email, password, redirectTo: "/" });
 }
