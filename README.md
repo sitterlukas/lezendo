@@ -1,24 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Lezendo — a climbing route database and personal logbook, built with Next.js,
+Kysely and PostgreSQL.
 
 ## Getting Started
 
-First, run the development server:
+1. **Install dependencies**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+   ```bash
+   npm install
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Configure environment** — copy the example file and fill it in:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+   ```bash
+   cp .env.example .env.local
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   See [Environment variables](#environment-variables) below.
+
+3. **Run database migrations** (needs a reachable `DATABASE_URL`):
+
+   ```bash
+   npm run migrate:latest
+   ```
+
+4. **Start the dev server**
+
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000).
+
+## Environment variables
+
+Defined in `.env.local` (gitignored); see `.env.example` for the template.
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string. |
+| `AUTH_SECRET` | Yes | Signs auth/JWT sessions. Generate with `npx auth secret`. |
+| `BLOB_READ_WRITE_TOKEN` | Yes | Vercel Blob token for photo uploads. |
+| `AUTH_GOOGLE_ID` | No | Google OAuth client ID — enables "Continue with Google". |
+| `AUTH_GOOGLE_SECRET` | No | Google OAuth client secret. |
+| `AUTH_URL` | Deploy | Public base URL (e.g. `https://your-domain`). Required off-localhost so NextAuth builds the correct OAuth callback; inferred locally. |
+
+### Google sign-in
+
+Email/password works out of the box. To enable **Continue with Google** (the
+buttons appear automatically once both vars are set):
+
+1. In [Google Cloud Console](https://console.cloud.google.com), create a project
+   and configure the **OAuth consent screen** (External). While it's in *Testing*
+   mode, add your account under **Test users**.
+2. **Credentials → Create credentials → OAuth client ID → Web application.**
+   - Authorized JavaScript origin: `http://localhost:3000` (plus deployed domains).
+   - Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+     (and `https://your-domain/api/auth/callback/google` per environment).
+3. Put the Client ID/secret into `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` and
+   restart the dev server.
+
+A first Google sign-in creates a passwordless local user keyed by email.
+
+## Seeding demo data
+
+The `scripts/` directory holds one-off seed scripts (`node scripts/seed-dummy.mjs`,
+etc.), and `scripts/seed-preprod.sql` is a ready-made SQL dump of demo content
+for a preprod database (assumes migrations have already run there).
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font).
 
 ## Learn More
 

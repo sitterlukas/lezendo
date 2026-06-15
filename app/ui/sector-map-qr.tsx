@@ -13,7 +13,13 @@ type Point = {
 
 function PinIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+    >
       <path
         d="M10 18s6-5.3 6-10A6 6 0 0 0 4 8c0 4.7 6 10 6 10Z"
         stroke="currentColor"
@@ -27,8 +33,22 @@ function PinIcon() {
 
 function ParkingIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <rect x="3" y="3" width="14" height="14" rx="3" stroke="currentColor" strokeWidth="1.6" />
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect
+        x="3"
+        y="3"
+        width="14"
+        height="14"
+        rx="3"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
       <path
         d="M7.5 14.5V6h3a2.25 2.25 0 0 1 0 4.5h-3"
         stroke="currentColor"
@@ -141,7 +161,7 @@ async function LocationCard({
   const coords = `${point.latitude!.toFixed(5)}, ${point.longitude!.toFixed(5)}`;
 
   return (
-    <div className="flex items-center gap-3 rounded border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900/50">
+    <div className="flex items-center gap-3">
       <a
         href={mapsUrl}
         target="_blank"
@@ -168,7 +188,13 @@ async function LocationCard({
             className="inline-flex items-center gap-1 text-sm font-medium text-zinc-900 underline underline-offset-2 hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300"
           >
             Open in Maps
-            <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+            >
               <path
                 d="M7 4h9v9M16 4 8 12"
                 stroke="currentColor"
@@ -266,9 +292,9 @@ export default async function SectorMapQR({
   if (slots.length === 0) return null;
 
   return (
-    <section className="mt-8">
+    <section className="flex h-full flex-col rounded border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/50">
       <h2 className="text-xl font-bold tracking-tight">Location</h2>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 space-y-4">
         {slots.map((point) =>
           point.latitude !== null && point.longitude !== null ? (
             <LocationCard

@@ -22,14 +22,17 @@ export default function GradeHistogram({
   const total = data.reduce((sum, d) => sum + d.count, 0);
 
   return (
-    <section className="mt-8">
+    <section className="flex h-full flex-col rounded border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/50">
       <h2 className="text-xl font-bold tracking-tight">Grade distribution</h2>
 
       <div className="mt-4 w-fit">
         {/* columns */}
         <div className="flex items-end gap-2 sm:gap-3">
           {data.map((d, i) => (
-            <div key={d.grade} className="flex w-10 flex-col items-center gap-1">
+            <div
+              key={d.grade}
+              className="flex w-10 flex-col items-center gap-1"
+            >
               <span className="text-xs font-medium tabular-nums text-zinc-500">
                 {d.count}
               </span>
