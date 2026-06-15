@@ -6,7 +6,7 @@ import { logAscent, updateRoute, deleteRoute } from "@/app/actions";
 import Modal from "@/app/ui/modal";
 import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageGallery from "@/app/ui/image-gallery";
-import ImageUpload from "@/app/ui/image-upload";
+import EntityReviews from "@/app/ui/entity-reviews";
 import Select from "@/app/ui/select";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
@@ -204,13 +204,10 @@ export default async function RoutePage({
           )}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-3">
-          <span className="rounded bg-zinc-900 px-4 py-2 text-center font-mono text-2xl font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
+          <span className="rounded bg-zinc-900 px-3 py-1 text-center font-mono text-lg font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
             {displayGrade}
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            {currentUser && (
-              <ImageUpload entityType="route" entityId={routeIdNum} />
-            )}
             {canEdit(route.created_by) && (
               <>
                 <form action={deleteRoute}>
@@ -328,10 +325,13 @@ export default async function RoutePage({
         images={images}
         currentUserId={currentUser?.id ?? null}
         isAdmin={currentUser?.role === "admin"}
+        entityType="route"
+        entityId={routeIdNum}
+        canUpload={!!currentUser}
       />
 
       {/* Log ascent */}
-      <section className="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+      <section className="mt-10 pt-8">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
           Log ascent
         </h2>
@@ -386,7 +386,7 @@ export default async function RoutePage({
 
       {/* My ascents */}
       {myAscents.length > 0 && (
-        <section className="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+        <section className="mt-10 pt-8">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Your ascents
           </h2>
@@ -421,7 +421,7 @@ export default async function RoutePage({
 
       {/* Community ascents */}
       {communityAscents.length > 0 && (
-        <section className="mt-10 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+        <section className="mt-10 pt-8">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             Community ascents{" "}
             <span className="ml-1 font-normal normal-case tracking-normal text-zinc-400">
@@ -458,6 +458,13 @@ export default async function RoutePage({
           No ascents logged yet — be the first.
         </p>
       )}
+
+      <EntityReviews
+        entityType="route"
+        entityId={routeIdNum}
+        currentUserId={currentUser?.id ?? null}
+        isAdmin={currentUser?.role === "admin"}
+      />
     </main>
   );
 }
