@@ -1,33 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
-import db, { type ClimbStyle } from "@/lib/db";
+import db from "@/lib/db";
 import { addRoute, updateSector, deleteSector } from "@/app/actions";
-import Modal from "@/app/modal";
-import ConfirmSubmit from "@/app/confirm-submit";
-import ImageGallery from "@/app/image-gallery";
-import ImageUpload from "@/app/image-upload";
+import Modal from "@/app/ui/modal";
+import ConfirmSubmit from "@/app/ui/confirm-submit";
+import ImageGallery from "@/app/ui/image-gallery";
+import ImageUpload from "@/app/ui/image-upload";
 import Select from "@/app/ui/select";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
 import GradeSelect from "@/app/ui/grade-select";
+import { typeLabel, typeBadge, inputClass } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
-
-const typeLabel: Record<ClimbStyle, string> = {
-  sport: "Sport climb",
-  trad: "Trad",
-  boulder: "Boulder",
-};
-
-const typeBadge: Record<ClimbStyle, string> = {
-  sport: "bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300",
-  trad: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
-  boulder: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
-};
-
-const inputClass =
-  "w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900";
 
 export default async function SectorPage({
   params,

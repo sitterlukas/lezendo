@@ -7,9 +7,10 @@ import {
   deleteGearItem,
   deleteGearReview,
 } from "@/app/actions";
-import Modal from "@/app/modal";
+import Modal from "@/app/ui/modal";
 import Select from "@/app/ui/select";
-import ConfirmSubmit from "@/app/confirm-submit";
+import ConfirmSubmit from "@/app/ui/confirm-submit";
+import { inputClass } from "@/app/ui/style";
 
 const categoryMeta: Record<GearCategory, { label: string }> = {
   rope: { label: "Rope" },
@@ -21,9 +22,6 @@ const categoryMeta: Record<GearCategory, { label: string }> = {
   safety: { label: "Safety" },
   other: { label: "Other" },
 };
-
-const inputClass =
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900";
 
 const trashTriggerClass =
   "rounded-md p-1 text-zinc-300 transition hover:bg-red-50 hover:text-red-600 group-hover:text-zinc-400 dark:text-zinc-600 dark:hover:bg-red-950/50 dark:hover:text-red-400";

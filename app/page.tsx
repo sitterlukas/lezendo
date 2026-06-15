@@ -1,23 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/auth";
-import db, { type ClimbStyle } from "@/lib/db";
+import db from "@/lib/db";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
+import { typeLabel, typeBadge } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
-
-const typeLabel: Record<ClimbStyle, string> = {
-  sport: "Sport climb",
-  trad: "Trad",
-  boulder: "Boulder",
-};
-
-const typeBadge: Record<ClimbStyle, string> = {
-  sport: "bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300",
-  trad: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
-  boulder: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300",
-};
 
 export default async function LandingPage() {
   const session = await auth();

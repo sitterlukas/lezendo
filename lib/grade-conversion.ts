@@ -15,7 +15,7 @@ export interface GradeEquivalency {
   discipline: "rope" | "boulder";
 }
 
-export interface GradingSystem { id: number; name: string; slug: string }
+interface GradingSystem { id: number; name: string; slug: string }
 
 export function disciplineOf(
   slug: string,
@@ -39,7 +39,7 @@ export function gradesForSystem(slug: string, eqs: GradeEquivalency[]): string[]
  * Returns null when the source grade is unknown or when converting between
  * disciplines (rope ↔ boulder), since those aren't meaningfully comparable.
  */
-export function convertGrade(
+function convertGrade(
   grade: string,
   fromSlug: string,
   toSlug: string,
