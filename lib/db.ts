@@ -204,8 +204,7 @@ export interface StatusesTable {
   id: Generated<number>;
   user_id: number;
   body: string;
-  crag_id: number | null;
-  route_id: number | null;
+  sector_id: number | null;
   created_at: Generated<Date>;
 }
 

@@ -35,11 +35,9 @@ export type FeedItem =
   | (FeedBase & {
       kind: "status";
       body: string;
-      crag: { id: number; name: string } | null;
-      route: {
+      sector: {
         id: number;
         name: string;
-        grade: string;
         crag: { id: number; name: string };
       } | null;
       photos: FeedPhoto[];
@@ -59,6 +57,34 @@ export type FeedItem =
     });
 
 export type FeedPage = { items: FeedItem[]; nextCursor: Date | null };
+
+// Sectors a status can be tagged with — grouped by crag in the picker. Loaded
+// for the composer (/feed) and the status edit dialog.
+export type SectorTag = {
+  id: number;
+  name: string;
+  cragId: number;
+  cragName: string;
+};
+
+export async function loadSectorOptions(
+  db: Kysely<Database>,
+): Promise<SectorTag[]> {
+  return db
+    .selectFrom("sectors")
+    .innerJoin("crags", "crags.id", "sectors.crag_id")
+    .select([
+      "sectors.id as id",
+      "sectors.name as name",
+      "crags.id as cragId",
+      "crags.name as cragName",
+    ])
+    .where("sectors.deleted", "=", false)
+    .where("crags.deleted", "=", false)
+    .orderBy("crags.name")
+    .orderBy("sectors.name")
+    .execute();
+}
 
 const PAGE_SIZE = 20;
 
@@ -85,9 +111,8 @@ async function buildFor(
   let statusQ = db
     .selectFrom("statuses")
     .innerJoin("users", "users.id", "statuses.user_id")
-    .leftJoin("crags", "crags.id", "statuses.crag_id")
-    .leftJoin("routes as sr", "sr.id", "statuses.route_id")
-    .leftJoin("crags as rc", "rc.id", "sr.crag_id")
+    .leftJoin("sectors", "sectors.id", "statuses.sector_id")
+    .leftJoin("crags as sc", "sc.id", "sectors.crag_id")
     .select([
       "statuses.id",
       "statuses.body",
@@ -95,14 +120,10 @@ async function buildFor(
       "users.id as author_id",
       "users.name as author_name",
       "users.avatar_url as author_avatar",
-      "crags.id as crag_id",
-      "crags.name as crag_name",
-      "sr.id as route_id",
-      "sr.name as route_name",
-      "sr.grade as route_grade",
-      "sr.grading_system_id as route_grading_system_id",
-      "rc.id as route_crag_id",
-      "rc.name as route_crag_name",
+      "sectors.id as sector_id",
+      "sectors.name as sector_name",
+      "sc.id as sector_crag_id",
+      "sc.name as sector_crag_name",
     ])
     .where("statuses.user_id", "in", authorIds)
     .orderBy("statuses.created_at", "desc")
@@ -201,14 +222,12 @@ async function buildFor(
       },
       createdAt: r.created_at,
       body: r.body,
-      crag: r.crag_id != null ? { id: r.crag_id, name: r.crag_name! } : null,
-      route:
-        r.route_id != null
+      sector:
+        r.sector_id != null
           ? {
-              id: r.route_id,
-              name: r.route_name!,
-              grade: showGrade(r.route_grade!, r.route_grading_system_id!),
-              crag: { id: r.route_crag_id!, name: r.route_crag_name! },
+              id: r.sector_id,
+              name: r.sector_name!,
+              crag: { id: r.sector_crag_id!, name: r.sector_crag_name! },
             }
           : null,
       photos: photosByStatus.get(r.id) ?? [],

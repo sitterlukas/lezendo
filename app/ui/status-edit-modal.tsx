@@ -6,21 +6,26 @@ import { editStatus } from "@/app/actions";
 import { STATUS_MAX_LEN } from "@/lib/constants";
 import { inputClass } from "@/app/ui/style";
 import ImageGallery from "@/app/ui/image-gallery";
+import SectorSelect, { type SectorOption } from "@/app/ui/sector-select";
 
 type Photo = { id: number; url: string; uploaded_by: number | null };
 
-// Author/admin dialog to edit a status's text and add/remove its photos.
-// Photo changes persist immediately (via ImageGallery); the text is saved on
-// "Save". Closing refreshes the feed so edits show.
+// Author/admin dialog to edit a status's text + sector tag and add/remove its
+// photos. Photo changes persist immediately (via ImageGallery); the text and
+// sector are saved on "Save". Closing refreshes the feed so edits show.
 export default function StatusEditModal({
   statusId,
   body,
+  sectorId,
+  sectors,
   photos,
   viewerId,
   isAdmin,
 }: {
   statusId: number;
   body: string;
+  sectorId: number | null;
+  sectors: SectorOption[];
   photos: Photo[];
   viewerId: number | null;
   isAdmin: boolean;
@@ -28,12 +33,14 @@ export default function StatusEditModal({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const router = useRouter();
   const [text, setText] = useState(body);
+  const [sector, setSector] = useState(sectorId ? String(sectorId) : "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const remaining = STATUS_MAX_LEN - text.length;
 
   function open() {
     setText(body);
+    setSector(sectorId ? String(sectorId) : "");
     setError(null);
     dialogRef.current?.showModal();
   }
@@ -47,6 +54,7 @@ export default function StatusEditModal({
       const fd = new FormData();
       fd.set("status_id", String(statusId));
       fd.set("body", text.trim());
+      fd.set("sector_id", sector);
       const res = await editStatus(fd);
       if (res.ok) close();
       else setError(res.error);
@@ -107,7 +115,18 @@ export default function StatusEditModal({
             </span>
           </label>
 
-          <p className="mt-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+          <label className="mt-3 block">
+            <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              Sector (optional)
+            </span>
+            <SectorSelect
+              sectors={sectors}
+              value={sector}
+              onChange={(e) => setSector(e.target.value)}
+            />
+          </label>
+
+          <p className="mt-3 text-xs font-medium text-zinc-600 dark:text-zinc-400">
             Photos (up to 5)
           </p>
           <ImageGallery

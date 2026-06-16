@@ -10,6 +10,7 @@ import Avatar from "@/app/ui/avatar";
 import { deleteStatus } from "@/app/actions";
 import CommentList from "@/app/ui/comment-list";
 import StatusEditModal from "@/app/ui/status-edit-modal";
+import { type SectorOption } from "@/app/ui/sector-select";
 
 const tickVerb: Record<string, string> = {
   onsight: "Onsighted",
@@ -23,10 +24,12 @@ export default function FeedItemCard({
   item,
   viewerId,
   isAdmin,
+  sectors,
 }: {
   item: FeedItem;
   viewerId: number | null;
   isAdmin: boolean;
+  sectors: SectorOption[];
 }) {
   const comments = item.comments.map((c) => ({
     id: c.id,
@@ -65,6 +68,8 @@ export default function FeedItemCard({
             <StatusEditModal
               statusId={item.id}
               body={item.body}
+              sectorId={item.sector?.id ?? null}
+              sectors={sectors}
               photos={item.photos}
               viewerId={viewerId}
               isAdmin={isAdmin}
@@ -88,25 +93,16 @@ export default function FeedItemCard({
           <p className="mt-2 whitespace-pre-wrap text-zinc-800 dark:text-zinc-200">
             {item.body}
           </p>
-          {item.route && (
+          {item.sector && (
             <Link
-              href={`/crags/${item.route.crag.id}/routes/${item.route.id}`}
+              href={`/crags/${item.sector.crag.id}/sectors/${item.sector.id}`}
               className="mt-2 flex flex-wrap items-center gap-x-2 rounded border border-zinc-200 px-3 py-2 text-sm transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/60"
             >
-              <span className="text-zinc-400">🧗</span>
+              <span className="text-zinc-400">📍</span>
               <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                {item.route.name}
+                {item.sector.name}
               </span>
-              <span className="text-zinc-500">{item.route.grade}</span>
-              <span className="text-zinc-400">· {item.route.crag.name}</span>
-            </Link>
-          )}
-          {item.crag && (
-            <Link
-              href={`/crags/${item.crag.id}`}
-              className="mt-2 inline-block text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-            >
-              📍 {item.crag.name}
+              <span className="text-zinc-400">· {item.sector.crag.name}</span>
             </Link>
           )}
           {/* Read-only in the feed (no delete/upload affordances); the author

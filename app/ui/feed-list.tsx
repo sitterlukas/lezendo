@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { FeedItem } from "@/lib/feed";
 import FeedItemCard from "@/app/ui/feed-item";
+import { type SectorOption } from "@/app/ui/sector-select";
 import { loadFeedPage } from "@/app/actions";
 
 // Renders the feed and appends older items via "Load more", consuming the
@@ -12,11 +13,13 @@ export default function FeedList({
   initialCursor,
   viewerId,
   isAdmin,
+  sectors,
 }: {
   initialItems: FeedItem[];
   initialCursor: Date | null;
   viewerId: number | null;
   isAdmin: boolean;
+  sectors: SectorOption[];
 }) {
   const [items, setItems] = useState(initialItems);
   const [cursor, setCursor] = useState(initialCursor);
@@ -49,6 +52,7 @@ export default function FeedList({
           item={item}
           viewerId={viewerId}
           isAdmin={isAdmin}
+          sectors={sectors}
         />
       ))}
       {cursor && (

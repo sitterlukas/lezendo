@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import FollowButton from "@/app/ui/follow-button";
-import { buildProfileTimeline } from "@/lib/feed";
+import { buildProfileTimeline, loadSectorOptions } from "@/lib/feed";
 import FeedItemCard from "@/app/ui/feed-item";
 import Avatar from "@/app/ui/avatar";
 
@@ -63,6 +63,10 @@ export default async function UserProfilePage({
     profileId,
   );
 
+  // The edit dialog (own/admin statuses only) needs the sector options.
+  const canEdit = isSelf || viewer?.role === "admin";
+  const sectors = canEdit ? await loadSectorOptions(db) : [];
+
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -104,6 +108,7 @@ export default async function UserProfilePage({
                 item={item}
                 viewerId={viewer?.id ?? null}
                 isAdmin={viewer?.role === "admin"}
+                sectors={sectors}
               />
             ))}
           </div>
