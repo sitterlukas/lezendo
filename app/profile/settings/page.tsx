@@ -6,6 +6,7 @@ import ProfileTabs from "@/app/profile/tabs";
 import AvatarUpload from "@/app/ui/avatar-upload";
 import Avatar from "@/app/ui/avatar";
 import FollowButton from "@/app/ui/follow-button";
+import PeopleSearch from "@/app/ui/people-search";
 import GradingSystemForm from "./grading-system-form";
 import db from "@/lib/db";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
@@ -145,6 +146,11 @@ export default async function SettingsPage() {
           empty="No followers yet."
         />
       </div>
+
+      <section className="mt-6 rounded border border-zinc-200 p-5 dark:border-zinc-800">
+        <h2 className="mb-2 text-sm font-semibold">Discover people</h2>
+        <PeopleSearch />
+      </section>
 
       <form action={logout} className="mt-8">
         <button

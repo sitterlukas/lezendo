@@ -7,6 +7,7 @@ import StatusComposer from "@/app/ui/status-composer";
 import FollowButton from "@/app/ui/follow-button";
 import LoginToAdd from "@/app/ui/login-to-add";
 import Avatar from "@/app/ui/avatar";
+import PeopleSearch from "@/app/ui/people-search";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,11 @@ export default async function FeedPage() {
         <h1 className="text-4xl font-bold tracking-tight">Feed</h1>
         <StatusComposer crags={crags} routes={routes} />
       </header>
+
+      <section className="mt-6 rounded border border-zinc-200 p-5 dark:border-zinc-800">
+        <p className="mb-2 font-medium">Discover people</p>
+        <PeopleSearch />
+      </section>
 
       {/* Until you follow someone, keep the "who to follow" prompt above your
           feed — even after you've posted your own statuses. */}
