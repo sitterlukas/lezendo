@@ -167,6 +167,29 @@ export default async function LandingPage({
         </div>
       </section>
 
+      {/* Feed call-to-action (signed-in) */}
+      {currentUser && (
+        <section className="mx-auto max-w-5xl px-6 pt-16">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-blue-200 bg-blue-50 p-6 dark:border-blue-900/50 dark:bg-blue-950/30">
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-blue-900 dark:text-blue-100">
+                Your feed
+              </h2>
+              <p className="mt-1 max-w-md text-sm text-blue-800/70 dark:text-blue-200/70">
+                See what the climbers you follow are up to, and share your own
+                ascents, statuses, and photos.
+              </p>
+            </div>
+            <Link
+              href="/feed"
+              className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+            >
+              Open feed →
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Features */}
       <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="grid gap-8 sm:grid-cols-3">
@@ -367,7 +390,12 @@ export default async function LandingPage({
                     <td className="px-4 py-3 font-medium">
                       <span className="flex items-center gap-1.5">
                         <RankCrown rank={index + 1} />
-                        {row.name}
+                        <Link
+                          href={`/users/${row.user_id}`}
+                          className="hover:underline"
+                        >
+                          {row.name}
+                        </Link>
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold">

@@ -131,7 +131,12 @@ export default async function LeaderboardPage({
                             src={row.avatar_url}
                             size={28}
                           />
-                          {row.name}
+                          <Link
+                            href={`/users/${row.user_id}`}
+                            className="hover:underline"
+                          >
+                            {row.name}
+                          </Link>
                           {isMe && (
                             <span className="ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800">
                               You

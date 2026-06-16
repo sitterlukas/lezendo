@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import { createPost } from "@/app/actions";
+import ForumPost from "@/app/ui/forum-post";
+import ForumTopicActions from "@/app/ui/forum-topic-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,7 @@ export default async function TopicPage({
       "forum_topics.id",
       "forum_topics.title",
       "forum_topics.created_at",
+      "forum_topics.user_id",
       "users.name as author",
     ])
     .where("forum_topics.id", "=", id)
@@ -40,6 +43,7 @@ export default async function TopicPage({
       "forum_posts.created_at",
       "forum_posts.user_id",
       "users.name as author",
+      "users.avatar_url as author_avatar",
     ])
     .where("forum_posts.topic_id", "=", id)
     .orderBy("forum_posts.created_at", "asc")
@@ -48,10 +52,14 @@ export default async function TopicPage({
   const currentUser = session?.user?.email
     ? ((await db
         .selectFrom("users")
-        .select("id")
+        .select(["id", "role"])
         .where("email", "=", session.user.email.toLowerCase())
         .executeTakeFirst()) ?? null)
     : null;
+
+  const canManageTopic =
+    !!currentUser &&
+    (currentUser.id === topic.user_id || currentUser.role === "admin");
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
@@ -69,57 +77,55 @@ export default async function TopicPage({
         </span>
       </nav>
 
-      <h1 className="mt-4 text-3xl font-bold tracking-tight">{topic.title}</h1>
-      <p className="mt-1 text-sm text-zinc-500">
-        Started by {topic.author} ·{" "}
-        {topic.created_at.toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })}{" "}
-        · {posts.length} {posts.length === 1 ? "post" : "posts"}
-      </p>
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{topic.title}</h1>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-500">
+            Started by{" "}
+            <Link
+              href={`/users/${topic.user_id}`}
+              className="font-medium text-zinc-700 hover:underline dark:text-zinc-300"
+            >
+              {topic.author}
+            </Link>{" "}
+            ·{" "}
+            {topic.created_at.toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}{" "}
+            · {posts.length} {posts.length === 1 ? "post" : "posts"}
+          </p>
+        </div>
+        {canManageTopic && (
+          <ForumTopicActions topicId={topic.id} title={topic.title} />
+        )}
+      </div>
 
       {/* Posts */}
       <div className="mt-8 space-y-4">
         {posts.map((post, index) => {
-          const isOp = index === 0;
-          const isMine = currentUser && post.user_id === currentUser.id;
+          const canManage =
+            !!currentUser &&
+            (currentUser.id === post.user_id || currentUser.role === "admin");
           return (
-            <article
+            <ForumPost
               key={post.id}
-              className={`rounded border p-5 ${
-                isOp
-                  ? "border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/60"
-                  : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-transparent"
-              }`}
-            >
-              <header className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="font-semibold">{post.author}</span>
-                {isOp && (
-                  <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">
-                    OP
-                  </span>
-                )}
-                {isMine && !isOp && (
-                  <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-medium text-zinc-500 dark:bg-zinc-800">
-                    You
-                  </span>
-                )}
-                <span className="ml-auto text-xs text-zinc-400">
-                  {post.created_at.toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </header>
-              <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-                {post.body}
-              </div>
-            </article>
+              postId={post.id}
+              authorId={post.user_id}
+              authorName={post.author}
+              authorAvatar={post.author_avatar}
+              body={post.body}
+              createdAtLabel={post.created_at.toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+              isOp={index === 0}
+              canManage={canManage}
+            />
           );
         })}
       </div>
