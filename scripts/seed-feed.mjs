@@ -50,6 +50,7 @@ async function main() {
   // --- wipe previous demo data (feed tables + tagged demo ascents) ---------
   await q(`TRUNCATE TABLE likes, comments, statuses, follows RESTART IDENTITY`);
   await q(`DELETE FROM ascents WHERE notes = '[seed]'`);
+  await q(`DELETE FROM images WHERE entity_type = 'status'`);
 
   // --- follows: everyone follows the demo authors; authors follow back -----
   for (const u of users) {
@@ -107,6 +108,26 @@ async function main() {
     routeId: cragRoutes[3]?.id ?? cragRoutes[0].id,
     agoMin: 180,
   });
+
+  // --- photos on a couple of statuses (reuse existing blob images) ---------
+  const photoPool = (
+    await q(
+      `SELECT url FROM images WHERE entity_type IN ('crag','route','sector') ORDER BY id LIMIT 8`,
+    )
+  ).map((r) => r.url);
+  const attachPhotos = async (statusId, uploadedBy, urls) => {
+    for (const url of urls) {
+      await q(
+        `INSERT INTO images (entity_type, entity_id, url, uploaded_by)
+         VALUES ('status', $1, $2, $3)`,
+        [statusId, url, uploadedBy],
+      );
+    }
+  };
+  if (photoPool.length > 0) {
+    await attachPhotos(s1, author1.id, photoPool.slice(0, 2));
+    await attachPhotos(s2, author2.id, photoPool.slice(2, 5));
+  }
 
   // --- ascents: a batch (author2, 3 routes, same crag + day) + a single ----
   // Each ascent belongs to a stable per-(climber, crag, day) activity, which is
