@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16 (App Router, RSC), React 19, TypeScript, Kysely + Postgres, Vercel Blob, Tailwind v4.
 
-> **Project conventions (read first):** This repo has **no automated test framework** — `AGENTS.md` is explicitly pragmatic. Verification for every task is `npm run lint`, `npm run build` (runs migrations + typecheck), and manual `npm run dev` checks. Prettier owns formatting (`npm run format`). Don't add a test runner. Follow existing patterns in `app/actions/index.ts`, `app/ui/`, and `migrations/`.
+> **Project conventions (read first):** This plan **introduces Vitest** (Phase 0) — unit tests for pure logic and a real-Postgres integration harness for actions/queries. After Phase 0, work **test-first** where a task lists tests: write the failing test, watch it fail, implement, watch it pass, commit. Verification for every task is `npm run test` (unit), the relevant `npm run test:integration` when present, `npm run lint`, and `npm run build` (runs migrations + typecheck); plus manual `npm run dev` for UI. Prettier owns formatting (`npm run format`). Follow existing patterns in `app/actions/index.ts`, `app/ui/`, and `migrations/`.
 
 > **Branch:** Work happens on the `social-feed` branch (already created). Commit after each task.
 
@@ -16,10 +16,18 @@
 
 ## File map
 
+**Created (test setup — Phase 0):**
+- `vitest.config.ts` — unit-test config (node env, excludes integration)
+- `vitest.integration.config.ts` — integration config (test DB, serial)
+- `test/integration/setup-global.ts` — migrate the test DB once before the suite
+- `test/integration/db.ts` — `resetDb()` (truncate + reseed fixtures) + fixture helpers
+- `lib/time-ago.test.ts`, `lib/feed.test.ts` — unit tests
+- `test/integration/follows.int.test.ts`, `statuses-feed.int.test.ts`, `likes-comments.int.test.ts`
+
 **Created:**
 - `migrations/2026-06-16T10-00-00_create_social_feed.ts` — 4 new tables + `images` CHECK update
 - `lib/time-ago.ts` — relative-time formatter (pure)
-- `lib/feed.ts` — `FeedItem` type + `buildFeed` / `buildProfileTimeline` / `suggestedUsers`
+- `lib/feed.ts` — `FeedItem` type + `buildFeed` / `buildProfileTimeline` / `suggestedUsers`; pure `shapeAndSortFeed` helper (unit-tested)
 - `app/ui/time-ago.tsx` — `<TimeAgo>` client component
 - `app/ui/follow-button.tsx` — client Follow/Unfollow toggle
 - `app/ui/feed-item.tsx` — renders one status/ascent
@@ -34,6 +42,259 @@
 - `app/actions/index.ts` — status/follow/like/comment actions; extend `deleteAscent`
 - `app/ui/header-nav.tsx` — add "Feed" nav link (desktop + mobile)
 - `app/forum/page.tsx` + `app/ui/entity-reviews.tsx` — link author names to `/users/[id]`
+
+---
+
+# Phase 0 — Testing setup (Vitest: unit + DB integration)
+
+### Task 0a: Vitest + unit config
+
+**Files:**
+- Modify: `package.json`
+- Create: `vitest.config.ts`
+- Create: `lib/time-ago.test.ts` (placeholder, fleshed out in Task 2)
+
+- [ ] **Step 1: Install Vitest**
+
+Run: `npm install -D vitest @vitejs/plugin-react vite-tsconfig-paths`
+Expected: added to `devDependencies`. (`vite-tsconfig-paths` makes the `@/` alias
+resolve in tests; `@vitejs/plugin-react` supports JSX/TSX component tests later.)
+
+- [ ] **Step 2: Add test scripts to `package.json`**
+
+Add to the `"scripts"` block:
+
+```json
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
+```
+
+- [ ] **Step 3: Write `vitest.config.ts`**
+
+```ts
+import { defineConfig } from "vitest/config";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+// Unit tests only: pure logic, no database. Integration tests live under
+// test/integration and run via vitest.integration.config.ts.
+export default defineConfig({
+  plugins: [tsconfigPaths()],
+  test: {
+    environment: "node",
+    include: ["lib/**/*.test.ts", "app/**/*.test.ts"],
+    exclude: ["test/integration/**", "node_modules/**"],
+  },
+});
+```
+
+- [ ] **Step 4: Smoke test**
+
+Create `lib/time-ago.test.ts`:
+
+```ts
+import { describe, it, expect } from "vitest";
+
+describe("vitest", () => {
+  it("runs", () => {
+    expect(1 + 1).toBe(2);
+  });
+});
+```
+
+Run: `npm run test`
+Expected: 1 passing test.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add package.json package-lock.json vitest.config.ts lib/time-ago.test.ts
+git commit -m "Add Vitest with a unit-test config"
+```
+
+---
+
+### Task 0b: Integration harness (real Postgres)
+
+**Files:**
+- Create: `vitest.integration.config.ts`
+- Create: `test/integration/setup-global.ts`
+- Create: `test/integration/db.ts`
+- Modify: `.env.example` (document `TEST_DATABASE_URL`)
+
+> Integration tests run against a **separate** Postgres database so they never
+> touch dev data. The harness reuses the project's migrations to build the
+> schema, then truncates + reseeds reference data between tests.
+
+- [ ] **Step 1: Document the test DB env var**
+
+Add to `.env.example`:
+
+```
+# Separate database for integration tests (its name MUST end in _test).
+# Create it once:  createdb whipperbook_test
+TEST_DATABASE_URL=postgresql://localhost:5432/whipperbook_test
+```
+
+- [ ] **Step 2: Write the integration Vitest config**
+
+`vitest.integration.config.ts`:
+
+```ts
+import { defineConfig } from "vitest/config";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+// Integration tests hit a real Postgres (TEST_DATABASE_URL). They share one DB,
+// so run them serially in a single fork to avoid cross-test interference.
+export default defineConfig({
+  plugins: [tsconfigPaths()],
+  test: {
+    environment: "node",
+    include: ["test/integration/**/*.int.test.ts"],
+    globalSetup: ["test/integration/setup-global.ts"],
+    fileParallelism: false,
+    poolOptions: { forks: { singleFork: true } },
+    hookTimeout: 60_000,
+    testTimeout: 30_000,
+  },
+});
+```
+
+- [ ] **Step 3: Write the global setup (migrate the test DB once)**
+
+`test/integration/setup-global.ts`:
+
+```ts
+import { execSync } from "node:child_process";
+
+// Runs once before the integration suite: point the migrator at the test DB and
+// bring it to the latest schema. Refuses to run against a DB whose name doesn't
+// end in `_test`, so we can never migrate/wipe a real database by accident.
+export default function setup() {
+  const url = process.env.TEST_DATABASE_URL;
+  if (!url) throw new Error("TEST_DATABASE_URL is not set");
+  const dbName = url.split("/").pop()?.split("?")[0] ?? "";
+  if (!dbName.endsWith("_test")) {
+    throw new Error(
+      `Refusing to run integration tests against "${dbName}" (name must end in _test)`,
+    );
+  }
+  execSync("npm run migrate:latest", {
+    stdio: "inherit",
+    env: { ...process.env, DATABASE_URL: url },
+  });
+}
+```
+
+- [ ] **Step 4: Write the per-test DB helper**
+
+`test/integration/db.ts`:
+
+```ts
+import { beforeAll, beforeEach } from "vitest";
+import { sql } from "kysely";
+import db from "@/lib/db";
+
+// Point the app's db client at the test database for the whole file. lib/db.ts
+// reads process.env.DATABASE_URL when the pool is created; set it before any
+// query runs. (Vitest loads this module fresh per test file.)
+beforeAll(() => {
+  if (!process.env.TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL unset");
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+});
+
+// Empty the mutable tables before each test. Reference data (countries,
+// grading_systems, grade_equivalencies) is left intact — it's seeded by the
+// migrations and the app needs it.
+export async function resetDb() {
+  await sql`
+    TRUNCATE TABLE
+      comments, likes, follows, statuses,
+      entity_reviews, gear_reviews, gear_items, ascents, images,
+      forum_posts, forum_topics, deletion_log,
+      routes, sectors, crags, users
+    RESTART IDENTITY CASCADE
+  `.execute(db);
+}
+
+beforeEach(resetDb);
+
+// --- Fixtures --------------------------------------------------------------
+
+export async function makeUser(name = "Tester"): Promise<number> {
+  const row = await db
+    .insertInto("users")
+    .values({ email: `${name.toLowerCase()}-${Date.now()}@x.test`, name })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return row.id;
+}
+
+export async function makeCragWithRoute(
+  createdBy: number,
+): Promise<{ cragId: number; routeId: number }> {
+  const crag = await db
+    .insertInto("crags")
+    .values({ name: `Crag ${Date.now()}`, created_by: createdBy })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  const gs = await db
+    .selectFrom("grading_systems")
+    .select("id")
+    .executeTakeFirstOrThrow();
+  const route = await db
+    .insertInto("routes")
+    .values({
+      name: "Test Route",
+      crag_id: crag.id,
+      grade: "6a",
+      grading_system_id: gs.id,
+      style: "sport",
+      created_by: createdBy,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return { cragId: crag.id, routeId: route.id };
+}
+```
+
+> Note: actions resolve the current user via NextAuth (`auth()`), which isn't
+> available in the test runner. Integration tests therefore exercise
+> **`lib/feed.ts`** (which takes `db`/`viewerId` as plain args) and direct DB
+> effects. Action-level auth flows stay covered by manual `dev` verification.
+> Where an action's logic is worth testing in isolation, extract its pure core
+> (e.g. validation) and unit-test that.
+
+- [ ] **Step 5: Verify the harness with a trivial integration test**
+
+Create `test/integration/follows.int.test.ts` (expanded in Task 5-int):
+
+```ts
+import { describe, it, expect } from "vitest";
+import db from "@/lib/db";
+import { makeUser, resetDb } from "./db";
+
+describe("integration harness", () => {
+  it("starts from an empty users table each test", async () => {
+    await resetDb();
+    const id = await makeUser("Alice");
+    const rows = await db.selectFrom("users").selectAll().execute();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe(id);
+  });
+});
+```
+
+Run: `TEST_DATABASE_URL=postgresql://localhost:5432/whipperbook_test npm run test:integration`
+(Create the DB first: `createdb whipperbook_test`.)
+Expected: migrations run, then 1 passing test.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add vitest.integration.config.ts test/integration/ .env.example
+git commit -m "Add Postgres integration-test harness for Vitest"
+```
 
 ---
 
@@ -247,9 +508,45 @@ git commit -m "Add social feed tables (statuses, follows, likes, comments)"
 
 **Files:**
 - Create: `lib/time-ago.ts`
+- Modify: `lib/time-ago.test.ts` (replace the Task 0a smoke test)
 - Create: `app/ui/time-ago.tsx`
 
-- [ ] **Step 1: Write `lib/time-ago.ts`**
+- [ ] **Step 1: Write the failing unit test**
+
+Replace the contents of `lib/time-ago.test.ts` with:
+
+```ts
+import { describe, it, expect } from "vitest";
+import { timeAgo } from "@/lib/time-ago";
+
+const now = new Date("2026-06-16T12:00:00Z");
+const ago = (ms: number) => new Date(now.getTime() - ms);
+
+describe("timeAgo", () => {
+  it("shows 'just now' under 45s", () => {
+    expect(timeAgo(ago(10_000), now)).toBe("just now");
+  });
+  it("shows minutes", () => {
+    expect(timeAgo(ago(5 * 60_000), now)).toBe("5m");
+  });
+  it("shows hours", () => {
+    expect(timeAgo(ago(3 * 3_600_000), now)).toBe("3h");
+  });
+  it("shows days under a week", () => {
+    expect(timeAgo(ago(2 * 86_400_000), now)).toBe("2d");
+  });
+  it("falls back to an absolute date past a week", () => {
+    expect(timeAgo(ago(30 * 86_400_000), now)).toMatch(/May|2026|\d/);
+  });
+});
+```
+
+- [ ] **Step 2: Run it and watch it fail**
+
+Run: `npm run test`
+Expected: FAIL — `timeAgo` is not exported yet (module not found).
+
+- [ ] **Step 3: Write `lib/time-ago.ts`**
 
 ```ts
 // Compact relative time for feed timestamps: "just now", "5m", "3h", "2d".
@@ -273,7 +570,12 @@ export function timeAgo(date: Date, now: Date = new Date()): string {
 }
 ```
 
-- [ ] **Step 2: Write `app/ui/time-ago.tsx`**
+- [ ] **Step 4: Run the test and watch it pass**
+
+Run: `npm run test`
+Expected: the 5 `timeAgo` tests pass.
+
+- [ ] **Step 5: Write `app/ui/time-ago.tsx`**
 
 ```tsx
 import { timeAgo } from "@/lib/time-ago";
@@ -294,16 +596,16 @@ export default function TimeAgo({ date }: { date: Date }) {
 }
 ```
 
-- [ ] **Step 3: Lint + build**
+- [ ] **Step 6: Test + lint + build**
 
-Run: `npm run lint && npm run build`
+Run: `npm run test && npm run lint && npm run build`
 Expected: clean.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add lib/time-ago.ts app/ui/time-ago.tsx
-git commit -m "Add timeAgo helper and TimeAgo component"
+git add lib/time-ago.ts lib/time-ago.test.ts app/ui/time-ago.tsx
+git commit -m "Add timeAgo helper (TDD) and TimeAgo component"
 ```
 
 ---
@@ -781,6 +1083,15 @@ export type FeedPage = { items: FeedItem[]; nextCursor: Date | null };
 
 const PAGE_SIZE = 20;
 
+// Pure: order feed items newest-first. Sorts a copy (no mutation) so it's easy
+// to unit-test. Ties broken by id desc for determinism.
+export function sortFeedNewestFirst(items: FeedItem[]): FeedItem[] {
+  return [...items].sort(
+    (a, b) =>
+      b.createdAt.getTime() - a.createdAt.getTime() || b.id - a.id,
+  );
+}
+
 // Build a feed of statuses + ascents authored by `authorIds`, newest first.
 // `before` pages backwards by created_at. Returns up to PAGE_SIZE items plus a
 // cursor (the oldest item's createdAt) when more may exist.
@@ -883,8 +1194,7 @@ async function buildFor(
     })),
   ];
 
-  merged.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  const items = merged.slice(0, limit);
+  const items = sortFeedNewestFirst(merged).slice(0, limit);
 
   await attachInteractions(db, viewerId, items);
 
@@ -1030,12 +1340,94 @@ export async function suggestedUsers(
 }
 ```
 
-- [ ] **Step 2: Lint + build + commit**
+- [ ] **Step 2: Unit-test the pure sort (`lib/feed.test.ts`)**
+
+```ts
+import { describe, it, expect } from "vitest";
+import { sortFeedNewestFirst, type FeedItem } from "@/lib/feed";
+
+function status(id: number, iso: string): FeedItem {
+  return {
+    kind: "status",
+    id,
+    author: { id: 1, name: "A" },
+    createdAt: new Date(iso),
+    body: "x",
+    crag: null,
+    photos: [],
+    likeCount: 0,
+    likedByMe: false,
+    commentCount: 0,
+  };
+}
+
+describe("sortFeedNewestFirst", () => {
+  it("orders newest first and does not mutate the input", () => {
+    const input = [
+      status(1, "2026-06-01T00:00:00Z"),
+      status(2, "2026-06-03T00:00:00Z"),
+      status(3, "2026-06-02T00:00:00Z"),
+    ];
+    const out = sortFeedNewestFirst(input);
+    expect(out.map((i) => i.id)).toEqual([2, 3, 1]);
+    expect(input.map((i) => i.id)).toEqual([1, 2, 3]); // unchanged
+  });
+});
+```
+
+Run: `npm run test`
+Expected: `sortFeedNewestFirst` tests pass (plus `timeAgo` from Task 2).
+
+- [ ] **Step 3: Integration-test `buildFeed` scope + ordering**
+
+Create `test/integration/statuses-feed.int.test.ts`:
+
+```ts
+import { describe, it, expect } from "vitest";
+import db from "@/lib/db";
+import { buildFeed } from "@/lib/feed";
+import { makeUser } from "./db";
+
+describe("buildFeed", () => {
+  it("includes followees + self, excludes non-followed, newest first", async () => {
+    const me = await makeUser("Me");
+    const friend = await makeUser("Friend");
+    const stranger = await makeUser("Stranger");
+
+    await db
+      .insertInto("follows")
+      .values({ follower_id: me, followee_id: friend })
+      .execute();
+
+    // Insert statuses with controlled timestamps (oldest → newest).
+    const mk = async (userId: number, body: string, iso: string) =>
+      db
+        .insertInto("statuses")
+        .values({ user_id: userId, body, crag_id: null, created_at: new Date(iso) })
+        .execute();
+    await mk(me, "mine", "2026-06-10T00:00:00Z");
+    await mk(friend, "friend", "2026-06-11T00:00:00Z");
+    await mk(stranger, "stranger", "2026-06-12T00:00:00Z");
+
+    const { items } = await buildFeed(db, me);
+    const bodies = items
+      .filter((i) => i.kind === "status")
+      .map((i) => (i.kind === "status" ? i.body : ""));
+
+    expect(bodies).toEqual(["friend", "mine"]); // newest-first, no stranger
+  });
+});
+```
+
+Run: `TEST_DATABASE_URL=postgresql://localhost:5432/whipperbook_test npm run test:integration`
+Expected: passes (the harness migrates + truncates between tests).
+
+- [ ] **Step 4: Lint + build + commit**
 
 ```bash
-npm run lint && npm run build
-git add lib/feed.ts
-git commit -m "Add feed builder (buildFeed, buildProfileTimeline, suggestedUsers)"
+npm run test && npm run lint && npm run build
+git add lib/feed.ts lib/feed.test.ts test/integration/statuses-feed.int.test.ts
+git commit -m "Add feed builder with unit + integration tests"
 ```
 
 ---
@@ -1723,15 +2115,59 @@ with:
         />
 ```
 
-- [ ] **Step 4: Verify in dev + lint + build + commit**
+- [ ] **Step 4: Integration-test like counts in the feed**
+
+Create `test/integration/likes-comments.int.test.ts`:
+
+```ts
+import { describe, it, expect } from "vitest";
+import db from "@/lib/db";
+import { buildFeed } from "@/lib/feed";
+import { makeUser } from "./db";
+
+async function makeStatus(userId: number): Promise<number> {
+  const row = await db
+    .insertInto("statuses")
+    .values({ user_id: userId, body: "hi", crag_id: null })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return row.id;
+}
+
+describe("feed interaction counts", () => {
+  it("reports likeCount and likedByMe", async () => {
+    const me = await makeUser("Me");
+    const other = await makeUser("Other");
+    const statusId = await makeStatus(me);
+
+    await db
+      .insertInto("likes")
+      .values([
+        { user_id: me, target_type: "status", target_id: statusId },
+        { user_id: other, target_type: "status", target_id: statusId },
+      ])
+      .execute();
+
+    const { items } = await buildFeed(db, me);
+    const item = items.find((i) => i.kind === "status" && i.id === statusId)!;
+    expect(item.likeCount).toBe(2);
+    expect(item.likedByMe).toBe(true);
+  });
+});
+```
+
+Run: `TEST_DATABASE_URL=postgresql://localhost:5432/whipperbook_test npm run test:integration`
+Expected: passes.
+
+- [ ] **Step 5: Verify in dev + lint + build + commit**
 
 Run: `npm run dev` — like/unlike a status and an ascent; the count updates
 immediately and persists on reload.
 
 ```bash
-npm run lint && npm run build
-git add app/actions/index.ts app/ui/like-button.tsx app/ui/feed-item.tsx
-git commit -m "Add likes (toggleLike action + LikeButton)"
+npm run test && npm run lint && npm run build
+git add app/actions/index.ts app/ui/like-button.tsx app/ui/feed-item.tsx test/integration/likes-comments.int.test.ts
+git commit -m "Add likes (toggleLike action + LikeButton) with feed-count test"
 ```
 
 ---
@@ -1968,16 +2404,49 @@ after the footer `</div>`:
 > Keep the like button in the footer. `isAdmin` stays used by the delete
 > affordance.
 
-- [ ] **Step 4: Verify in dev + lint + build + commit**
+- [ ] **Step 4: Integration-test comment count + loader**
+
+Append to `test/integration/likes-comments.int.test.ts`:
+
+```ts
+import { loadComments } from "@/lib/feed";
+
+describe("comments", () => {
+  it("reports commentCount and loads comments oldest-first", async () => {
+    const me = await makeUser("Me");
+    const statusId = await makeStatus(me);
+
+    await db
+      .insertInto("comments")
+      .values([
+        { user_id: me, target_type: "status", target_id: statusId, body: "first", created_at: new Date("2026-06-10T00:00:00Z") },
+        { user_id: me, target_type: "status", target_id: statusId, body: "second", created_at: new Date("2026-06-11T00:00:00Z") },
+      ])
+      .execute();
+
+    const { items } = await buildFeed(db, me);
+    const item = items.find((i) => i.kind === "status" && i.id === statusId)!;
+    expect(item.commentCount).toBe(2);
+
+    const comments = await loadComments(db, "status", statusId);
+    expect(comments.map((c) => c.body)).toEqual(["first", "second"]);
+  });
+});
+```
+
+Run: `TEST_DATABASE_URL=postgresql://localhost:5432/whipperbook_test npm run test:integration`
+Expected: passes.
+
+- [ ] **Step 5: Verify in dev + lint + build + commit**
 
 Run: `npm run dev` — add a comment to a status and an ascent; it appears
 immediately and persists; author/admin can't yet delete comments via UI (delete
 action exists for future use). Confirm comment author names link to profiles.
 
 ```bash
-npm run lint && npm run build
-git add app/actions/index.ts lib/feed.ts app/ui/comment-list.tsx app/ui/feed-item.tsx
-git commit -m "Add flat comments on feed items"
+npm run test && npm run lint && npm run build
+git add app/actions/index.ts lib/feed.ts app/ui/comment-list.tsx app/ui/feed-item.tsx test/integration/likes-comments.int.test.ts
+git commit -m "Add flat comments on feed items with count/loader test"
 ```
 
 ---
@@ -2030,3 +2499,10 @@ git commit -m "Drop an ascent's likes/comments when it is deleted"
   cascade-on-delete is handled in `deleteStatus` (T6) and `deleteAscent` (T14).
 - **Type consistency:** `FeedItem.kind` values (`"status"`/`"ascent"`) equal
   `FeedTargetType`, so `targetType={item.kind}` typechecks in T12/T13.
+- **Testing:** Vitest set up in Phase 0 (unit config + Postgres integration
+  harness). Unit tests cover the pure logic (`timeAgo`, `sortFeedNewestFirst`);
+  integration tests cover `buildFeed` scope/ordering and the feed's
+  like/comment counts + `loadComments` against a real `*_test` database.
+  Auth-gated actions (which call NextAuth `auth()`) stay verified via manual
+  `dev`, as the harness can't impersonate a session — their testable logic is
+  exercised through `lib/feed.ts`.
