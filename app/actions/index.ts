@@ -205,17 +205,15 @@ export async function logAscent(formData: FormData) {
     .executeTakeFirst();
   if (!route) return;
 
-  // Find or create the (climber, crag, day) activity this ascent belongs to,
-  // so feed likes/comments have a stable target. `DO UPDATE` (a no-op set) lets
-  // the upsert RETURN the existing row's id on conflict.
+  // Find or create the (climber, day) activity this ascent belongs to (across
+  // crags), so feed likes/comments have a stable target. `DO UPDATE` (a no-op
+  // set) lets the upsert RETURN the existing row's id on conflict.
   const day = (date ?? new Date()).toISOString().slice(0, 10);
   const activity = await db
     .insertInto("ascent_activities")
     .values({ user_id: userId, crag_id: route.crag_id, activity_date: day })
     .onConflict((oc) =>
-      oc
-        .columns(["user_id", "crag_id", "activity_date"])
-        .doUpdateSet({ crag_id: route.crag_id }),
+      oc.columns(["user_id", "activity_date"]).doUpdateSet({ user_id: userId }),
     )
     .returning("id")
     .executeTakeFirstOrThrow();
@@ -720,6 +718,85 @@ export async function createTopic(formData: FormData) {
     .execute();
 
   redirect(`/forum/${topic.id}`);
+}
+
+export async function editTopic(formData: FormData): Promise<ActionResult> {
+  const user = await currentUserFull();
+  if (!user) return { ok: false, error: "You must be logged in." };
+  const topicId = Number(formData.get("topic_id"));
+  const title = String(formData.get("title") ?? "").trim();
+  if (!Number.isInteger(topicId)) return { ok: false, error: "Invalid topic." };
+  if (!title) return { ok: false, error: "Title can't be empty." };
+  const topic = await db
+    .selectFrom("forum_topics")
+    .select(["id", "user_id"])
+    .where("id", "=", topicId)
+    .executeTakeFirst();
+  if (!topic || !canModify(user, topic.user_id))
+    return { ok: false, error: "Not allowed." };
+  await db
+    .updateTable("forum_topics")
+    .set({ title })
+    .where("id", "=", topicId)
+    .execute();
+  revalidatePath(`/forum/${topicId}`);
+  revalidatePath("/forum");
+  return { ok: true };
+}
+
+export async function deleteTopic(formData: FormData) {
+  const user = await currentUserFull();
+  if (!user) return;
+  const topicId = Number(formData.get("topic_id"));
+  if (!Number.isInteger(topicId)) return;
+  const topic = await db
+    .selectFrom("forum_topics")
+    .select(["id", "user_id"])
+    .where("id", "=", topicId)
+    .executeTakeFirst();
+  if (!topic || !canModify(user, topic.user_id)) return;
+  // forum_posts cascade-delete with the topic (FK on delete cascade).
+  await db.deleteFrom("forum_topics").where("id", "=", topicId).execute();
+  revalidatePath("/forum");
+  redirect("/forum");
+}
+
+export async function editPost(formData: FormData): Promise<ActionResult> {
+  const user = await currentUserFull();
+  if (!user) return { ok: false, error: "You must be logged in." };
+  const postId = Number(formData.get("post_id"));
+  const body = String(formData.get("body") ?? "").trim();
+  if (!Number.isInteger(postId)) return { ok: false, error: "Invalid post." };
+  if (!body) return { ok: false, error: "Write something first." };
+  const post = await db
+    .selectFrom("forum_posts")
+    .select(["id", "user_id", "topic_id"])
+    .where("id", "=", postId)
+    .executeTakeFirst();
+  if (!post || !canModify(user, post.user_id))
+    return { ok: false, error: "Not allowed." };
+  await db
+    .updateTable("forum_posts")
+    .set({ body })
+    .where("id", "=", postId)
+    .execute();
+  revalidatePath(`/forum/${post.topic_id}`);
+  return { ok: true };
+}
+
+export async function deletePost(formData: FormData) {
+  const user = await currentUserFull();
+  if (!user) return;
+  const postId = Number(formData.get("post_id"));
+  if (!Number.isInteger(postId)) return;
+  const post = await db
+    .selectFrom("forum_posts")
+    .select(["id", "user_id", "topic_id"])
+    .where("id", "=", postId)
+    .executeTakeFirst();
+  if (!post || !canModify(user, post.user_id)) return;
+  await db.deleteFrom("forum_posts").where("id", "=", postId).execute();
+  revalidatePath(`/forum/${post.topic_id}`);
 }
 
 export async function createPost(formData: FormData) {
@@ -1331,6 +1408,38 @@ export async function deleteComment(formData: FormData) {
   await db.deleteFrom("comments").where("id", "=", commentId).execute();
   revalidatePath("/feed");
   revalidatePath("/users", "layout");
+}
+
+export async function editStatus(formData: FormData): Promise<ActionResult> {
+  const user = await currentUserFull();
+  if (!user) return { ok: false, error: "You must be logged in." };
+
+  const statusId = Number(formData.get("status_id"));
+  if (!Number.isInteger(statusId))
+    return { ok: false, error: "Invalid status." };
+
+  const status = await db
+    .selectFrom("statuses")
+    .select(["id", "user_id"])
+    .where("id", "=", statusId)
+    .executeTakeFirst();
+  if (!status || !canModify(user, status.user_id))
+    return { ok: false, error: "Not allowed." };
+
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) return { ok: false, error: "Write something first." };
+  if (body.length > STATUS_MAX_LEN)
+    return { ok: false, error: `Keep it under ${STATUS_MAX_LEN} characters.` };
+
+  await db
+    .updateTable("statuses")
+    .set({ body })
+    .where("id", "=", statusId)
+    .execute();
+
+  revalidatePath("/feed");
+  revalidatePath("/users", "layout");
+  return { ok: true };
 }
 
 export async function deleteStatus(formData: FormData) {
