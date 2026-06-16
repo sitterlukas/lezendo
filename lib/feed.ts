@@ -23,6 +23,12 @@ export type FeedItem =
       kind: "status";
       body: string;
       crag: { id: number; name: string } | null;
+      route: {
+        id: number;
+        name: string;
+        grade: string;
+        crag: { id: number; name: string };
+      } | null;
       photos: FeedPhoto[];
     })
   | (FeedBase & {
@@ -60,6 +66,8 @@ async function buildFor(
     .selectFrom("statuses")
     .innerJoin("users", "users.id", "statuses.user_id")
     .leftJoin("crags", "crags.id", "statuses.crag_id")
+    .leftJoin("routes as sr", "sr.id", "statuses.route_id")
+    .leftJoin("crags as rc", "rc.id", "sr.crag_id")
     .select([
       "statuses.id",
       "statuses.body",
@@ -69,6 +77,11 @@ async function buildFor(
       "users.avatar_url as author_avatar",
       "crags.id as crag_id",
       "crags.name as crag_name",
+      "sr.id as route_id",
+      "sr.name as route_name",
+      "sr.grade as route_grade",
+      "rc.id as route_crag_id",
+      "rc.name as route_crag_name",
     ])
     .where("statuses.user_id", "in", authorIds)
     .orderBy("statuses.created_at", "desc")
@@ -134,6 +147,15 @@ async function buildFor(
         createdAt: r.created_at,
         body: r.body,
         crag: r.crag_id != null ? { id: r.crag_id, name: r.crag_name! } : null,
+        route:
+          r.route_id != null
+            ? {
+                id: r.route_id,
+                name: r.route_name!,
+                grade: r.route_grade!,
+                crag: { id: r.route_crag_id!, name: r.route_crag_name! },
+              }
+            : null,
         photos: photosByStatus.get(r.id) ?? [],
         likeCount: 0,
         likedByMe: false,

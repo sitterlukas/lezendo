@@ -1040,9 +1040,7 @@ export async function unfollowUser(formData: FormData) {
   revalidatePath("/feed");
 }
 
-export async function createStatus(
-  formData: FormData,
-): Promise<CreateResult> {
+export async function createStatus(formData: FormData): Promise<CreateResult> {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "You must be logged in." };
 
@@ -1051,9 +1049,27 @@ export async function createStatus(
   if (body.length > STATUS_MAX_LEN)
     return { ok: false, error: `Keep it under ${STATUS_MAX_LEN} characters.` };
 
-  const cragRaw = String(formData.get("crag_id") ?? "").trim();
+  // A status can tag a route OR a crag. A tagged route takes precedence (it
+  // already implies its crag), so we clear crag_id in that case.
+  let routeId: number | null = null;
   let cragId: number | null = null;
-  if (cragRaw) {
+
+  const routeRaw = String(formData.get("route_id") ?? "").trim();
+  if (routeRaw) {
+    const id = Number(routeRaw);
+    if (!Number.isInteger(id)) return { ok: false, error: "Invalid route." };
+    const route = await db
+      .selectFrom("routes")
+      .select("id")
+      .where("id", "=", id)
+      .where("deleted", "=", false)
+      .executeTakeFirst();
+    if (!route) return { ok: false, error: "That route no longer exists." };
+    routeId = id;
+  }
+
+  const cragRaw = String(formData.get("crag_id") ?? "").trim();
+  if (!routeId && cragRaw) {
     const id = Number(cragRaw);
     if (!Number.isInteger(id)) return { ok: false, error: "Invalid crag." };
     const crag = await db
@@ -1068,7 +1084,7 @@ export async function createStatus(
 
   const row = await db
     .insertInto("statuses")
-    .values({ user_id: userId, body, crag_id: cragId })
+    .values({ user_id: userId, body, crag_id: cragId, route_id: routeId })
     .returning("id")
     .executeTakeFirstOrThrow();
 
@@ -1129,7 +1145,12 @@ export async function addComment(formData: FormData) {
 
   await db
     .insertInto("comments")
-    .values({ user_id: userId, target_type: targetType, target_id: targetId, body })
+    .values({
+      user_id: userId,
+      target_type: targetType,
+      target_id: targetId,
+      body,
+    })
     .execute();
 
   revalidatePath("/feed");
