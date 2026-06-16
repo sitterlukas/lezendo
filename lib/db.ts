@@ -2,7 +2,8 @@ import { Kysely, PostgresDialect, type Generated } from "kysely";
 
 export type DeletionEntityType = "crag" | "sector" | "route";
 export type DeletionAction = "delete" | "recover";
-export type ImageEntityType = "crag" | "sector" | "route";
+export type ImageEntityType = "crag" | "sector" | "route" | "status";
+export type FeedTargetType = "status" | "ascent";
 export type ReviewEntityType = "crag" | "sector" | "route";
 import { Pool } from "pg";
 
@@ -178,6 +179,37 @@ export interface EntityReviewsTable {
   created_at: Generated<Date>;
 }
 
+export interface StatusesTable {
+  id: Generated<number>;
+  user_id: number;
+  body: string;
+  crag_id: number | null;
+  created_at: Generated<Date>;
+}
+
+export interface FollowsTable {
+  follower_id: number;
+  followee_id: number;
+  created_at: Generated<Date>;
+}
+
+export interface LikesTable {
+  id: Generated<number>;
+  user_id: number;
+  target_type: FeedTargetType;
+  target_id: number;
+  created_at: Generated<Date>;
+}
+
+export interface CommentsTable {
+  id: Generated<number>;
+  user_id: number;
+  target_type: FeedTargetType;
+  target_id: number;
+  body: string;
+  created_at: Generated<Date>;
+}
+
 export interface Database {
   crags: CragsTable;
   sectors: SectorsTable;
@@ -194,6 +226,10 @@ export interface Database {
   forum_topics: ForumTopicsTable;
   forum_posts: ForumPostsTable;
   entity_reviews: EntityReviewsTable;
+  statuses: StatusesTable;
+  follows: FollowsTable;
+  likes: LikesTable;
+  comments: CommentsTable;
 }
 
 declare global {
