@@ -320,7 +320,7 @@ export default async function CragPage({
               />
             </>
           ) : (
-            <LoginToAdd label="Log in to add sectors & routes" />
+            <LoginToAdd to="to add sectors & routes" />
           )}
           {canEdit(crag.created_by) && (
             <form action={deleteCrag}>

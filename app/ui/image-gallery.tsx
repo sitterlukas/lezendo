@@ -153,7 +153,7 @@ export default function ImageGallery({
 
       {!canUpload && (
         <div className="mt-3">
-          <LoginToAdd label="Log in to add photos" />
+          <LoginToAdd to="to add photos" />
         </div>
       )}
 
@@ -207,7 +207,13 @@ export default function ImageGallery({
             aria-label="Close"
             className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
           >
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+            >
               <path
                 d="M4 4l12 12M16 4 4 16"
                 stroke="currentColor"
@@ -228,7 +234,13 @@ export default function ImageGallery({
                 }}
                 className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-4"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
                   <path
                     d="M15 5l-7 7 7 7"
                     stroke="currentColor"
@@ -247,7 +259,13 @@ export default function ImageGallery({
                 }}
                 className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-4"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
                   <path
                     d="M9 5l7 7-7 7"
                     stroke="currentColor"

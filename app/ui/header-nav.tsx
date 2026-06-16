@@ -63,7 +63,7 @@ export default function HeaderNav({
             <div className="invisible absolute right-0 top-full z-20 pt-1 opacity-0 transition group-hover:visible group-hover:opacity-100">
               <div className="w-52 rounded border border-zinc-200 bg-white py-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
                 <p className="px-4 py-2 text-xs text-zinc-400">
-                  Signed in as{" "}
+                  Logged in as{" "}
                   <span className="font-medium text-zinc-600 dark:text-zinc-300">
                     {displayName}
                   </span>
@@ -100,7 +100,7 @@ export default function HeaderNav({
                     type="submit"
                     className="block w-full px-4 py-2 text-left transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                   >
-                    Sign out
+                    Log out
                   </button>
                 </form>
               </div>
@@ -109,7 +109,7 @@ export default function HeaderNav({
         ) : (
           <>
             <Link href="/login" className={linkCls}>
-              Sign in
+              Log in
             </Link>
             <Link
               href="/register"
@@ -183,7 +183,7 @@ export default function HeaderNav({
             {isAuthed ? (
               <>
                 <p className="py-1 text-xs text-zinc-400">
-                  Signed in as{" "}
+                  Logged in as{" "}
                   <span className="font-medium text-zinc-600 dark:text-zinc-300">
                     {displayName}
                   </span>
@@ -207,14 +207,14 @@ export default function HeaderNav({
                     type="submit"
                     className="block w-full py-2.5 text-left transition hover:text-zinc-900 dark:hover:text-zinc-100"
                   >
-                    Sign out
+                    Log out
                   </button>
                 </form>
               </>
             ) : (
               <>
                 <Link href="/login" className={mobileLinkCls}>
-                  Sign in
+                  Log in
                 </Link>
                 <Link
                   href="/register"

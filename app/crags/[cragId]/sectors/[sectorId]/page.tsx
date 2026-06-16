@@ -202,7 +202,7 @@ export default async function SectorPage({
               }
             />
           ) : (
-            <LoginToAdd label="Log in to add a route" />
+            <LoginToAdd to="to add a route" />
           )}
 
           {canEdit(sector.created_by) && (

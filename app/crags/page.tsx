@@ -251,7 +251,7 @@ export default async function CragsPage({
           {currentUser ? (
             <CreateCragModal allCountries={allCountries} />
           ) : (
-            <LoginToAdd label="Log in to add a crag" />
+            <LoginToAdd to="to add a crag" />
           )}
         </div>
       </div>
