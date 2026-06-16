@@ -13,9 +13,11 @@ import {
   parseDiscipline,
 } from "@/lib/leaderboard";
 import { loadLeaderboard, POINTS_EXPLAINER } from "@/lib/points";
+import { buildFeed } from "@/lib/feed";
 import DisciplineSelect from "@/app/ui/discipline-select";
 import FilterPill from "@/app/ui/filter-pill";
 import RankCrown from "@/app/ui/rank-crown";
+import FeedItemCard from "@/app/ui/feed-item";
 
 export const dynamic = "force-dynamic";
 
@@ -33,12 +35,19 @@ export default async function LandingPage({
     ? ((await db
         .selectFrom("users")
         .select([
+          "id",
+          "role",
           "preferred_rope_grading_system_id",
           "preferred_boulder_grading_system_id",
         ])
         .where("email", "=", session.user.email.toLowerCase())
         .executeTakeFirst()) ?? null)
     : null;
+
+  // A short preview of the signed-in climber's feed.
+  const feedPreview = currentUser
+    ? (await buildFeed(db, currentUser.id)).items.slice(0, 3)
+    : [];
 
   const [
     routeCount,
@@ -166,6 +175,33 @@ export default async function LandingPage({
           </div>
         </div>
       </section>
+
+      {/* Feed preview (signed-in) */}
+      {currentUser && feedPreview.length > 0 && (
+        <section className="mx-auto max-w-2xl px-6 pt-16">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-2xl font-bold tracking-tight">
+              From your feed
+            </h2>
+            <Link
+              href="/feed"
+              className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              Open feed →
+            </Link>
+          </div>
+          <div className="mt-6 space-y-4">
+            {feedPreview.map((item) => (
+              <FeedItemCard
+                key={`${item.kind}:${item.id}`}
+                item={item}
+                viewerId={currentUser.id}
+                isAdmin={currentUser.role === "admin"}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section className="mx-auto max-w-5xl px-6 py-20">
