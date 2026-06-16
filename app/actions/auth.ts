@@ -3,9 +3,11 @@
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { AuthError } from "next-auth";
+import { AuthError, CredentialsSignin } from "next-auth";
 import db from "@/lib/db";
 import { auth, signIn, signOut } from "@/auth";
+import { issueVerificationToken } from "@/lib/email-verification";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function updateName(formData: FormData) {
   const email = (await auth())?.user?.email;
@@ -85,11 +87,14 @@ export async function register(formData: FormData) {
   }
 
   const password_hash = await hash(password, 12);
+  let userId: number;
   try {
-    await db
+    const inserted = await db
       .insertInto("users")
       .values({ name, email, password_hash })
-      .execute();
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    userId = inserted.id;
   } catch (error) {
     // Backstop for the check-then-insert race: the DB's unique constraint on
     // email (Postgres error 23505) means a concurrent signup got there first.
@@ -104,7 +109,10 @@ export async function register(formData: FormData) {
     throw error;
   }
 
-  await signIn("credentials", { email, password, redirectTo: "/" });
+  // Don't log them in yet — they must confirm the email first.
+  const token = await issueVerificationToken(userId);
+  await sendVerificationEmail(email, token);
+  redirect("/login?verify=sent");
 }
 
 export async function login(formData: FormData) {
@@ -115,12 +123,37 @@ export async function login(formData: FormData) {
       redirectTo: "/",
     });
   } catch (error) {
+    // A correct password on an unverified account surfaces as our custom code.
+    if (error instanceof CredentialsSignin && error.code === "unverified") {
+      redirect("/login?error=unverified");
+    }
     if (error instanceof AuthError) {
       redirect("/login?error=invalid");
     }
     // signIn redirects by throwing; anything else must propagate too.
     throw error;
   }
+}
+
+export async function resendVerification(formData: FormData) {
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+
+  // Always report success so this can't be used to probe which emails exist.
+  if (email) {
+    const user = await db
+      .selectFrom("users")
+      .select(["id", "email", "email_verified_at"])
+      .where("email", "=", email)
+      .executeTakeFirst();
+    if (user && !user.email_verified_at) {
+      const token = await issueVerificationToken(user.id);
+      await sendVerificationEmail(user.email, token);
+    }
+  }
+
+  redirect("/login?verify=sent");
 }
 
 export async function oauthLogin(formData: FormData) {

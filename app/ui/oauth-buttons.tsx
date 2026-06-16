@@ -52,6 +52,9 @@ export default function OAuthButtons() {
           </form>
         ))}
       </div>
+      <p className="mt-3 text-center text-xs text-zinc-400">
+        You can only sign in with a verified email address.
+      </p>
     </div>
   );
 }
