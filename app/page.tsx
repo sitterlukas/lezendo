@@ -246,17 +246,25 @@ export default async function LandingPage({
       </section>
 
       {/* Explore routes */}
-      {recentRoutes.length > 0 && (
-        <section className="mx-auto max-w-5xl px-6 pb-20">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-2xl font-bold tracking-tight">Latest routes</h2>
-            <Link
-              href="/crags"
-              className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
-            >
-              All crags →
+      <section className="mx-auto max-w-5xl px-6 pb-20">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-2xl font-bold tracking-tight">Latest routes</h2>
+          <Link
+            href="/crags"
+            className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            All crags →
+          </Link>
+        </div>
+        {recentRoutes.length === 0 ? (
+          <div className="mt-8 border border-dashed border-zinc-300 py-12 text-center text-sm text-zinc-500 dark:border-zinc-700">
+            No routes yet.{" "}
+            <Link href="/crags" className="underline underline-offset-2">
+              Add the first crag
             </Link>
+            .
           </div>
+        ) : (
           <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {resolvedRecentRoutes.map((route) => (
               <li key={route.id}>
@@ -286,100 +294,96 @@ export default async function LandingPage({
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* Leaderboard */}
-      {ascentCount > 0 && (
-        <section id="leaderboard" className="mx-auto max-w-5xl px-6 pb-20">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-2xl font-bold tracking-tight">Leaderboard</h2>
-            <Link
-              href={`/leaderboards?period=${period}&discipline=${discipline}`}
-              className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
-            >
-              Full leaderboard →
-            </Link>
-          </div>
+      <section id="leaderboard" className="mx-auto max-w-5xl px-6 pb-20">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-2xl font-bold tracking-tight">Leaderboard</h2>
+          <Link
+            href={`/leaderboards?period=${period}&discipline=${discipline}`}
+            className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            Full leaderboard →
+          </Link>
+        </div>
 
-          {/* Period filter (left) + discipline dropdown (right) */}
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-            <nav className="flex flex-wrap gap-2">
-              {periods.map((p) => (
-                <FilterPill
-                  key={p}
-                  href={`/?period=${p}&discipline=${discipline}#leaderboard`}
-                  active={period === p}
-                  scroll={false}
-                >
-                  {periodLabel[p]}
-                </FilterPill>
-              ))}
-            </nav>
-            <DisciplineSelect
-              value={discipline}
-              period={period}
-              basePath="/"
-              hash="#leaderboard"
-              scroll={false}
-            />
-          </div>
+        {/* Period filter (left) + discipline dropdown (right) */}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <nav className="flex flex-wrap gap-2">
+            {periods.map((p) => (
+              <FilterPill
+                key={p}
+                href={`/?period=${p}&discipline=${discipline}#leaderboard`}
+                active={period === p}
+                scroll={false}
+              >
+                {periodLabel[p]}
+              </FilterPill>
+            ))}
+          </nav>
+          <DisciplineSelect
+            value={discipline}
+            period={period}
+            basePath="/"
+            hash="#leaderboard"
+            scroll={false}
+          />
+        </div>
 
-          {topClimbers.length === 0 ? (
-            <div className="mt-6 border border-dashed border-zinc-300 py-12 text-center text-sm text-zinc-500 dark:border-zinc-700">
-              No sends logged {periodLabel[period].toLowerCase()}.
-            </div>
-          ) : (
-            <div className="mt-6 overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
-              <table className="w-full min-w-[20rem] text-sm">
-                <thead>
-                  <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
-                    <th className="w-12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                      #
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                      Climber
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                      Points
-                    </th>
+        {topClimbers.length === 0 ? (
+          <div className="mt-6 border border-dashed border-zinc-300 py-12 text-center text-sm text-zinc-500 dark:border-zinc-700">
+            No sends logged {periodLabel[period].toLowerCase()}.
+          </div>
+        ) : (
+          <div className="mt-6 overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
+            <table className="w-full min-w-[20rem] text-sm">
+              <thead>
+                <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
+                  <th className="w-12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    #
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    Climber
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    Points
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                {topClimbers.map((row, index) => (
+                  <tr key={row.user_id}>
+                    <td className="px-4 py-3 tabular-nums">
+                      <span
+                        className={
+                          index === 0 ? "text-base font-bold" : "text-zinc-400"
+                        }
+                      >
+                        {index + 1}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <RankCrown rank={index + 1} />
+                        {row.name}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">
+                      {row.points.toLocaleString()}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {topClimbers.map((row, index) => (
-                    <tr key={row.user_id}>
-                      <td className="px-4 py-3 tabular-nums">
-                        <span
-                          className={
-                            index === 0
-                              ? "text-base font-bold"
-                              : "text-zinc-400"
-                          }
-                        >
-                          {index + 1}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        <span className="flex items-center gap-1.5">
-                          <RankCrown rank={index + 1} />
-                          {row.name}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                        {row.points.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-          <p className="mt-3 max-w-2xl text-xs leading-relaxed text-zinc-500">
-            {POINTS_EXPLAINER}
-          </p>
-        </section>
-      )}
+        <p className="mt-3 max-w-2xl text-xs leading-relaxed text-zinc-500">
+          {POINTS_EXPLAINER}
+        </p>
+      </section>
 
       {/* Discover */}
       <section className="mx-auto max-w-5xl px-6 pb-24">
