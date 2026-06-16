@@ -148,12 +148,12 @@ export default async function RootLayout({
               >
                 Register
               </Link>
-              <a
-                href="mailto:info@whipperbook.com"
+              <Link
+                href="/contact"
                 className="transition hover:text-zinc-900 dark:hover:text-zinc-100"
               >
                 Contact
-              </a>
+              </Link>
             </nav>
             <span className="text-xs text-zinc-400 dark:text-zinc-600">
               © {new Date().getFullYear()} Whipperbook
