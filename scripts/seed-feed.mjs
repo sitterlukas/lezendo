@@ -136,7 +136,7 @@ async function main() {
     const [{ id }] = await q(
       `INSERT INTO ascent_activities (user_id, crag_id, activity_date)
        VALUES ($1,$2, now()::date)
-       ON CONFLICT (user_id, crag_id, activity_date) DO UPDATE SET crag_id = EXCLUDED.crag_id
+       ON CONFLICT (user_id, activity_date) DO UPDATE SET crag_id = EXCLUDED.crag_id
        RETURNING id`,
       [userId, crag.id],
     );

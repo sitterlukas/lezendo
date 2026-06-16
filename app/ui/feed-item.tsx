@@ -143,8 +143,8 @@ export default function FeedItemCard({
   );
 }
 
-// The body of an ascent post: a single tick reads as a sentence; a batch (same
-// crag + day) lists each climb with a points total.
+// The body of an ascent post: a single tick reads as a sentence; a day with
+// several climbs (across any crags) lists each one with a points total.
 function AscentBody({ item }: { item: Extract<FeedItem, { kind: "ascent" }> }) {
   const pointsBadge =
     "rounded bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300";
@@ -156,15 +156,15 @@ function AscentBody({ item }: { item: Extract<FeedItem, { kind: "ascent" }> }) {
         <p className="mt-2 text-zinc-800 dark:text-zinc-200">
           {tickVerb[c.tickType] ?? "Climbed"}{" "}
           <Link
-            href={`/crags/${item.crag.id}/routes/${c.route.id}`}
+            href={`/crags/${c.crag.id}/routes/${c.route.id}`}
             className="font-medium hover:underline"
           >
             {c.route.name}
           </Link>{" "}
           <span className="text-zinc-500">{c.route.grade}</span>{" "}
           <span className="text-zinc-400">at</span>{" "}
-          <Link href={`/crags/${item.crag.id}`} className="hover:underline">
-            {item.crag.name}
+          <Link href={`/crags/${c.crag.id}`} className="hover:underline">
+            {c.crag.name}
           </Link>
         </p>
         {c.points != null && c.tickType !== "attempt" && (
@@ -183,13 +183,7 @@ function AscentBody({ item }: { item: Extract<FeedItem, { kind: "ascent" }> }) {
   return (
     <>
       <p className="mt-2 text-zinc-800 dark:text-zinc-200">
-        Logged {item.climbs.length} climbs at{" "}
-        <Link
-          href={`/crags/${item.crag.id}`}
-          className="font-medium hover:underline"
-        >
-          {item.crag.name}
-        </Link>
+        Logged {item.climbs.length} climbs
       </p>
       <ul className="mt-2 space-y-1 border-l-2 border-zinc-100 pl-3 text-sm dark:border-zinc-800">
         {item.climbs.map((c) => (
@@ -198,12 +192,18 @@ function AscentBody({ item }: { item: Extract<FeedItem, { kind: "ascent" }> }) {
               {tickVerb[c.tickType] ?? "Climbed"}
             </span>
             <Link
-              href={`/crags/${item.crag.id}/routes/${c.route.id}`}
+              href={`/crags/${c.crag.id}/routes/${c.route.id}`}
               className="font-medium text-zinc-800 hover:underline dark:text-zinc-200"
             >
               {c.route.name}
             </Link>
             <span className="text-zinc-500">{c.route.grade}</span>
+            <Link
+              href={`/crags/${c.crag.id}`}
+              className="text-zinc-400 hover:underline"
+            >
+              · {c.crag.name}
+            </Link>
             {c.points != null && c.tickType !== "attempt" && (
               <span className="text-xs text-emerald-600 dark:text-emerald-400">
                 +{c.points}
