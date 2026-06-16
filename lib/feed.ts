@@ -47,8 +47,8 @@ export type FeedItem =
       kind: "ascent";
       crag: { id: number; name: string };
       // One post per (climber, crag, day): a lone tick, or several batched.
-      // `id` (FeedBase) is the latest ascent in the group — likes/comments
-      // attach to it.
+      // `id` (FeedBase) is the stable ascent_activity id — likes/comments
+      // attach to it, so they survive logging more climbs that day.
       climbs: {
         id: number;
         tickType: TickType;
@@ -114,6 +114,7 @@ async function buildFor(
     .innerJoin("crags", "crags.id", "routes.crag_id")
     .select([
       "ascents.id",
+      "ascents.activity_id",
       "ascents.tick_type",
       "ascents.ascent_date",
       "ascents.created_at",
@@ -191,43 +192,46 @@ async function buildFor(
     }),
   );
 
-  // Batch a climber's ascents in the same crag on the same day into one post.
-  const ascentGroups = new Map<string, typeof ascentRows>();
+  // Batch by the stable ascent_activity (one per climber/crag/day). The
+  // activity id is the post's identity, so likes/comments survive logging more
+  // climbs that day.
+  const ascentGroups = new Map<number, typeof ascentRows>();
   for (const r of ascentRows) {
-    const day = r.ascent_date.toISOString().slice(0, 10);
-    const key = `${r.author_id}|${r.crag_id}|${day}`;
+    const key = r.activity_id ?? r.id;
     const group = ascentGroups.get(key) ?? [];
     group.push(r);
     ascentGroups.set(key, group);
   }
-  const ascentItems: FeedItem[] = [...ascentGroups.values()].map((group) => {
-    // Latest log in the group represents the post (sort time + like target).
-    const rep = group.reduce((a, b) => (b.created_at > a.created_at ? b : a));
-    const climbs = [...group]
-      .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())
-      .map((r) => ({
-        id: r.id,
-        tickType: r.tick_type,
-        route: { id: r.route_id, name: r.route_name, grade: r.grade },
-        points: routePoints?.(r.grading_system_id, r.grade) ?? null,
-      }));
-    return {
-      kind: "ascent",
-      id: rep.id,
-      author: {
-        id: rep.author_id,
-        name: rep.author_name,
-        avatarUrl: rep.author_avatar,
-      },
-      createdAt: rep.created_at,
-      crag: { id: rep.crag_id, name: rep.crag_name },
-      climbs,
-      likeCount: 0,
-      likedByMe: false,
-      commentCount: 0,
-      comments: [],
-    };
-  });
+  const ascentItems: FeedItem[] = [...ascentGroups.entries()].map(
+    ([activityId, group]) => {
+      // Latest log sets the post's sort time + author display.
+      const rep = group.reduce((a, b) => (b.created_at > a.created_at ? b : a));
+      const climbs = [...group]
+        .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())
+        .map((r) => ({
+          id: r.id,
+          tickType: r.tick_type,
+          route: { id: r.route_id, name: r.route_name, grade: r.grade },
+          points: routePoints?.(r.grading_system_id, r.grade) ?? null,
+        }));
+      return {
+        kind: "ascent",
+        id: activityId,
+        author: {
+          id: rep.author_id,
+          name: rep.author_name,
+          avatarUrl: rep.author_avatar,
+        },
+        createdAt: rep.created_at,
+        crag: { id: rep.crag_id, name: rep.crag_name },
+        climbs,
+        likeCount: 0,
+        likedByMe: false,
+        commentCount: 0,
+        comments: [],
+      };
+    },
+  );
 
   const items = sortFeedNewestFirst([...statusItems, ...ascentItems]).slice(
     0,
@@ -248,6 +252,12 @@ async function buildFor(
   return { items, nextCursor: items.length === limit ? more : null };
 }
 
+// Feed items map to interaction target types: statuses → 'status', ascent
+// activities → 'activity'. (Comments are their own 'comment' target type.)
+function targetTypeForKind(kind: "status" | "ascent"): "status" | "activity" {
+  return kind === "ascent" ? "activity" : "status";
+}
+
 // Like counts (+ which the viewer liked) for the feed items, batched in two
 // queries regardless of how many items there are.
 async function attachLikes(
@@ -257,7 +267,7 @@ async function attachLikes(
 ): Promise<void> {
   if (items.length === 0) return;
   const statusIds = items.filter((i) => i.kind === "status").map((i) => i.id);
-  const ascentIds = items.filter((i) => i.kind === "ascent").map((i) => i.id);
+  const activityIds = items.filter((i) => i.kind === "ascent").map((i) => i.id);
 
   // Restrict a `likes` query to exactly the items' (target_type, target_id) set.
   const matchItems = (eb: ExpressionBuilder<Database, "likes">) =>
@@ -267,8 +277,8 @@ async function attachLikes(
         eb("target_id", "in", statusIds.length ? statusIds : [-1]),
       ]),
       eb.and([
-        eb("target_type", "=", "ascent"),
-        eb("target_id", "in", ascentIds.length ? ascentIds : [-1]),
+        eb("target_type", "=", "activity"),
+        eb("target_id", "in", activityIds.length ? activityIds : [-1]),
       ]),
     ]);
 
@@ -299,7 +309,7 @@ async function attachLikes(
   const likedSet = new Set(liked.map((r) => `${r.target_type}:${r.target_id}`));
 
   for (const item of items) {
-    const key = `${item.kind}:${item.id}`;
+    const key = `${targetTypeForKind(item.kind)}:${item.id}`;
     item.likeCount = likeCounts.get(key) ?? 0;
     item.likedByMe = likedSet.has(key);
   }
@@ -314,7 +324,7 @@ async function attachComments(
 ): Promise<void> {
   if (items.length === 0) return;
   const statusIds = items.filter((i) => i.kind === "status").map((i) => i.id);
-  const ascentIds = items.filter((i) => i.kind === "ascent").map((i) => i.id);
+  const activityIds = items.filter((i) => i.kind === "ascent").map((i) => i.id);
 
   const rows = await db
     .selectFrom("comments")
@@ -336,8 +346,12 @@ async function attachComments(
           eb("comments.target_id", "in", statusIds.length ? statusIds : [-1]),
         ]),
         eb.and([
-          eb("comments.target_type", "=", "ascent"),
-          eb("comments.target_id", "in", ascentIds.length ? ascentIds : [-1]),
+          eb("comments.target_type", "=", "activity"),
+          eb(
+            "comments.target_id",
+            "in",
+            activityIds.length ? activityIds : [-1],
+          ),
         ]),
       ]),
     )
@@ -370,7 +384,8 @@ async function attachComments(
   }
 
   for (const item of items) {
-    const list = byTarget.get(`${item.kind}:${item.id}`) ?? [];
+    const list =
+      byTarget.get(`${targetTypeForKind(item.kind)}:${item.id}`) ?? [];
     item.comments = list;
     item.commentCount = list.length;
   }

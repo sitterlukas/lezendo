@@ -38,6 +38,9 @@ export default function FeedItemCard({
   const canDelete =
     item.kind === "status" && (isAdmin || viewerId === item.author.id);
 
+  // Ascent posts are grouped into an "activity"; likes/comments target that.
+  const targetType = item.kind === "ascent" ? "activity" : "status";
+
   return (
     <article className="rounded border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/50">
       <div className="flex items-center gap-2 text-sm">
@@ -116,7 +119,7 @@ export default function FeedItemCard({
 
       <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500">
         <LikeButton
-          targetType={item.kind}
+          targetType={targetType}
           targetId={item.id}
           initialLiked={item.likedByMe}
           initialCount={item.likeCount}
@@ -124,7 +127,7 @@ export default function FeedItemCard({
         />
       </div>
       <CommentList
-        targetType={item.kind}
+        targetType={targetType}
         targetId={item.id}
         comments={comments}
         canComment={viewerId !== null}

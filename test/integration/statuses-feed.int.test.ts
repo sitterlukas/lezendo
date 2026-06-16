@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import db from "@/lib/db";
 import { buildFeed } from "@/lib/feed";
-import { makeUser, makeCragWithRoute } from "./db";
+import { makeUser, makeCragWithRoute, makeActivity } from "./db";
 
 describe("buildFeed", () => {
   it("includes followees + self, excludes non-followed, newest first", async () => {
@@ -80,6 +80,7 @@ describe("buildFeed", () => {
       .executeTakeFirstOrThrow();
 
     const day = new Date("2026-06-10T00:00:00Z");
+    const activityId = await makeActivity(me, cragId, "2026-06-10");
     await db
       .insertInto("ascents")
       .values([
@@ -88,6 +89,7 @@ describe("buildFeed", () => {
           user_id: me,
           tick_type: "redpoint",
           ascent_date: day,
+          activity_id: activityId,
           created_at: new Date("2026-06-10T10:00:00Z"),
         },
         {
@@ -95,6 +97,7 @@ describe("buildFeed", () => {
           user_id: me,
           tick_type: "flash",
           ascent_date: day,
+          activity_id: activityId,
           created_at: new Date("2026-06-10T11:00:00Z"),
         },
       ])
@@ -103,7 +106,71 @@ describe("buildFeed", () => {
     const { items } = await buildFeed(db, me);
     const ascent = items.find((i) => i.kind === "ascent");
     if (ascent?.kind !== "ascent") throw new Error("expected an ascent item");
+    expect(ascent.id).toBe(activityId);
     expect(ascent.climbs).toHaveLength(2);
     expect(ascent.crag.id).toBe(cragId);
+  });
+
+  it("keeps a stable activity id so likes survive a later same-day ascent", async () => {
+    const me = await makeUser("Me");
+    const { cragId, routeId } = await makeCragWithRoute(me);
+    const activityId = await makeActivity(me, cragId, "2026-06-12");
+    await db
+      .insertInto("ascents")
+      .values({
+        route_id: routeId,
+        user_id: me,
+        tick_type: "redpoint",
+        ascent_date: new Date("2026-06-12T00:00:00Z"),
+        activity_id: activityId,
+        created_at: new Date("2026-06-12T10:00:00Z"),
+      })
+      .execute();
+    await db
+      .insertInto("likes")
+      .values({ user_id: me, target_type: "activity", target_id: activityId })
+      .execute();
+
+    let item = (await buildFeed(db, me)).items.find((i) => i.kind === "ascent");
+    if (item?.kind !== "ascent") throw new Error("expected an ascent item");
+    expect(item.id).toBe(activityId);
+    expect(item.likeCount).toBe(1);
+    expect(item.likedByMe).toBe(true);
+
+    // Log another ascent the same day → same activity; the like must persist.
+    const gs = await db
+      .selectFrom("grading_systems")
+      .select("id")
+      .executeTakeFirstOrThrow();
+    const route2 = await db
+      .insertInto("routes")
+      .values({
+        name: "Later Route",
+        crag_id: cragId,
+        grade: "6b",
+        grading_system_id: gs.id,
+        style: "sport",
+        created_by: me,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await db
+      .insertInto("ascents")
+      .values({
+        route_id: route2.id,
+        user_id: me,
+        tick_type: "flash",
+        ascent_date: new Date("2026-06-12T00:00:00Z"),
+        activity_id: activityId,
+        created_at: new Date("2026-06-12T14:00:00Z"),
+      })
+      .execute();
+
+    item = (await buildFeed(db, me)).items.find((i) => i.kind === "ascent");
+    if (item?.kind !== "ascent") throw new Error("expected an ascent item");
+    expect(item.id).toBe(activityId); // stable
+    expect(item.climbs).toHaveLength(2);
+    expect(item.likeCount).toBe(1); // like survived
+    expect(item.likedByMe).toBe(true);
   });
 });

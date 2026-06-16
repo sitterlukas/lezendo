@@ -6,7 +6,8 @@ import db from "@/lib/db";
 // reads process.env.DATABASE_URL when the pool is created; set it before any
 // query runs. (Vitest loads this module fresh per test file.)
 beforeAll(() => {
-  if (!process.env.TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL unset");
+  if (!process.env.TEST_DATABASE_URL)
+    throw new Error("TEST_DATABASE_URL unset");
   process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 });
 
@@ -17,7 +18,7 @@ export async function resetDb() {
   await sql`
     TRUNCATE TABLE
       comments, likes, follows, statuses,
-      entity_reviews, gear_reviews, gear_items, ascents, images,
+      entity_reviews, gear_reviews, gear_items, ascents, ascent_activities, images,
       forum_posts, forum_topics, deletion_log,
       routes, sectors, crags, users
     RESTART IDENTITY CASCADE
@@ -62,4 +63,19 @@ export async function makeCragWithRoute(
     .returning("id")
     .executeTakeFirstOrThrow();
   return { cragId: crag.id, routeId: route.id };
+}
+
+// A stable ascent-activity (one per climber/crag/day). Ascents inserted in a
+// test should set `activity_id` to this so the feed batches them.
+export async function makeActivity(
+  userId: number,
+  cragId: number,
+  day: string,
+): Promise<number> {
+  const row = await db
+    .insertInto("ascent_activities")
+    .values({ user_id: userId, crag_id: cragId, activity_date: day })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return row.id;
 }
