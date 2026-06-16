@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import FollowButton from "@/app/ui/follow-button";
-import TimeAgo from "@/app/ui/time-ago";
+import { buildProfileTimeline } from "@/lib/feed";
+import FeedItemCard from "@/app/ui/feed-item";
 
 export const dynamic = "force-dynamic";
 
@@ -27,53 +27,40 @@ export default async function UserProfilePage({
   const viewer = session?.user?.email
     ? ((await db
         .selectFrom("users")
-        .select(["id"])
+        .select(["id", "role"])
         .where("email", "=", session.user.email.toLowerCase())
         .executeTakeFirst()) ?? null)
     : null;
 
   const isSelf = viewer?.id === profileId;
 
-  const [{ followers }, { following }, viewerFollowsRow, ascents] =
-    await Promise.all([
-      db
-        .selectFrom("follows")
-        .select((eb) => eb.fn.countAll<number>().as("followers"))
-        .where("followee_id", "=", profileId)
-        .executeTakeFirstOrThrow(),
-      db
-        .selectFrom("follows")
-        .select((eb) => eb.fn.countAll<number>().as("following"))
-        .where("follower_id", "=", profileId)
-        .executeTakeFirstOrThrow(),
-      viewer && !isSelf
-        ? db
-            .selectFrom("follows")
-            .select("follower_id")
-            .where("follower_id", "=", viewer.id)
-            .where("followee_id", "=", profileId)
-            .executeTakeFirst()
-        : Promise.resolve(null),
-      db
-        .selectFrom("ascents")
-        .innerJoin("routes", "routes.id", "ascents.route_id")
-        .innerJoin("crags", "crags.id", "routes.crag_id")
-        .select([
-          "ascents.id",
-          "ascents.tick_type",
-          "ascents.created_at",
-          "routes.id as route_id",
-          "routes.name as route_name",
-          "routes.grade",
-          "crags.id as crag_id",
-          "crags.name as crag_name",
-        ])
-        .where("ascents.user_id", "=", profileId)
-        .orderBy("ascents.created_at", "desc")
-        .limit(50)
-        .execute(),
-    ]);
+  const [{ followers }, { following }, viewerFollowsRow] = await Promise.all([
+    db
+      .selectFrom("follows")
+      .select((eb) => eb.fn.countAll<number>().as("followers"))
+      .where("followee_id", "=", profileId)
+      .executeTakeFirstOrThrow(),
+    db
+      .selectFrom("follows")
+      .select((eb) => eb.fn.countAll<number>().as("following"))
+      .where("follower_id", "=", profileId)
+      .executeTakeFirstOrThrow(),
+    viewer && !isSelf
+      ? db
+          .selectFrom("follows")
+          .select("follower_id")
+          .where("follower_id", "=", viewer.id)
+          .where("followee_id", "=", profileId)
+          .executeTakeFirst()
+      : Promise.resolve(null),
+  ]);
   const viewerFollows = !!viewerFollowsRow;
+
+  const { items } = await buildProfileTimeline(
+    db,
+    viewer?.id ?? null,
+    profileId,
+  );
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
@@ -97,28 +84,20 @@ export default async function UserProfilePage({
       </header>
 
       <section className="mt-10">
-        <h2 className="text-lg font-bold tracking-tight">Recent ascents</h2>
-        {ascents.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-500">No ascents logged yet.</p>
+        <h2 className="text-lg font-bold tracking-tight">Activity</h2>
+        {items.length === 0 ? (
+          <p className="mt-3 text-sm text-zinc-500">Nothing here yet.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-zinc-200 dark:divide-zinc-800">
-            {ascents.map((a) => (
-              <li key={a.id} className="flex items-baseline gap-2 py-3 text-sm">
-                <span className="font-medium capitalize">{a.tick_type}</span>
-                <Link
-                  href={`/crags/${a.crag_id}/routes/${a.route_id}`}
-                  className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
-                >
-                  {a.route_name}
-                </Link>
-                <span className="text-zinc-500">{a.grade}</span>
-                <span className="text-zinc-400">· {a.crag_name}</span>
-                <span className="ml-auto">
-                  <TimeAgo date={a.created_at} />
-                </span>
-              </li>
+          <div className="mt-4 space-y-4">
+            {items.map((item) => (
+              <FeedItemCard
+                key={`${item.kind}:${item.id}`}
+                item={item}
+                viewerId={viewer?.id ?? null}
+                isAdmin={viewer?.role === "admin"}
+              />
             ))}
-          </ul>
+          </div>
         )}
       </section>
     </main>
