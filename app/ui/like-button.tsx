@@ -45,7 +45,23 @@ export default function LikeButton({
           : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
       }`}
     >
-      {liked ? "♥" : "♡"} {count}
+      {/* SVG heart so the filled (liked) and outline (not liked) states are
+          always the exact same size — unicode ♥/♡ render at different widths. */}
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill={liked ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="2"
+        aria-hidden="true"
+      >
+        <path
+          d="M12 21s-6.716-4.297-9.428-7.01C.86 12.28.86 9.22 2.572 7.51 4.284 5.8 7.05 5.8 8.76 7.51L12 10.75l3.24-3.24c1.71-1.71 4.476-1.71 6.188 0 1.712 1.71 1.712 4.77 0 6.48C18.716 16.703 12 21 12 21z"
+          strokeLinejoin="round"
+        />
+      </svg>
+      {count}
     </button>
   );
 }
