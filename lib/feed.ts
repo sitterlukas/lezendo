@@ -2,6 +2,7 @@ import type { Kysely, ExpressionBuilder } from "kysely";
 import { sql } from "kysely";
 import type { Database, TickType } from "@/lib/db";
 import { buildRoutePoints } from "@/lib/points";
+import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
 
 export type FeedAuthor = {
@@ -99,6 +100,7 @@ async function buildFor(
       "sr.id as route_id",
       "sr.name as route_name",
       "sr.grade as route_grade",
+      "sr.grading_system_id as route_grading_system_id",
       "rc.id as route_crag_id",
       "rc.name as route_crag_name",
     ])
@@ -133,13 +135,38 @@ async function buildFor(
     .limit(limit);
   if (before) ascentQ = ascentQ.where("ascents.created_at", "<", before);
 
-  // Grade equivalencies (for points) don't depend on the rows, so fetch them
-  // alongside the feed queries. loadGradeEquivalencies is request-cached.
-  const [statusRows, ascentRows, equivalencies] = await Promise.all([
-    statusQ.execute(),
-    ascentQ.execute(),
-    loadGradeEquivalencies(),
-  ]);
+  // Grade data + the viewer's grading preference, fetched alongside the feed
+  // rows so route grades can be shown in the viewer's preferred system.
+  const [statusRows, ascentRows, equivalencies, gradingSystems, prefsRow] =
+    await Promise.all([
+      statusQ.execute(),
+      ascentQ.execute(),
+      loadGradeEquivalencies(),
+      db
+        .selectFrom("grading_systems")
+        .select(["id", "name", "slug"])
+        .orderBy("id")
+        .execute(),
+      viewerId === null
+        ? Promise.resolve(null)
+        : db
+            .selectFrom("users")
+            .select([
+              "preferred_rope_grading_system_id",
+              "preferred_boulder_grading_system_id",
+            ])
+            .where("id", "=", viewerId)
+            .executeTakeFirst(),
+    ]);
+
+  // Display a route's grade in the viewer's preferred system (falls back to the
+  // route's own grade when no conversion applies).
+  const prefs = {
+    rope: prefsRow?.preferred_rope_grading_system_id,
+    boulder: prefsRow?.preferred_boulder_grading_system_id,
+  };
+  const showGrade = (grade: string, systemId: number) =>
+    resolveGrade(grade, systemId, gradingSystems, prefs, equivalencies).grade;
 
   // Photos for the fetched statuses, in one query.
   const statusIds = statusRows.map((r) => r.id);
@@ -180,7 +207,7 @@ async function buildFor(
           ? {
               id: r.route_id,
               name: r.route_name!,
-              grade: r.route_grade!,
+              grade: showGrade(r.route_grade!, r.route_grading_system_id!),
               crag: { id: r.route_crag_id!, name: r.route_crag_name! },
             }
           : null,
@@ -211,7 +238,11 @@ async function buildFor(
         .map((r) => ({
           id: r.id,
           tickType: r.tick_type,
-          route: { id: r.route_id, name: r.route_name, grade: r.grade },
+          route: {
+            id: r.route_id,
+            name: r.route_name,
+            grade: showGrade(r.grade, r.grading_system_id),
+          },
           crag: { id: r.crag_id, name: r.crag_name },
           points: routePoints?.(r.grading_system_id, r.grade) ?? null,
         }));
