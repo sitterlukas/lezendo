@@ -13,11 +13,9 @@ import {
   parseDiscipline,
 } from "@/lib/leaderboard";
 import { loadLeaderboard, POINTS_EXPLAINER } from "@/lib/points";
-import { buildFeed } from "@/lib/feed";
 import DisciplineSelect from "@/app/ui/discipline-select";
 import FilterPill from "@/app/ui/filter-pill";
 import RankCrown from "@/app/ui/rank-crown";
-import FeedItemCard from "@/app/ui/feed-item";
 
 export const dynamic = "force-dynamic";
 
@@ -35,19 +33,12 @@ export default async function LandingPage({
     ? ((await db
         .selectFrom("users")
         .select([
-          "id",
-          "role",
           "preferred_rope_grading_system_id",
           "preferred_boulder_grading_system_id",
         ])
         .where("email", "=", session.user.email.toLowerCase())
         .executeTakeFirst()) ?? null)
     : null;
-
-  // A short preview of the signed-in climber's feed.
-  const feedPreview = currentUser
-    ? (await buildFeed(db, currentUser.id)).items.slice(0, 3)
-    : [];
 
   const [
     routeCount,
@@ -176,29 +167,25 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Feed preview (signed-in) */}
-      {currentUser && feedPreview.length > 0 && (
-        <section className="mx-auto max-w-2xl px-6 pt-16">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-2xl font-bold tracking-tight">
-              From your feed
-            </h2>
+      {/* Feed call-to-action (signed-in) */}
+      {currentUser && (
+        <section className="mx-auto max-w-5xl px-6 pt-16">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-blue-200 bg-blue-50 p-6 dark:border-blue-900/50 dark:bg-blue-950/30">
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-blue-900 dark:text-blue-100">
+                Your feed
+              </h2>
+              <p className="mt-1 max-w-md text-sm text-blue-800/70 dark:text-blue-200/70">
+                See what the climbers you follow are up to, and share your own
+                ascents, statuses, and photos.
+              </p>
+            </div>
             <Link
               href="/feed"
-              className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
+              className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
             >
               Open feed →
             </Link>
-          </div>
-          <div className="mt-6 space-y-4">
-            {feedPreview.map((item) => (
-              <FeedItemCard
-                key={`${item.kind}:${item.id}`}
-                item={item}
-                viewerId={currentUser.id}
-                isAdmin={currentUser.role === "admin"}
-              />
-            ))}
           </div>
         </section>
       )}
@@ -403,7 +390,12 @@ export default async function LandingPage({
                     <td className="px-4 py-3 font-medium">
                       <span className="flex items-center gap-1.5">
                         <RankCrown rank={index + 1} />
-                        {row.name}
+                        <Link
+                          href={`/users/${row.user_id}`}
+                          className="hover:underline"
+                        >
+                          {row.name}
+                        </Link>
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold">
