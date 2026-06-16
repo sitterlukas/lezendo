@@ -35,6 +35,7 @@ export default function CommentList({
   isAdmin: boolean;
 }) {
   const [text, setText] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -42,12 +43,18 @@ export default function CommentList({
     const body = text.trim();
     if (!body) return;
     setText("");
+    setError(null);
     startTransition(async () => {
       const fd = new FormData();
       fd.set("target_type", targetType);
       fd.set("target_id", String(targetId));
       fd.set("body", body);
-      await addComment(fd);
+      const res = await addComment(fd);
+      // On failure, put the text back so it isn't lost and show why.
+      if (res && !res.ok) {
+        setText(body);
+        setError(res.error);
+      }
     });
   }
 
@@ -89,21 +96,24 @@ export default function CommentList({
         </div>
       ))}
       {canComment && (
-        <form onSubmit={submit} className="flex gap-2">
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Add a comment…"
-            className={inputClass}
-          />
-          <button
-            type="submit"
-            disabled={pending || !text.trim()}
-            className="rounded bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
-            Post
-          </button>
-        </form>
+        <div>
+          <form onSubmit={submit} className="flex gap-2">
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Add a comment…"
+              className={inputClass}
+            />
+            <button
+              type="submit"
+              disabled={pending || !text.trim()}
+              className="rounded bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            >
+              Post
+            </button>
+          </form>
+          {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+        </div>
       )}
     </div>
   );

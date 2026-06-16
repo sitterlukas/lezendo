@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sql } from "kysely";
 import { auth } from "@/auth";
 import { STATUS_MAX_LEN, COMMENT_MAX_LEN } from "@/lib/constants";
 import db, {
@@ -983,15 +984,34 @@ export async function saveImage(
   const userId = await currentUserId();
   if (!userId) return;
 
-  // Statuses are capped at 5 photos.
+  // Statuses are capped at 5 photos. Do the count + insert inside one
+  // transaction guarded by a per-status advisory lock so two concurrent
+  // uploads can't both pass the check and overshoot the cap.
   if (entityType === "status") {
-    const { count } = await db
-      .selectFrom("images")
-      .select((eb) => eb.fn.countAll<number>().as("count"))
-      .where("entity_type", "=", "status")
-      .where("entity_id", "=", entityId)
-      .executeTakeFirstOrThrow();
-    if (Number(count) >= 5) return;
+    await db.transaction().execute(async (trx) => {
+      await sql`select pg_advisory_xact_lock(hashtext(${`status:${entityId}`}))`.execute(
+        trx,
+      );
+      const { count } = await trx
+        .selectFrom("images")
+        .select((eb) => eb.fn.countAll<number>().as("count"))
+        .where("entity_type", "=", "status")
+        .where("entity_id", "=", entityId)
+        .executeTakeFirstOrThrow();
+      if (Number(count) >= 5) return;
+      await trx
+        .insertInto("images")
+        .values({
+          entity_type: entityType,
+          entity_id: entityId,
+          url,
+          uploaded_by: userId,
+        })
+        .execute();
+    });
+    revalidatePath("/crags", "layout");
+    revalidatePath("/feed");
+    return;
   }
 
   await db
@@ -1005,7 +1025,6 @@ export async function saveImage(
     .execute();
 
   revalidatePath("/crags", "layout");
-  if (entityType === "status") revalidatePath("/feed");
 }
 
 export async function deleteImage(imageId: number) {
@@ -1076,24 +1095,27 @@ export type PersonResult = {
 // Find people by name or email (email is matched but never returned, so it
 // stays private). Excludes the viewer; flags who they already follow.
 export async function searchPeople(query: string): Promise<PersonResult[]> {
+  // Searching people and exposing follow relationships is for signed-in users.
+  const viewerId = await currentUserId();
+  if (viewerId === null) return [];
+
   const q = query.trim();
   if (q.length < 2) return [];
   const pattern = `%${q.replace(/[%_\\]/g, "\\$&")}%`;
-  const viewerId = await currentUserId();
 
-  let select = db
+  const rows = await db
     .selectFrom("users")
     .select(["id", "name", "avatar_url"])
     .where((eb) =>
       eb.or([eb("name", "ilike", pattern), eb("email", "ilike", pattern)]),
     )
+    .where("id", "!=", viewerId)
     .orderBy("name")
-    .limit(10);
-  if (viewerId !== null) select = select.where("id", "!=", viewerId);
-  const rows = await select.execute();
+    .limit(10)
+    .execute();
 
   let followed = new Set<number>();
-  if (viewerId !== null && rows.length > 0) {
+  if (rows.length > 0) {
     const f = await db
       .selectFrom("follows")
       .select("followee_id")
@@ -1204,20 +1226,20 @@ export async function toggleLike(formData: FormData) {
   revalidatePath("/users", "layout");
 }
 
-export async function addComment(formData: FormData) {
+export type ActionResult = { ok: true } | { ok: false; error: string };
+
+export async function addComment(formData: FormData): Promise<ActionResult> {
   const userId = await currentUserId();
-  if (userId === null) return;
+  if (userId === null) return { ok: false, error: "You must be logged in." };
 
   const targetType = String(formData.get("target_type")) as FeedTargetType;
   const targetId = Number(formData.get("target_id"));
   const body = String(formData.get("body") ?? "").trim();
-  if (
-    !feedTargetTypes.includes(targetType) ||
-    !Number.isInteger(targetId) ||
-    !body ||
-    body.length > COMMENT_MAX_LEN
-  )
-    return;
+  if (!feedTargetTypes.includes(targetType) || !Number.isInteger(targetId))
+    return { ok: false, error: "Invalid comment target." };
+  if (!body) return { ok: false, error: "Write something first." };
+  if (body.length > COMMENT_MAX_LEN)
+    return { ok: false, error: `Keep it under ${COMMENT_MAX_LEN} characters.` };
 
   await db
     .insertInto("comments")
@@ -1231,6 +1253,7 @@ export async function addComment(formData: FormData) {
 
   revalidatePath("/feed");
   revalidatePath("/users", "layout");
+  return { ok: true };
 }
 
 export async function deleteComment(formData: FormData) {
