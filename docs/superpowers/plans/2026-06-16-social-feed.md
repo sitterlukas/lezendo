@@ -67,8 +67,13 @@ Add to the `"scripts"` block:
 ```json
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "sh -c 'DATABASE_URL=${TEST_DATABASE_URL:-$DATABASE_URL} vitest run --config vitest.integration.config.ts'"
 ```
+
+> `test:integration` exports `DATABASE_URL=$TEST_DATABASE_URL` **before** Vitest
+> starts because `lib/db.ts` builds its pool at import time — setting it in a
+> `beforeAll` would be too late. `TEST_DATABASE_URL` must be present in the shell
+> env (kept in `.env.local`, which npm does not auto-load).
 
 - [ ] **Step 3: Write `vitest.config.ts`**
 
@@ -152,8 +157,9 @@ export default defineConfig({
     environment: "node",
     include: ["test/integration/**/*.int.test.ts"],
     globalSetup: ["test/integration/setup-global.ts"],
+    // Vitest 4: force a single worker, one file at a time (no DB races).
     fileParallelism: false,
-    poolOptions: { forks: { singleFork: true } },
+    maxWorkers: 1,
     hookTimeout: 60_000,
     testTimeout: 30_000,
   },
