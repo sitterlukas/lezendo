@@ -4,6 +4,7 @@ import TimeAgo from "@/app/ui/time-ago";
 import ImageGallery from "@/app/ui/image-gallery";
 import DeleteButton from "@/app/ui/delete-button";
 import LikeButton from "@/app/ui/like-button";
+import Avatar from "@/app/ui/avatar";
 import { deleteStatus } from "@/app/actions";
 import db from "@/lib/db";
 import { loadComments } from "@/lib/feed";
@@ -32,6 +33,7 @@ export default async function FeedItemCard({
           id: c.id,
           authorId: c.author.id,
           authorName: c.author.name,
+          authorAvatar: c.author.avatarUrl,
           body: c.body,
         }))
       : [];
@@ -41,15 +43,23 @@ export default async function FeedItemCard({
 
   return (
     <article className="rounded border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/50">
-      <div className="flex items-baseline gap-2 text-sm">
-        <Link
-          href={`/users/${item.author.id}`}
-          className="font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
-        >
-          {item.author.name}
+      <div className="flex items-center gap-2 text-sm">
+        <Link href={`/users/${item.author.id}`} className="shrink-0">
+          <Avatar
+            name={item.author.name}
+            src={item.author.avatarUrl}
+            size={36}
+          />
         </Link>
-        <span className="text-zinc-400">·</span>
-        <TimeAgo date={item.createdAt} />
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <Link
+            href={`/users/${item.author.id}`}
+            className="font-semibold text-zinc-900 hover:underline dark:text-zinc-100"
+          >
+            {item.author.name}
+          </Link>
+          <TimeAgo date={item.createdAt} />
+        </div>
         {canDelete && (
           <span className="ml-auto">
             <form action={deleteStatus}>
@@ -101,10 +111,7 @@ export default async function FeedItemCard({
           </Link>{" "}
           <span className="text-zinc-500">{item.route.grade}</span>{" "}
           <span className="text-zinc-400">at</span>{" "}
-          <Link
-            href={`/crags/${item.crag.id}`}
-            className="hover:underline"
-          >
+          <Link href={`/crags/${item.crag.id}`} className="hover:underline">
             {item.crag.name}
           </Link>
         </p>

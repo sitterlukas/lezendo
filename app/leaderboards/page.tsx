@@ -12,6 +12,7 @@ import { loadLeaderboard, POINTS_EXPLAINER } from "@/lib/points";
 import DisciplineSelect from "@/app/ui/discipline-select";
 import FilterPill from "@/app/ui/filter-pill";
 import RankCrown from "@/app/ui/rank-crown";
+import Avatar from "@/app/ui/avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -125,6 +126,11 @@ export default async function LeaderboardPage({
                       <td className="px-4 py-3 font-medium">
                         <span className="flex items-center gap-1.5">
                           <RankCrown rank={index + 1} />
+                          <Avatar
+                            name={row.name}
+                            src={row.avatar_url}
+                            size={28}
+                          />
                           {row.name}
                           {isMe && (
                             <span className="ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800">

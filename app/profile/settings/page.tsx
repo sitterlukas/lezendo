@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { logout, updateName } from "@/app/actions/auth";
 import ProfileTabs from "@/app/profile/tabs";
+import AvatarUpload from "@/app/ui/avatar-upload";
 import GradingSystemForm from "./grading-system-form";
 import db from "@/lib/db";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
@@ -21,6 +22,7 @@ export default async function SettingsPage() {
         "name",
         "email",
         "password_hash",
+        "avatar_url",
         "preferred_rope_grading_system_id",
         "preferred_boulder_grading_system_id",
         "created_at",
@@ -53,6 +55,12 @@ export default async function SettingsPage() {
         <h2 className="border-b border-zinc-200 px-6 py-4 text-lg font-semibold dark:border-zinc-800">
           Settings
         </h2>
+        <div className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+          <span className="mb-2 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+            Photo
+          </span>
+          <AvatarUpload name={user.name} avatarUrl={user.avatar_url} />
+        </div>
         <form
           action={updateName}
           className="flex items-end gap-3 border-b border-zinc-200 px-6 py-4 dark:border-zinc-800"

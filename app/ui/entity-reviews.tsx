@@ -4,6 +4,7 @@ import { addEntityReview, deleteEntityReview } from "@/app/actions";
 import Stars from "@/app/ui/stars";
 import StarRatingInput from "@/app/ui/star-rating-input";
 import DeleteButton from "@/app/ui/delete-button";
+import Avatar from "@/app/ui/avatar";
 import { inputClass } from "@/app/ui/style";
 
 const dateOpts: Intl.DateTimeFormatOptions = {
@@ -33,6 +34,7 @@ export default async function EntityReviews({
       "r.body",
       "r.created_at",
       "u.name as author",
+      "u.avatar_url as author_avatar",
     ])
     .where("r.entity_type", "=", entityType)
     .where("r.entity_id", "=", entityId)
@@ -129,13 +131,20 @@ export default async function EntityReviews({
               className="rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50"
             >
               <div className="flex flex-wrap items-center gap-2">
-                <Stars rating={review.rating} className="text-sm" />
+                <Link href={`/users/${review.user_id}`} className="shrink-0">
+                  <Avatar
+                    name={review.author}
+                    src={review.author_avatar}
+                    size={24}
+                  />
+                </Link>
                 <Link
                   href={`/users/${review.user_id}`}
                   className="text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100"
                 >
                   {review.author}
                 </Link>
+                <Stars rating={review.rating} className="text-sm" />
                 <span className="ml-auto text-xs text-zinc-500">
                   {review.created_at.toLocaleDateString("en-GB", dateOpts)}
                 </span>

@@ -24,6 +24,21 @@ export async function updateName(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+export async function updateAvatar(url: string | null) {
+  const email = (await auth())?.user?.email;
+  if (!email) return;
+
+  await db
+    .updateTable("users")
+    .set({ avatar_url: url })
+    .where("email", "=", email.toLowerCase())
+    .execute();
+
+  // Avatars appear all over (feed, reviews, profile, forum, leaderboard), so
+  // refresh everything.
+  revalidatePath("/", "layout");
+}
+
 export async function updateGradingSystem(formData: FormData): Promise<void> {
   const email = (await auth())?.user?.email;
   if (!email) return;
@@ -71,7 +86,10 @@ export async function register(formData: FormData) {
 
   const password_hash = await hash(password, 12);
   try {
-    await db.insertInto("users").values({ name, email, password_hash }).execute();
+    await db
+      .insertInto("users")
+      .values({ name, email, password_hash })
+      .execute();
   } catch (error) {
     // Backstop for the check-then-insert race: the DB's unique constraint on
     // email (Postgres error 23505) means a concurrent signup got there first.
