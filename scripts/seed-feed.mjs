@@ -1,5 +1,5 @@
-// Dummy social-feed data for local development: follows, statuses (text / with
-// a crag / with a route), a batched same-crag-same-day set of ascents, plus
+// Dummy social-feed data for local development: follows, statuses (plain text
+// or tagged with a sector), a batched same-crag-same-day set of ascents, plus
 // likes and comments.
 //
 // Idempotent: wipes the feed tables it owns (statuses/follows/likes/comments)
@@ -46,6 +46,11 @@ async function main() {
   );
   if (cragRoutes.length < 3)
     throw new Error(`Crag ${crag.name} needs ≥3 routes for the batch demo.`);
+  const sectors = await q(
+    `SELECT id, name FROM sectors WHERE crag_id = $1 AND deleted = false ORDER BY id LIMIT 1`,
+    [crag.id],
+  );
+  const sector = sectors[0] ?? null;
 
   // --- wipe previous demo data (feed tables + tagged demo ascents) ---------
   await q(`TRUNCATE TABLE likes, comments, statuses, follows RESTART IDENTITY`);
@@ -81,12 +86,12 @@ async function main() {
   const mkStatus = async (
     userId,
     body,
-    { cragId = null, routeId = null, agoMin = 0 } = {},
+    { sectorId = null, agoMin = 0 } = {},
   ) => {
     const [{ id }] = await q(
-      `INSERT INTO statuses (user_id, body, crag_id, route_id, created_at)
-       VALUES ($1,$2,$3,$4, now() - ($5 || ' minutes')::interval) RETURNING id`,
-      [userId, body, cragId, routeId, agoMin],
+      `INSERT INTO statuses (user_id, body, sector_id, created_at)
+       VALUES ($1,$2,$3, now() - ($4 || ' minutes')::interval) RETURNING id`,
+      [userId, body, sectorId, agoMin],
     );
     return id;
   };
@@ -98,14 +103,13 @@ async function main() {
   );
   const s2 = await mkStatus(
     author2.id,
-    `Conditions at ${crag.name} are perfect right now.`,
-    {
-      cragId: crag.id,
-      agoMin: 90,
-    },
+    sector
+      ? `Conditions at ${sector.name} (${crag.name}) are perfect right now.`
+      : `Conditions at ${crag.name} are perfect right now.`,
+    { sectorId: sector?.id ?? null, agoMin: 90 },
   );
   await mkStatus(author1.id, "Finally clipped the chains on this one!! 🧗", {
-    routeId: cragRoutes[3]?.id ?? cragRoutes[0].id,
+    sectorId: sector?.id ?? null,
     agoMin: 180,
   });
 

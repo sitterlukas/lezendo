@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import db from "@/lib/db";
-import { buildFeed, suggestedUsers } from "@/lib/feed";
+import { buildFeed, suggestedUsers, loadSectorOptions } from "@/lib/feed";
 import FeedList from "@/app/ui/feed-list";
 import StatusComposer from "@/app/ui/status-composer";
 import LoginToAdd from "@/app/ui/login-to-add";
@@ -34,20 +34,9 @@ export default async function FeedPage() {
   }
 
   const isAdmin = viewer.role === "admin";
-  const [{ items, nextCursor }, crags, routes, followRow] = await Promise.all([
+  const [{ items, nextCursor }, sectors, followRow] = await Promise.all([
     buildFeed(db, viewer.id),
-    db
-      .selectFrom("crags")
-      .select(["id", "name"])
-      .where("deleted", "=", false)
-      .orderBy("name")
-      .execute(),
-    db
-      .selectFrom("routes")
-      .select(["id", "name", "grade", "crag_id"])
-      .where("deleted", "=", false)
-      .orderBy("name")
-      .execute(),
+    loadSectorOptions(db),
     db
       .selectFrom("follows")
       .select("followee_id")
@@ -61,7 +50,7 @@ export default async function FeedPage() {
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-4xl font-bold tracking-tight">Feed</h1>
-        <StatusComposer crags={crags} routes={routes} />
+        <StatusComposer sectors={sectors} />
       </header>
 
       <section className="mt-6 rounded border border-zinc-200 p-5 dark:border-zinc-800">
@@ -79,6 +68,7 @@ export default async function FeedPage() {
           initialCursor={nextCursor}
           viewerId={viewer.id}
           isAdmin={isAdmin}
+          sectors={sectors}
         />
       ) : (
         !followsNobody && (

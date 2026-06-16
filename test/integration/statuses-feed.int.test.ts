@@ -20,7 +20,7 @@ describe("buildFeed", () => {
         .values({
           user_id: userId,
           body,
-          crag_id: null,
+          sector_id: null,
           created_at: new Date(iso),
         })
         .execute();
@@ -36,28 +36,26 @@ describe("buildFeed", () => {
     expect(bodies).toEqual(["friend", "mine"]);
   });
 
-  it("embeds the shared route (with its crag) on a status", async () => {
+  it("embeds the tagged sector (with its crag) on a status", async () => {
     const me = await makeUser("Me");
-    const { cragId, routeId } = await makeCragWithRoute(me);
+    const { cragId } = await makeCragWithRoute(me);
+    const sector = await db
+      .insertInto("sectors")
+      .values({ name: "Main Wall", crag_id: cragId, created_by: me })
+      .returning("id")
+      .executeTakeFirstOrThrow();
 
     await db
       .insertInto("statuses")
-      .values({
-        user_id: me,
-        body: "psyched",
-        crag_id: null,
-        route_id: routeId,
-      })
+      .values({ user_id: me, body: "psyched", sector_id: sector.id })
       .execute();
 
     const { items } = await buildFeed(db, me);
     const item = items.find((i) => i.kind === "status");
     if (item?.kind !== "status") throw new Error("expected a status item");
-    expect(item.route).not.toBeNull();
-    expect(item.route?.id).toBe(routeId);
-    // grade is shown in the viewer's preferred system, so just assert presence
-    expect(item.route?.grade).toBeTruthy();
-    expect(item.route?.crag.id).toBe(cragId);
+    expect(item.sector).not.toBeNull();
+    expect(item.sector?.id).toBe(sector.id);
+    expect(item.sector?.crag.id).toBe(cragId);
   });
 
   it("batches same-crag, same-day ascents into one feed item", async () => {

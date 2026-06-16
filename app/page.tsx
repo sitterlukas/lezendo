@@ -16,6 +16,7 @@ import { loadLeaderboard, POINTS_EXPLAINER } from "@/lib/points";
 import DisciplineSelect from "@/app/ui/discipline-select";
 import FilterPill from "@/app/ui/filter-pill";
 import RankCrown from "@/app/ui/rank-crown";
+import Avatar from "@/app/ui/avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -388,12 +389,17 @@ export default async function LandingPage({
                       </span>
                     </td>
                     <td className="px-4 py-3 font-medium">
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-2">
                         <RankCrown rank={index + 1} />
                         <Link
                           href={`/users/${row.user_id}`}
-                          className="hover:underline"
+                          className="flex items-center gap-2 hover:underline"
                         >
+                          <Avatar
+                            name={row.name}
+                            src={row.avatar_url}
+                            size={28}
+                          />
                           {row.name}
                         </Link>
                       </span>

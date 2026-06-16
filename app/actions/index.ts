@@ -1264,6 +1264,27 @@ export async function loadFeedPage(before: Date | null): Promise<FeedPage> {
   return buildFeed(db, viewerId, before);
 }
 
+// Resolve the optional `sector_id` form field for a status: returns the sector
+// id, null when no tag was chosen, or INVALID_SECTOR when the id is malformed
+// or points at a missing/deleted sector.
+const INVALID_SECTOR = Symbol("invalid-sector");
+
+async function resolveSectorTag(
+  formData: FormData,
+): Promise<number | null | typeof INVALID_SECTOR> {
+  const raw = String(formData.get("sector_id") ?? "").trim();
+  if (!raw) return null;
+  const id = Number(raw);
+  if (!Number.isInteger(id)) return INVALID_SECTOR;
+  const sector = await db
+    .selectFrom("sectors")
+    .select("id")
+    .where("id", "=", id)
+    .where("deleted", "=", false)
+    .executeTakeFirst();
+  return sector ? id : INVALID_SECTOR;
+}
+
 export async function createStatus(formData: FormData): Promise<CreateResult> {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "You must be logged in." };
@@ -1273,42 +1294,14 @@ export async function createStatus(formData: FormData): Promise<CreateResult> {
   if (body.length > STATUS_MAX_LEN)
     return { ok: false, error: `Keep it under ${STATUS_MAX_LEN} characters.` };
 
-  // A status can tag a route OR a crag. A tagged route takes precedence (it
-  // already implies its crag), so we clear crag_id in that case.
-  let routeId: number | null = null;
-  let cragId: number | null = null;
-
-  const routeRaw = String(formData.get("route_id") ?? "").trim();
-  if (routeRaw) {
-    const id = Number(routeRaw);
-    if (!Number.isInteger(id)) return { ok: false, error: "Invalid route." };
-    const route = await db
-      .selectFrom("routes")
-      .select("id")
-      .where("id", "=", id)
-      .where("deleted", "=", false)
-      .executeTakeFirst();
-    if (!route) return { ok: false, error: "That route no longer exists." };
-    routeId = id;
-  }
-
-  const cragRaw = String(formData.get("crag_id") ?? "").trim();
-  if (!routeId && cragRaw) {
-    const id = Number(cragRaw);
-    if (!Number.isInteger(id)) return { ok: false, error: "Invalid crag." };
-    const crag = await db
-      .selectFrom("crags")
-      .select("id")
-      .where("id", "=", id)
-      .where("deleted", "=", false)
-      .executeTakeFirst();
-    if (!crag) return { ok: false, error: "That crag no longer exists." };
-    cragId = id;
-  }
+  // A status can optionally tag a sector.
+  const sectorId = await resolveSectorTag(formData);
+  if (sectorId === INVALID_SECTOR)
+    return { ok: false, error: "That sector no longer exists." };
 
   const row = await db
     .insertInto("statuses")
-    .values({ user_id: userId, body, crag_id: cragId, route_id: routeId })
+    .values({ user_id: userId, body, sector_id: sectorId })
     .returning("id")
     .executeTakeFirstOrThrow();
 
@@ -1431,9 +1424,13 @@ export async function editStatus(formData: FormData): Promise<ActionResult> {
   if (body.length > STATUS_MAX_LEN)
     return { ok: false, error: `Keep it under ${STATUS_MAX_LEN} characters.` };
 
+  const sectorId = await resolveSectorTag(formData);
+  if (sectorId === INVALID_SECTOR)
+    return { ok: false, error: "That sector no longer exists." };
+
   await db
     .updateTable("statuses")
-    .set({ body })
+    .set({ body, sector_id: sectorId })
     .where("id", "=", statusId)
     .execute();
 

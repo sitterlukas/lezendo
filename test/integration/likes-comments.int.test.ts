@@ -6,7 +6,7 @@ import { makeUser } from "./db";
 async function makeStatus(userId: number): Promise<number> {
   const row = await db
     .insertInto("statuses")
-    .values({ user_id: userId, body: "hi", crag_id: null })
+    .values({ user_id: userId, body: "hi", sector_id: null })
     .returning("id")
     .executeTakeFirstOrThrow();
   return row.id;
