@@ -91,7 +91,7 @@ export default async function ForumPage() {
             </form>
           </Modal>
         ) : (
-          <LoginToAdd label="Log in to start a topic" />
+          <LoginToAdd to="to start a topic" />
         )}
       </header>
 

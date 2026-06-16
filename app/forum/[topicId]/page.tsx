@@ -154,7 +154,7 @@ export default async function TopicPage({
               href="/login"
               className="font-medium text-zinc-900 underline underline-offset-2 transition hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-400"
             >
-              Sign in
+              Log in
             </Link>{" "}
             to join the discussion.
           </p>

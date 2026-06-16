@@ -11,7 +11,7 @@ export default async function LoginPage({
 
   return (
     <main className="mx-auto w-full max-w-sm flex-1 px-6 py-16">
-      <h1 className="text-3xl font-bold tracking-tight">Sign in</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Log in</h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
         Welcome back.
       </p>
@@ -43,7 +43,7 @@ export default async function LoginPage({
           type="submit"
           className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
-          Sign in
+          Log in
         </button>
       </form>
 

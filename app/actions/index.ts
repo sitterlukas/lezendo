@@ -106,7 +106,8 @@ function parseBolting(formData: FormData): {
   const bolts = boltRaw ? Number.parseInt(boltRaw, 10) : null;
   const protection = String(formData.get("protection") ?? "").trim();
   return {
-    boltCount: bolts !== null && Number.isInteger(bolts) && bolts >= 0 ? bolts : null,
+    boltCount:
+      bolts !== null && Number.isInteger(bolts) && bolts >= 0 ? bolts : null,
     protection: protection || null,
   };
 }
@@ -151,7 +152,9 @@ function parseRouteDetails(formData: FormData): {
   pitches: number | null;
   gearNotes: string | null;
 } {
-  const firstAscensionist = String(formData.get("first_ascensionist") ?? "").trim();
+  const firstAscensionist = String(
+    formData.get("first_ascensionist") ?? "",
+  ).trim();
   const yearRaw = String(formData.get("first_ascent_year") ?? "").trim();
   const pitchesRaw = String(formData.get("pitches") ?? "").trim();
   const gearNotes = String(formData.get("gear_notes") ?? "").trim();
@@ -163,10 +166,16 @@ function parseRouteDetails(formData: FormData): {
   return {
     firstAscensionist: firstAscensionist || null,
     firstAscentYear:
-      year !== null && Number.isInteger(year) && year >= 1900 && year <= thisYear + 1
+      year !== null &&
+      Number.isInteger(year) &&
+      year >= 1900 &&
+      year <= thisYear + 1
         ? year
         : null,
-    pitches: pitches !== null && Number.isInteger(pitches) && pitches >= 1 ? pitches : null,
+    pitches:
+      pitches !== null && Number.isInteger(pitches) && pitches >= 1
+        ? pitches
+        : null,
     gearNotes: gearNotes || null,
   };
 }
@@ -348,7 +357,11 @@ export async function addEntityReview(formData: FormData) {
   const rating = Number(formData.get("rating"));
   const body = String(formData.get("body") ?? "").trim();
 
-  if (!reviewEntityTypes.includes(entityType as (typeof reviewEntityTypes)[number]))
+  if (
+    !reviewEntityTypes.includes(
+      entityType as (typeof reviewEntityTypes)[number],
+    )
+  )
     return;
   if (!Number.isInteger(entityId)) return;
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return;
@@ -395,7 +408,7 @@ export type CreateResult =
 
 export async function addCrag(formData: FormData): Promise<CreateResult> {
   const userId = await currentUserId();
-  if (!userId) return { ok: false, error: "You must be signed in." };
+  if (!userId) return { ok: false, error: "You must be logged in." };
 
   const name = String(formData.get("name") ?? "").trim();
   const area = String(formData.get("area") ?? "").trim();
@@ -419,7 +432,8 @@ export async function addCrag(formData: FormData): Promise<CreateResult> {
     .returning("id")
     .executeTakeFirst();
 
-  if (!row) return { ok: false, error: "A crag with that name already exists." };
+  if (!row)
+    return { ok: false, error: "A crag with that name already exists." };
 
   revalidatePath("/crags");
   revalidatePath("/");
@@ -813,7 +827,7 @@ export async function recoverRoute(formData: FormData) {
 
 export async function addSector(formData: FormData): Promise<CreateResult> {
   const userId = await currentUserId();
-  if (userId === null) return { ok: false, error: "You must be signed in." };
+  if (userId === null) return { ok: false, error: "You must be logged in." };
 
   const name = String(formData.get("name") ?? "").trim();
   const cragId = Number(formData.get("crag_id"));
@@ -848,7 +862,7 @@ export async function addSector(formData: FormData): Promise<CreateResult> {
 
 export async function addRoute(formData: FormData): Promise<CreateResult> {
   const userId = await currentUserId();
-  if (userId === null) return { ok: false, error: "You must be signed in." };
+  if (userId === null) return { ok: false, error: "You must be logged in." };
 
   const name = String(formData.get("name") ?? "").trim();
   const cragId = Number(formData.get("crag_id"));

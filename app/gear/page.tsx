@@ -93,9 +93,7 @@ export default async function GearPage() {
                 : "Log in to track your rope, draws, and rubber."}
             </p>
           </div>
-          {!user ? (
-            <LoginToAdd label="Log in to add gear" />
-          ) : (
+          {user && (
             <Modal
               triggerLabel="Add gear"
               title="Add gear"
@@ -255,7 +253,7 @@ export default async function GearPage() {
             </p>
           </div>
           {!user ? (
-            <LoginToAdd label="Log in to write a review" />
+            <LoginToAdd to="to write a review" />
           ) : (
             <Modal
               triggerLabel="Write review"

@@ -92,7 +92,7 @@ export default async function SettingsPage() {
             <dd className="text-sm font-medium">{memberSince}</dd>
           </div>
           <div className="flex items-center justify-between px-6 py-4">
-            <dt className="text-sm text-zinc-500">Sign-in method</dt>
+            <dt className="text-sm text-zinc-500">Log-in method</dt>
             <dd className="text-sm font-medium">
               {user.password_hash ? "Email & password" : "Google"}
             </dd>
@@ -105,7 +105,7 @@ export default async function SettingsPage() {
           type="submit"
           className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
         >
-          Sign out
+          Log out
         </button>
       </form>
     </main>
