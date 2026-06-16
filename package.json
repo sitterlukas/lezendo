@@ -11,7 +11,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration": "sh -c 'DATABASE_URL=${TEST_DATABASE_URL:-$DATABASE_URL} vitest run --config vitest.integration.config.ts'",
     "migrate:make": "kysely migrate:make",
     "migrate:latest": "kysely migrate:latest",
     "migrate:down": "kysely migrate:down",
