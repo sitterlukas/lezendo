@@ -9,8 +9,10 @@ export default defineConfig({
     environment: "node",
     include: ["test/integration/**/*.int.test.ts"],
     globalSetup: ["test/integration/setup-global.ts"],
+    // Integration tests share one Postgres DB; run them in a single worker,
+    // one file at a time, so they never race on DB state.
     fileParallelism: false,
-    singleFork: true,
+    maxWorkers: 1,
     hookTimeout: 60_000,
     testTimeout: 30_000,
   },
