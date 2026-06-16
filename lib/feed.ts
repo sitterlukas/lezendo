@@ -35,10 +35,16 @@ export type FeedItem =
     })
   | (FeedBase & {
       kind: "ascent";
-      tickType: TickType;
-      route: { id: number; name: string; grade: string };
       crag: { id: number; name: string };
-      points: number | null;
+      // One post per (climber, crag, day): a lone tick, or several batched.
+      // `id` (FeedBase) is the latest ascent in the group — likes/comments
+      // attach to it.
+      climbs: {
+        id: number;
+        tickType: TickType;
+        route: { id: number; name: string; grade: string };
+        points: number | null;
+      }[];
     });
 
 export type FeedPage = { items: FeedItem[]; nextCursor: Date | null };
@@ -99,6 +105,7 @@ async function buildFor(
     .select([
       "ascents.id",
       "ascents.tick_type",
+      "ascents.ascent_date",
       "ascents.created_at",
       "users.id as author_id",
       "users.name as author_name",
@@ -144,56 +151,75 @@ async function buildFor(
       ? buildRoutePoints(await loadGradeEquivalencies())
       : null;
 
-  const merged: FeedItem[] = [
-    ...statusRows.map(
-      (r): FeedItem => ({
-        kind: "status",
+  const statusItems = statusRows.map(
+    (r): FeedItem => ({
+      kind: "status",
+      id: r.id,
+      author: {
+        id: r.author_id,
+        name: r.author_name,
+        avatarUrl: r.author_avatar,
+      },
+      createdAt: r.created_at,
+      body: r.body,
+      crag: r.crag_id != null ? { id: r.crag_id, name: r.crag_name! } : null,
+      route:
+        r.route_id != null
+          ? {
+              id: r.route_id,
+              name: r.route_name!,
+              grade: r.route_grade!,
+              crag: { id: r.route_crag_id!, name: r.route_crag_name! },
+            }
+          : null,
+      photos: photosByStatus.get(r.id) ?? [],
+      likeCount: 0,
+      likedByMe: false,
+      commentCount: 0,
+    }),
+  );
+
+  // Batch a climber's ascents in the same crag on the same day into one post.
+  const ascentGroups = new Map<string, typeof ascentRows>();
+  for (const r of ascentRows) {
+    const day = r.ascent_date.toISOString().slice(0, 10);
+    const key = `${r.author_id}|${r.crag_id}|${day}`;
+    const group = ascentGroups.get(key) ?? [];
+    group.push(r);
+    ascentGroups.set(key, group);
+  }
+  const ascentItems: FeedItem[] = [...ascentGroups.values()].map((group) => {
+    // Latest log in the group represents the post (sort time + like target).
+    const rep = group.reduce((a, b) => (b.created_at > a.created_at ? b : a));
+    const climbs = [...group]
+      .sort((a, b) => a.created_at.getTime() - b.created_at.getTime())
+      .map((r) => ({
         id: r.id,
-        author: {
-          id: r.author_id,
-          name: r.author_name,
-          avatarUrl: r.author_avatar,
-        },
-        createdAt: r.created_at,
-        body: r.body,
-        crag: r.crag_id != null ? { id: r.crag_id, name: r.crag_name! } : null,
-        route:
-          r.route_id != null
-            ? {
-                id: r.route_id,
-                name: r.route_name!,
-                grade: r.route_grade!,
-                crag: { id: r.route_crag_id!, name: r.route_crag_name! },
-              }
-            : null,
-        photos: photosByStatus.get(r.id) ?? [],
-        likeCount: 0,
-        likedByMe: false,
-        commentCount: 0,
-      }),
-    ),
-    ...ascentRows.map(
-      (r): FeedItem => ({
-        kind: "ascent",
-        id: r.id,
-        author: {
-          id: r.author_id,
-          name: r.author_name,
-          avatarUrl: r.author_avatar,
-        },
-        createdAt: r.created_at,
         tickType: r.tick_type,
         route: { id: r.route_id, name: r.route_name, grade: r.grade },
-        crag: { id: r.crag_id, name: r.crag_name },
         points: routePoints?.(r.grading_system_id, r.grade) ?? null,
-        likeCount: 0,
-        likedByMe: false,
-        commentCount: 0,
-      }),
-    ),
-  ];
+      }));
+    return {
+      kind: "ascent",
+      id: rep.id,
+      author: {
+        id: rep.author_id,
+        name: rep.author_name,
+        avatarUrl: rep.author_avatar,
+      },
+      createdAt: rep.created_at,
+      crag: { id: rep.crag_id, name: rep.crag_name },
+      climbs,
+      likeCount: 0,
+      likedByMe: false,
+      commentCount: 0,
+    };
+  });
 
-  const items = sortFeedNewestFirst(merged).slice(0, limit);
+  const items = sortFeedNewestFirst([...statusItems, ...ascentItems]).slice(
+    0,
+    limit,
+  );
 
   await attachInteractions(db, viewerId, items);
 

@@ -58,4 +58,52 @@ describe("buildFeed", () => {
     expect(item.route?.grade).toBe("6a");
     expect(item.route?.crag.id).toBe(cragId);
   });
+
+  it("batches same-crag, same-day ascents into one feed item", async () => {
+    const me = await makeUser("Me");
+    const { cragId, routeId } = await makeCragWithRoute(me);
+    const gs = await db
+      .selectFrom("grading_systems")
+      .select("id")
+      .executeTakeFirstOrThrow();
+    const route2 = await db
+      .insertInto("routes")
+      .values({
+        name: "Route Two",
+        crag_id: cragId,
+        grade: "6b",
+        grading_system_id: gs.id,
+        style: "sport",
+        created_by: me,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+
+    const day = new Date("2026-06-10T00:00:00Z");
+    await db
+      .insertInto("ascents")
+      .values([
+        {
+          route_id: routeId,
+          user_id: me,
+          tick_type: "redpoint",
+          ascent_date: day,
+          created_at: new Date("2026-06-10T10:00:00Z"),
+        },
+        {
+          route_id: route2.id,
+          user_id: me,
+          tick_type: "flash",
+          ascent_date: day,
+          created_at: new Date("2026-06-10T11:00:00Z"),
+        },
+      ])
+      .execute();
+
+    const { items } = await buildFeed(db, me);
+    const ascent = items.find((i) => i.kind === "ascent");
+    if (ascent?.kind !== "ascent") throw new Error("expected an ascent item");
+    expect(ascent.climbs).toHaveLength(2);
+    expect(ascent.crag.id).toBe(cragId);
+  });
 });

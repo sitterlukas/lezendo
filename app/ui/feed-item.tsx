@@ -115,27 +115,81 @@ export default async function FeedItemCard({
             />
           )}
         </>
+      ) : item.climbs.length === 1 ? (
+        (() => {
+          const c = item.climbs[0];
+          return (
+            <>
+              <p className="mt-2 text-zinc-800 dark:text-zinc-200">
+                {tickVerb[c.tickType] ?? "Climbed"}{" "}
+                <Link
+                  href={`/crags/${item.crag.id}/routes/${c.route.id}`}
+                  className="font-medium hover:underline"
+                >
+                  {c.route.name}
+                </Link>{" "}
+                <span className="text-zinc-500">{c.route.grade}</span>{" "}
+                <span className="text-zinc-400">at</span>{" "}
+                <Link
+                  href={`/crags/${item.crag.id}`}
+                  className="hover:underline"
+                >
+                  {item.crag.name}
+                </Link>
+              </p>
+              {c.points != null && c.tickType !== "attempt" && (
+                <span className="mt-2 inline-block rounded bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  +{c.points} pts
+                </span>
+              )}
+            </>
+          );
+        })()
       ) : (
         <>
           <p className="mt-2 text-zinc-800 dark:text-zinc-200">
-            {tickVerb[item.tickType] ?? "Climbed"}{" "}
+            Logged {item.climbs.length} climbs at{" "}
             <Link
-              href={`/crags/${item.crag.id}/routes/${item.route.id}`}
+              href={`/crags/${item.crag.id}`}
               className="font-medium hover:underline"
             >
-              {item.route.name}
-            </Link>{" "}
-            <span className="text-zinc-500">{item.route.grade}</span>{" "}
-            <span className="text-zinc-400">at</span>{" "}
-            <Link href={`/crags/${item.crag.id}`} className="hover:underline">
               {item.crag.name}
             </Link>
           </p>
-          {item.points != null && item.tickType !== "attempt" && (
-            <span className="mt-2 inline-block rounded bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-              +{item.points} pts
-            </span>
-          )}
+          <ul className="mt-2 space-y-1 border-l-2 border-zinc-100 pl-3 text-sm dark:border-zinc-800">
+            {item.climbs.map((c) => (
+              <li
+                key={c.id}
+                className="flex flex-wrap items-baseline gap-x-1.5"
+              >
+                <span className="text-zinc-400">
+                  {tickVerb[c.tickType] ?? "Climbed"}
+                </span>
+                <Link
+                  href={`/crags/${item.crag.id}/routes/${c.route.id}`}
+                  className="font-medium text-zinc-800 hover:underline dark:text-zinc-200"
+                >
+                  {c.route.name}
+                </Link>
+                <span className="text-zinc-500">{c.route.grade}</span>
+                {c.points != null && c.tickType !== "attempt" && (
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                    +{c.points}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+          {(() => {
+            const total = item.climbs
+              .filter((c) => c.tickType !== "attempt")
+              .reduce((sum, c) => sum + (c.points ?? 0), 0);
+            return total > 0 ? (
+              <span className="mt-2 inline-block rounded bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                +{total} pts total
+              </span>
+            ) : null;
+          })()}
         </>
       )}
 
