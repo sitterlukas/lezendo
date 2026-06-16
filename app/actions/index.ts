@@ -1043,6 +1043,55 @@ export async function unfollowUser(formData: FormData) {
   revalidatePath("/profile", "layout");
 }
 
+export type PersonResult = {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+  following: boolean;
+};
+
+// Find people by name or email (email is matched but never returned, so it
+// stays private). Excludes the viewer; flags who they already follow.
+export async function searchPeople(query: string): Promise<PersonResult[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const pattern = `%${q.replace(/[%_\\]/g, "\\$&")}%`;
+  const viewerId = await currentUserId();
+
+  let select = db
+    .selectFrom("users")
+    .select(["id", "name", "avatar_url"])
+    .where((eb) =>
+      eb.or([eb("name", "ilike", pattern), eb("email", "ilike", pattern)]),
+    )
+    .orderBy("name")
+    .limit(10);
+  if (viewerId !== null) select = select.where("id", "!=", viewerId);
+  const rows = await select.execute();
+
+  let followed = new Set<number>();
+  if (viewerId !== null && rows.length > 0) {
+    const f = await db
+      .selectFrom("follows")
+      .select("followee_id")
+      .where("follower_id", "=", viewerId)
+      .where(
+        "followee_id",
+        "in",
+        rows.map((r) => r.id),
+      )
+      .execute();
+    followed = new Set(f.map((r) => r.followee_id));
+  }
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    avatarUrl: r.avatar_url,
+    following: followed.has(r.id),
+  }));
+}
+
 export async function createStatus(formData: FormData): Promise<CreateResult> {
   const userId = await currentUserId();
   if (!userId) return { ok: false, error: "You must be logged in." };

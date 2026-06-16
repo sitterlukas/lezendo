@@ -87,7 +87,7 @@ export default function HeaderNav({
                   href="/profile/settings"
                   className="block px-4 py-2 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                 >
-                  Settings
+                  Profile
                 </Link>
                 {isAdmin && (
                   <Link
@@ -201,7 +201,7 @@ export default function HeaderNav({
                   My gear
                 </Link>
                 <Link href="/profile/settings" className={mobileLinkCls}>
-                  Settings
+                  Profile
                 </Link>
                 {isAdmin && (
                   <Link href="/admin" className={mobileLinkCls}>
