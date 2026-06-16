@@ -304,12 +304,15 @@ export type FeedComment = {
   author: FeedAuthor;
   body: string;
   createdAt: Date;
+  likeCount: number;
+  likedByMe: boolean;
 };
 
 export async function loadComments(
   db: Kysely<Database>,
   targetType: "status" | "ascent",
   targetId: number,
+  viewerId: number | null = null,
 ): Promise<FeedComment[]> {
   const rows = await db
     .selectFrom("comments")
@@ -326,6 +329,33 @@ export async function loadComments(
     .where("comments.target_id", "=", targetId)
     .orderBy("comments.created_at", "asc")
     .execute();
+
+  // Batch-load like counts (+ which the viewer liked) for these comments.
+  const ids = rows.map((r) => r.id);
+  const likeCounts = new Map<number, number>();
+  const likedByMe = new Set<number>();
+  if (ids.length > 0) {
+    const counts = await db
+      .selectFrom("likes")
+      .select((eb) => ["target_id", eb.fn.countAll<number>().as("n")])
+      .where("target_type", "=", "comment")
+      .where("target_id", "in", ids)
+      .groupBy("target_id")
+      .execute();
+    for (const c of counts) likeCounts.set(c.target_id, Number(c.n));
+
+    if (viewerId !== null) {
+      const mine = await db
+        .selectFrom("likes")
+        .select("target_id")
+        .where("user_id", "=", viewerId)
+        .where("target_type", "=", "comment")
+        .where("target_id", "in", ids)
+        .execute();
+      for (const m of mine) likedByMe.add(m.target_id);
+    }
+  }
+
   return rows.map((r) => ({
     id: r.id,
     author: {
@@ -335,6 +365,8 @@ export async function loadComments(
     },
     body: r.body,
     createdAt: r.created_at,
+    likeCount: likeCounts.get(r.id) ?? 0,
+    likedByMe: likedByMe.has(r.id),
   }));
 }
 
@@ -344,7 +376,9 @@ export async function suggestedUsers(
   db: Kysely<Database>,
   viewerId: number,
   limit = 5,
-): Promise<{ id: number; name: string; followers: number }[]> {
+): Promise<
+  { id: number; name: string; avatarUrl: string | null; followers: number }[]
+> {
   const exclude = [...(await followeeIds(db, viewerId)), viewerId];
   const rows = await db
     .selectFrom("users")
@@ -352,10 +386,11 @@ export async function suggestedUsers(
     .select((eb) => [
       "users.id",
       "users.name",
+      "users.avatar_url",
       eb.fn.count<number>("follows.follower_id").as("followers"),
     ])
     .where("users.id", "not in", exclude)
-    .groupBy(["users.id", "users.name"])
+    .groupBy(["users.id", "users.name", "users.avatar_url"])
     .orderBy(sql`count(follows.follower_id)`, "desc")
     .orderBy("users.id", "desc")
     .limit(limit)
@@ -363,6 +398,7 @@ export async function suggestedUsers(
   return rows.map((r) => ({
     id: r.id,
     name: r.name,
+    avatarUrl: r.avatar_url,
     followers: Number(r.followers),
   }));
 }

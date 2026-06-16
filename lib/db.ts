@@ -4,6 +4,8 @@ export type DeletionEntityType = "crag" | "sector" | "route";
 export type DeletionAction = "delete" | "recover";
 export type ImageEntityType = "crag" | "sector" | "route" | "status";
 export type FeedTargetType = "status" | "ascent";
+// Comments can also be liked, so likes target a wider set than comments do.
+export type LikeTargetType = "status" | "ascent" | "comment";
 export type ReviewEntityType = "crag" | "sector" | "route";
 import { Pool } from "pg";
 
@@ -198,7 +200,7 @@ export interface FollowsTable {
 export interface LikesTable {
   id: Generated<number>;
   user_id: number;
-  target_type: FeedTargetType;
+  target_type: LikeTargetType;
   target_id: number;
   created_at: Generated<Date>;
 }

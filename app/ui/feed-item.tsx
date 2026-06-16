@@ -29,12 +29,14 @@ export default async function FeedItemCard({
 }) {
   const comments =
     item.commentCount > 0
-      ? (await loadComments(db, item.kind, item.id)).map((c) => ({
+      ? (await loadComments(db, item.kind, item.id, viewerId)).map((c) => ({
           id: c.id,
           authorId: c.author.id,
           authorName: c.author.name,
           authorAvatar: c.author.avatarUrl,
           body: c.body,
+          likeCount: c.likeCount,
+          likedByMe: c.likedByMe,
         }))
       : [];
 

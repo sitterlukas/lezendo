@@ -7,6 +7,7 @@ import { STATUS_MAX_LEN, COMMENT_MAX_LEN } from "@/lib/constants";
 import db, {
   type ClimbStyle,
   type FeedTargetType,
+  type LikeTargetType,
   type GearCategory,
   type TickType,
   type DeletionEntityType,
@@ -1094,14 +1095,15 @@ export async function createStatus(formData: FormData): Promise<CreateResult> {
 }
 
 const feedTargetTypes: FeedTargetType[] = ["status", "ascent"];
+const likeTargetTypes: LikeTargetType[] = ["status", "ascent", "comment"];
 
 export async function toggleLike(formData: FormData) {
   const userId = await currentUserId();
   if (userId === null) return;
 
-  const targetType = String(formData.get("target_type")) as FeedTargetType;
+  const targetType = String(formData.get("target_type")) as LikeTargetType;
   const targetId = Number(formData.get("target_id"));
-  if (!feedTargetTypes.includes(targetType) || !Number.isInteger(targetId))
+  if (!likeTargetTypes.includes(targetType) || !Number.isInteger(targetId))
     return;
 
   const existing = await db
@@ -1171,6 +1173,12 @@ export async function deleteComment(formData: FormData) {
     .executeTakeFirst();
   if (!comment || !canModify(user, comment.user_id)) return;
 
+  // Drop the comment's likes first (polymorphic, no FK), then the comment.
+  await db
+    .deleteFrom("likes")
+    .where("target_type", "=", "comment")
+    .where("target_id", "=", commentId)
+    .execute();
   await db.deleteFrom("comments").where("id", "=", commentId).execute();
   revalidatePath("/feed");
   revalidatePath("/users", "layout");
