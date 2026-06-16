@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { STATUS_MAX_LEN } from "@/lib/constants";
 import db, {
   type ClimbStyle,
   type GearCategory,
@@ -1008,4 +1009,89 @@ export async function unfollowUser(formData: FormData) {
 
   revalidatePath(`/users/${followeeId}`);
   revalidatePath("/feed");
+}
+
+export async function createStatus(
+  formData: FormData,
+): Promise<CreateResult> {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false, error: "You must be logged in." };
+
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) return { ok: false, error: "Write something first." };
+  if (body.length > STATUS_MAX_LEN)
+    return { ok: false, error: `Keep it under ${STATUS_MAX_LEN} characters.` };
+
+  const cragRaw = String(formData.get("crag_id") ?? "").trim();
+  let cragId: number | null = null;
+  if (cragRaw) {
+    const id = Number(cragRaw);
+    if (!Number.isInteger(id)) return { ok: false, error: "Invalid crag." };
+    const crag = await db
+      .selectFrom("crags")
+      .select("id")
+      .where("id", "=", id)
+      .where("deleted", "=", false)
+      .executeTakeFirst();
+    if (!crag) return { ok: false, error: "That crag no longer exists." };
+    cragId = id;
+  }
+
+  const row = await db
+    .insertInto("statuses")
+    .values({ user_id: userId, body, crag_id: cragId })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+
+  revalidatePath("/feed");
+  revalidatePath(`/users/${userId}`);
+  return { ok: true, id: row.id };
+}
+
+export async function deleteStatus(formData: FormData) {
+  const user = await currentUserFull();
+  if (!user) return;
+
+  const statusId = Number(formData.get("status_id"));
+  if (!Number.isInteger(statusId)) return;
+
+  const status = await db
+    .selectFrom("statuses")
+    .select(["id", "user_id"])
+    .where("id", "=", statusId)
+    .executeTakeFirst();
+  if (!status) return;
+  if (!canModify(user, status.user_id)) return;
+
+  // Remove the status's photos from blob storage, then its rows + polymorphic
+  // likes/comments (no FK ties those to the status).
+  const photos = await db
+    .selectFrom("images")
+    .select(["id", "url"])
+    .where("entity_type", "=", "status")
+    .where("entity_id", "=", statusId)
+    .execute();
+  if (photos.length > 0) {
+    const { del } = await import("@vercel/blob");
+    await del(photos.map((p) => p.url));
+    await db
+      .deleteFrom("images")
+      .where("entity_type", "=", "status")
+      .where("entity_id", "=", statusId)
+      .execute();
+  }
+  await db
+    .deleteFrom("likes")
+    .where("target_type", "=", "status")
+    .where("target_id", "=", statusId)
+    .execute();
+  await db
+    .deleteFrom("comments")
+    .where("target_type", "=", "status")
+    .where("target_id", "=", statusId)
+    .execute();
+  await db.deleteFrom("statuses").where("id", "=", statusId).execute();
+
+  revalidatePath("/feed");
+  revalidatePath(`/users/${status.user_id}`);
 }
