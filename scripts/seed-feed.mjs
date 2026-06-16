@@ -22,17 +22,23 @@ const q = async (text, params) => (await pool.query(text, params)).rows;
 
 async function main() {
   const users = await q(`SELECT id, name FROM users ORDER BY id`);
-  if (users.length < 2) throw new Error("Need at least 2 users — seed users first.");
+  if (users.length < 2)
+    throw new Error("Need at least 2 users — seed users first.");
 
   // Demo authors: prefer the named demo accounts, else the first two users.
   const byName = (n) => users.find((u) => u.name === n);
   const author1 = byName("Lukas Climber") ?? users[0];
   const author2 = byName("Mara Boulder") ?? users[1];
   const authorIds = [author1.id, author2.id];
-  console.log(`Demo authors: ${author1.name} (#${author1.id}), ${author2.name} (#${author2.id})`);
+  console.log(
+    `Demo authors: ${author1.name} (#${author1.id}), ${author2.name} (#${author2.id})`,
+  );
 
-  const crags = await q(`SELECT id, name FROM crags WHERE deleted = false ORDER BY id`);
-  if (crags.length === 0) throw new Error("No crags — run the main seed first.");
+  const crags = await q(
+    `SELECT id, name FROM crags WHERE deleted = false ORDER BY id`,
+  );
+  if (crags.length === 0)
+    throw new Error("No crags — run the main seed first.");
   const crag = crags[0];
   const cragRoutes = await q(
     `SELECT id, name, grade FROM routes WHERE crag_id = $1 AND deleted = false ORDER BY id LIMIT 4`,
@@ -71,7 +77,11 @@ async function main() {
   }
 
   // --- statuses ------------------------------------------------------------
-  const mkStatus = async (userId, body, { cragId = null, routeId = null, agoMin = 0 } = {}) => {
+  const mkStatus = async (
+    userId,
+    body,
+    { cragId = null, routeId = null, agoMin = 0 } = {},
+  ) => {
     const [{ id }] = await q(
       `INSERT INTO statuses (user_id, body, crag_id, route_id, created_at)
        VALUES ($1,$2,$3,$4, now() - ($5 || ' minutes')::interval) RETURNING id`,
@@ -80,12 +90,20 @@ async function main() {
     return id;
   };
 
-  const s1 = await mkStatus(author1.id, "Rest day. Fingers wrecked but stoked for the weekend. 🙌", { agoMin: 30 });
-  const s2 = await mkStatus(author2.id, `Conditions at ${crag.name} are perfect right now.`, {
-    cragId: crag.id,
-    agoMin: 90,
-  });
-  const s3 = await mkStatus(author1.id, "Finally clipped the chains on this one!! 🧗", {
+  const s1 = await mkStatus(
+    author1.id,
+    "Rest day. Fingers wrecked but stoked for the weekend. 🙌",
+    { agoMin: 30 },
+  );
+  const s2 = await mkStatus(
+    author2.id,
+    `Conditions at ${crag.name} are perfect right now.`,
+    {
+      cragId: crag.id,
+      agoMin: 90,
+    },
+  );
+  await mkStatus(author1.id, "Finally clipped the chains on this one!! 🧗", {
     routeId: cragRoutes[3]?.id ?? cragRoutes[0].id,
     agoMin: 180,
   });
