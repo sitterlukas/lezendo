@@ -720,6 +720,85 @@ export async function createTopic(formData: FormData) {
   redirect(`/forum/${topic.id}`);
 }
 
+export async function editTopic(formData: FormData): Promise<ActionResult> {
+  const user = await currentUserFull();
+  if (!user) return { ok: false, error: "You must be logged in." };
+  const topicId = Number(formData.get("topic_id"));
+  const title = String(formData.get("title") ?? "").trim();
+  if (!Number.isInteger(topicId)) return { ok: false, error: "Invalid topic." };
+  if (!title) return { ok: false, error: "Title can't be empty." };
+  const topic = await db
+    .selectFrom("forum_topics")
+    .select(["id", "user_id"])
+    .where("id", "=", topicId)
+    .executeTakeFirst();
+  if (!topic || !canModify(user, topic.user_id))
+    return { ok: false, error: "Not allowed." };
+  await db
+    .updateTable("forum_topics")
+    .set({ title })
+    .where("id", "=", topicId)
+    .execute();
+  revalidatePath(`/forum/${topicId}`);
+  revalidatePath("/forum");
+  return { ok: true };
+}
+
+export async function deleteTopic(formData: FormData) {
+  const user = await currentUserFull();
+  if (!user) return;
+  const topicId = Number(formData.get("topic_id"));
+  if (!Number.isInteger(topicId)) return;
+  const topic = await db
+    .selectFrom("forum_topics")
+    .select(["id", "user_id"])
+    .where("id", "=", topicId)
+    .executeTakeFirst();
+  if (!topic || !canModify(user, topic.user_id)) return;
+  // forum_posts cascade-delete with the topic (FK on delete cascade).
+  await db.deleteFrom("forum_topics").where("id", "=", topicId).execute();
+  revalidatePath("/forum");
+  redirect("/forum");
+}
+
+export async function editPost(formData: FormData): Promise<ActionResult> {
+  const user = await currentUserFull();
+  if (!user) return { ok: false, error: "You must be logged in." };
+  const postId = Number(formData.get("post_id"));
+  const body = String(formData.get("body") ?? "").trim();
+  if (!Number.isInteger(postId)) return { ok: false, error: "Invalid post." };
+  if (!body) return { ok: false, error: "Write something first." };
+  const post = await db
+    .selectFrom("forum_posts")
+    .select(["id", "user_id", "topic_id"])
+    .where("id", "=", postId)
+    .executeTakeFirst();
+  if (!post || !canModify(user, post.user_id))
+    return { ok: false, error: "Not allowed." };
+  await db
+    .updateTable("forum_posts")
+    .set({ body })
+    .where("id", "=", postId)
+    .execute();
+  revalidatePath(`/forum/${post.topic_id}`);
+  return { ok: true };
+}
+
+export async function deletePost(formData: FormData) {
+  const user = await currentUserFull();
+  if (!user) return;
+  const postId = Number(formData.get("post_id"));
+  if (!Number.isInteger(postId)) return;
+  const post = await db
+    .selectFrom("forum_posts")
+    .select(["id", "user_id", "topic_id"])
+    .where("id", "=", postId)
+    .executeTakeFirst();
+  if (!post || !canModify(user, post.user_id)) return;
+  await db.deleteFrom("forum_posts").where("id", "=", postId).execute();
+  revalidatePath(`/forum/${post.topic_id}`);
+}
+
 export async function createPost(formData: FormData) {
   const userId = await currentUserId();
   if (!userId) return;
