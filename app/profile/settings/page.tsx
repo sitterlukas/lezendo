@@ -1,12 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { logout, updateName } from "@/app/actions/auth";
 import ProfileTabs from "@/app/profile/tabs";
 import AvatarUpload from "@/app/ui/avatar-upload";
-import Avatar from "@/app/ui/avatar";
-import FollowButton from "@/app/ui/follow-button";
 import PeopleSearch from "@/app/ui/people-search";
+import UserRow from "@/app/ui/user-row";
 import GradingSystemForm from "./grading-system-form";
 import db from "@/lib/db";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
@@ -186,22 +184,14 @@ function FollowSection({
       ) : (
         <ul className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
           {users.map((u) => (
-            <li
+            <UserRow
               key={u.id}
-              className="flex items-center justify-between gap-3 px-5 py-3"
-            >
-              <Link
-                href={`/users/${u.id}`}
-                className="flex min-w-0 items-center gap-2 text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100"
-              >
-                <Avatar name={u.name} src={u.avatar_url} size={28} />
-                <span className="truncate">{u.name}</span>
-              </Link>
-              <FollowButton
-                followeeId={u.id}
-                initialFollowing={followingIds.has(u.id)}
-              />
-            </li>
+              id={u.id}
+              name={u.name}
+              avatarUrl={u.avatar_url}
+              initialFollowing={followingIds.has(u.id)}
+              className="px-5 py-3"
+            />
           ))}
         </ul>
       )}

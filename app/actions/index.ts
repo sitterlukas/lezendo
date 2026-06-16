@@ -211,6 +211,39 @@ export async function logAscent(formData: FormData) {
   revalidatePath("/profile");
 }
 
+// Remove a feed target's polymorphic interactions before the row itself:
+// likes on it, its comments, and the likes on those comments (none are tied by
+// a DB foreign key, so they'd otherwise orphan).
+async function deleteTargetInteractions(
+  targetType: "status" | "ascent",
+  targetId: number,
+) {
+  const commentRows = await db
+    .selectFrom("comments")
+    .select("id")
+    .where("target_type", "=", targetType)
+    .where("target_id", "=", targetId)
+    .execute();
+  const commentIds = commentRows.map((r) => r.id);
+  if (commentIds.length > 0) {
+    await db
+      .deleteFrom("likes")
+      .where("target_type", "=", "comment")
+      .where("target_id", "in", commentIds)
+      .execute();
+  }
+  await db
+    .deleteFrom("comments")
+    .where("target_type", "=", targetType)
+    .where("target_id", "=", targetId)
+    .execute();
+  await db
+    .deleteFrom("likes")
+    .where("target_type", "=", targetType)
+    .where("target_id", "=", targetId)
+    .execute();
+}
+
 export async function deleteAscent(formData: FormData) {
   const userId = await currentUserId();
   if (userId === null) return;
@@ -227,17 +260,7 @@ export async function deleteAscent(formData: FormData) {
     .executeTakeFirst();
   if (!owned) return;
 
-  await db
-    .deleteFrom("likes")
-    .where("target_type", "=", "ascent")
-    .where("target_id", "=", ascentId)
-    .execute();
-  await db
-    .deleteFrom("comments")
-    .where("target_type", "=", "ascent")
-    .where("target_id", "=", ascentId)
-    .execute();
-
+  await deleteTargetInteractions("ascent", ascentId);
   await db.deleteFrom("ascents").where("id", "=", ascentId).execute();
 
   revalidatePath("/profile");
@@ -1250,8 +1273,8 @@ export async function deleteStatus(formData: FormData) {
   if (!status) return;
   if (!canModify(user, status.user_id)) return;
 
-  // Remove the status's photos from blob storage, then its rows + polymorphic
-  // likes/comments (no FK ties those to the status).
+  // Remove the status's photos from blob storage, then its polymorphic
+  // likes/comments (and the comments' likes), then the row itself.
   const photos = await db
     .selectFrom("images")
     .select(["id", "url"])
@@ -1267,16 +1290,7 @@ export async function deleteStatus(formData: FormData) {
       .where("entity_id", "=", statusId)
       .execute();
   }
-  await db
-    .deleteFrom("likes")
-    .where("target_type", "=", "status")
-    .where("target_id", "=", statusId)
-    .execute();
-  await db
-    .deleteFrom("comments")
-    .where("target_type", "=", "status")
-    .where("target_id", "=", statusId)
-    .execute();
+  await deleteTargetInteractions("status", statusId);
   await db.deleteFrom("statuses").where("id", "=", statusId).execute();
 
   revalidatePath("/feed");

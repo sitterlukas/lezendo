@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { addComment } from "@/app/actions";
+import { addComment, deleteComment } from "@/app/actions";
 import type { FeedTargetType } from "@/lib/db";
 import { inputClass } from "@/app/ui/style";
 import Avatar from "@/app/ui/avatar";
 import LikeButton from "@/app/ui/like-button";
+import DeleteButton from "@/app/ui/delete-button";
 
 export type CommentView = {
   id: number;
@@ -23,11 +24,15 @@ export default function CommentList({
   targetId,
   comments,
   canComment,
+  viewerId,
+  isAdmin,
 }: {
   targetType: FeedTargetType;
   targetId: number;
   comments: CommentView[];
   canComment: boolean;
+  viewerId: number | null;
+  isAdmin: boolean;
 }) {
   const [text, setText] = useState("");
   const [pending, startTransition] = useTransition();
@@ -69,6 +74,18 @@ export default function CommentList({
             initialCount={c.likeCount}
             disabled={!canComment}
           />
+          {(isAdmin || viewerId === c.authorId) && (
+            <form action={deleteComment}>
+              <input type="hidden" name="comment_id" value={c.id} />
+              <DeleteButton
+                variant="icon"
+                title="Delete comment?"
+                message="This permanently removes your comment. This can't be undone."
+                confirmLabel="Delete"
+                ariaLabel="Delete comment"
+              />
+            </form>
+          )}
         </div>
       ))}
       {canComment && (
