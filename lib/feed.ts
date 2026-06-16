@@ -1,4 +1,4 @@
-import type { Kysely } from "kysely";
+import type { Kysely, ExpressionBuilder } from "kysely";
 import { sql } from "kysely";
 import type { Database, TickType } from "@/lib/db";
 import { buildRoutePoints } from "@/lib/points";
@@ -11,6 +11,15 @@ export type FeedAuthor = {
 };
 export type FeedPhoto = { id: number; url: string; uploaded_by: number | null };
 
+export type FeedComment = {
+  id: number;
+  author: FeedAuthor;
+  body: string;
+  createdAt: Date;
+  likeCount: number;
+  likedByMe: boolean;
+};
+
 type FeedBase = {
   id: number;
   author: FeedAuthor;
@@ -18,6 +27,7 @@ type FeedBase = {
   likeCount: number;
   likedByMe: boolean;
   commentCount: number;
+  comments: FeedComment[];
 };
 
 export type FeedItem =
@@ -122,9 +132,12 @@ async function buildFor(
     .limit(limit);
   if (before) ascentQ = ascentQ.where("ascents.created_at", "<", before);
 
-  const [statusRows, ascentRows] = await Promise.all([
+  // Grade equivalencies (for points) don't depend on the rows, so fetch them
+  // alongside the feed queries. loadGradeEquivalencies is request-cached.
+  const [statusRows, ascentRows, equivalencies] = await Promise.all([
     statusQ.execute(),
     ascentQ.execute(),
+    loadGradeEquivalencies(),
   ]);
 
   // Photos for the fetched statuses, in one query.
@@ -147,9 +160,7 @@ async function buildFor(
 
   // Points each ascent's route is worth (same scoring as the leaderboard).
   const routePoints =
-    ascentRows.length > 0
-      ? buildRoutePoints(await loadGradeEquivalencies())
-      : null;
+    ascentRows.length > 0 ? buildRoutePoints(equivalencies) : null;
 
   const statusItems = statusRows.map(
     (r): FeedItem => ({
@@ -176,6 +187,7 @@ async function buildFor(
       likeCount: 0,
       likedByMe: false,
       commentCount: 0,
+      comments: [],
     }),
   );
 
@@ -213,6 +225,7 @@ async function buildFor(
       likeCount: 0,
       likedByMe: false,
       commentCount: 0,
+      comments: [],
     };
   });
 
@@ -221,7 +234,11 @@ async function buildFor(
     limit,
   );
 
-  await attachInteractions(db, viewerId, items);
+  // Likes for the items and their comments load independently — run together.
+  await Promise.all([
+    attachLikes(db, viewerId, items),
+    attachComments(db, viewerId, items),
+  ]);
 
   // If both source queries returned a full page, there may be more.
   const more =
@@ -231,8 +248,9 @@ async function buildFor(
   return { items, nextCursor: items.length === limit ? more : null };
 }
 
-// Batch-load like counts, liked-by-me, and comment counts for the given items.
-async function attachInteractions(
+// Like counts (+ which the viewer liked) for the feed items, batched in two
+// queries regardless of how many items there are.
+async function attachLikes(
   db: Kysely<Database>,
   viewerId: number | null,
   items: FeedItem[],
@@ -241,67 +259,154 @@ async function attachInteractions(
   const statusIds = items.filter((i) => i.kind === "status").map((i) => i.id);
   const ascentIds = items.filter((i) => i.kind === "ascent").map((i) => i.id);
 
-  async function counts(table: "likes" | "comments") {
-    const rows = await db
-      .selectFrom(table)
+  // Restrict a `likes` query to exactly the items' (target_type, target_id) set.
+  const matchItems = (eb: ExpressionBuilder<Database, "likes">) =>
+    eb.or([
+      eb.and([
+        eb("target_type", "=", "status"),
+        eb("target_id", "in", statusIds.length ? statusIds : [-1]),
+      ]),
+      eb.and([
+        eb("target_type", "=", "ascent"),
+        eb("target_id", "in", ascentIds.length ? ascentIds : [-1]),
+      ]),
+    ]);
+
+  const [counts, liked] = await Promise.all([
+    db
+      .selectFrom("likes")
       .select((eb) => [
         "target_type",
         "target_id",
         eb.fn.countAll<number>().as("n"),
       ])
-      .where((eb) =>
-        eb.or([
-          eb.and([
-            eb("target_type", "=", "status"),
-            eb("target_id", "in", statusIds.length ? statusIds : [-1]),
-          ]),
-          eb.and([
-            eb("target_type", "=", "ascent"),
-            eb("target_id", "in", ascentIds.length ? ascentIds : [-1]),
-          ]),
-        ]),
-      )
+      .where(matchItems)
       .groupBy(["target_type", "target_id"])
-      .execute();
-    const map = new Map<string, number>();
-    for (const r of rows)
-      map.set(`${r.target_type}:${r.target_id}`, Number(r.n));
-    return map;
-  }
-
-  const [likeCounts, commentCounts] = await Promise.all([
-    counts("likes"),
-    counts("comments"),
+      .execute(),
+    viewerId === null
+      ? Promise.resolve([] as { target_type: string; target_id: number }[])
+      : db
+          .selectFrom("likes")
+          .select(["target_type", "target_id"])
+          .where("user_id", "=", viewerId)
+          .where(matchItems)
+          .execute(),
   ]);
 
-  let likedSet = new Set<string>();
-  if (viewerId !== null) {
-    const liked = await db
-      .selectFrom("likes")
-      .select(["target_type", "target_id"])
-      .where("user_id", "=", viewerId)
-      .where((eb) =>
-        eb.or([
-          eb.and([
-            eb("target_type", "=", "status"),
-            eb("target_id", "in", statusIds.length ? statusIds : [-1]),
-          ]),
-          eb.and([
-            eb("target_type", "=", "ascent"),
-            eb("target_id", "in", ascentIds.length ? ascentIds : [-1]),
-          ]),
-        ]),
-      )
-      .execute();
-    likedSet = new Set(liked.map((r) => `${r.target_type}:${r.target_id}`));
-  }
+  const likeCounts = new Map<string, number>();
+  for (const r of counts)
+    likeCounts.set(`${r.target_type}:${r.target_id}`, Number(r.n));
+  const likedSet = new Set(liked.map((r) => `${r.target_type}:${r.target_id}`));
 
   for (const item of items) {
     const key = `${item.kind}:${item.id}`;
     item.likeCount = likeCounts.get(key) ?? 0;
-    item.commentCount = commentCounts.get(key) ?? 0;
     item.likedByMe = likedSet.has(key);
   }
+}
+
+// Batch-load all comments (+ per-comment like state) for the given items in
+// one comments query, avoiding an N+1 across the feed.
+async function attachComments(
+  db: Kysely<Database>,
+  viewerId: number | null,
+  items: FeedItem[],
+): Promise<void> {
+  if (items.length === 0) return;
+  const statusIds = items.filter((i) => i.kind === "status").map((i) => i.id);
+  const ascentIds = items.filter((i) => i.kind === "ascent").map((i) => i.id);
+
+  const rows = await db
+    .selectFrom("comments")
+    .innerJoin("users", "users.id", "comments.user_id")
+    .select([
+      "comments.id",
+      "comments.target_type",
+      "comments.target_id",
+      "comments.body",
+      "comments.created_at",
+      "users.id as author_id",
+      "users.name as author_name",
+      "users.avatar_url as author_avatar",
+    ])
+    .where((eb) =>
+      eb.or([
+        eb.and([
+          eb("comments.target_type", "=", "status"),
+          eb("comments.target_id", "in", statusIds.length ? statusIds : [-1]),
+        ]),
+        eb.and([
+          eb("comments.target_type", "=", "ascent"),
+          eb("comments.target_id", "in", ascentIds.length ? ascentIds : [-1]),
+        ]),
+      ]),
+    )
+    .orderBy("comments.created_at", "asc")
+    .execute();
+
+  const { counts: likeCounts, liked: likedSet } = await commentLikeStats(
+    db,
+    viewerId,
+    rows.map((r) => r.id),
+  );
+
+  const byTarget = new Map<string, FeedComment[]>();
+  for (const r of rows) {
+    const key = `${r.target_type}:${r.target_id}`;
+    const list = byTarget.get(key) ?? [];
+    list.push({
+      id: r.id,
+      author: {
+        id: r.author_id,
+        name: r.author_name,
+        avatarUrl: r.author_avatar,
+      },
+      body: r.body,
+      createdAt: r.created_at,
+      likeCount: likeCounts.get(r.id) ?? 0,
+      likedByMe: likedSet.has(r.id),
+    });
+    byTarget.set(key, list);
+  }
+
+  for (const item of items) {
+    const list = byTarget.get(`${item.kind}:${item.id}`) ?? [];
+    item.comments = list;
+    item.commentCount = list.length;
+  }
+}
+
+// Like counts (+ which the viewer liked) for a set of comment ids.
+async function commentLikeStats(
+  db: Kysely<Database>,
+  viewerId: number | null,
+  commentIds: number[],
+): Promise<{ counts: Map<number, number>; liked: Set<number> }> {
+  const counts = new Map<number, number>();
+  const liked = new Set<number>();
+  if (commentIds.length === 0) return { counts, liked };
+
+  const [countRows, likedRows] = await Promise.all([
+    db
+      .selectFrom("likes")
+      .select((eb) => ["target_id", eb.fn.countAll<number>().as("n")])
+      .where("target_type", "=", "comment")
+      .where("target_id", "in", commentIds)
+      .groupBy("target_id")
+      .execute(),
+    viewerId === null
+      ? Promise.resolve([] as { target_id: number }[])
+      : db
+          .selectFrom("likes")
+          .select("target_id")
+          .where("user_id", "=", viewerId)
+          .where("target_type", "=", "comment")
+          .where("target_id", "in", commentIds)
+          .execute(),
+  ]);
+  for (const c of countRows) counts.set(c.target_id, Number(c.n));
+  for (const l of likedRows) liked.add(l.target_id);
+  return { counts, liked };
 }
 
 async function followeeIds(
@@ -334,77 +439,6 @@ export async function buildProfileTimeline(
   before: Date | null = null,
 ): Promise<FeedPage> {
   return buildFor(db, viewerId, [profileId], before);
-}
-
-export type FeedComment = {
-  id: number;
-  author: FeedAuthor;
-  body: string;
-  createdAt: Date;
-  likeCount: number;
-  likedByMe: boolean;
-};
-
-export async function loadComments(
-  db: Kysely<Database>,
-  targetType: "status" | "ascent",
-  targetId: number,
-  viewerId: number | null = null,
-): Promise<FeedComment[]> {
-  const rows = await db
-    .selectFrom("comments")
-    .innerJoin("users", "users.id", "comments.user_id")
-    .select([
-      "comments.id",
-      "comments.body",
-      "comments.created_at",
-      "users.id as author_id",
-      "users.name as author_name",
-      "users.avatar_url as author_avatar",
-    ])
-    .where("comments.target_type", "=", targetType)
-    .where("comments.target_id", "=", targetId)
-    .orderBy("comments.created_at", "asc")
-    .execute();
-
-  // Batch-load like counts (+ which the viewer liked) for these comments.
-  const ids = rows.map((r) => r.id);
-  const likeCounts = new Map<number, number>();
-  const likedByMe = new Set<number>();
-  if (ids.length > 0) {
-    const counts = await db
-      .selectFrom("likes")
-      .select((eb) => ["target_id", eb.fn.countAll<number>().as("n")])
-      .where("target_type", "=", "comment")
-      .where("target_id", "in", ids)
-      .groupBy("target_id")
-      .execute();
-    for (const c of counts) likeCounts.set(c.target_id, Number(c.n));
-
-    if (viewerId !== null) {
-      const mine = await db
-        .selectFrom("likes")
-        .select("target_id")
-        .where("user_id", "=", viewerId)
-        .where("target_type", "=", "comment")
-        .where("target_id", "in", ids)
-        .execute();
-      for (const m of mine) likedByMe.add(m.target_id);
-    }
-  }
-
-  return rows.map((r) => ({
-    id: r.id,
-    author: {
-      id: r.author_id,
-      name: r.author_name,
-      avatarUrl: r.author_avatar,
-    },
-    body: r.body,
-    createdAt: r.created_at,
-    likeCount: likeCounts.get(r.id) ?? 0,
-    likedByMe: likedByMe.has(r.id),
-  }));
 }
 
 // A few users to suggest following: most-followed, excluding the viewer and

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import db from "@/lib/db";
-import { buildFeed, loadComments } from "@/lib/feed";
+import { buildFeed } from "@/lib/feed";
 import { makeUser } from "./db";
 
 async function makeStatus(userId: number): Promise<number> {
@@ -40,12 +40,10 @@ describe("comments", () => {
     const { items } = await buildFeed(db, me);
     const item = items.find((i) => i.kind === "status" && i.id === statusId)!;
     expect(item.commentCount).toBe(2);
-
-    const comments = await loadComments(db, "status", statusId);
-    expect(comments.map((c) => c.body)).toEqual(["first", "second"]);
+    expect(item.comments.map((c) => c.body)).toEqual(["first", "second"]);
   });
 
-  it("reports per-comment like counts via loadComments", async () => {
+  it("reports per-comment like counts on feed items", async () => {
     const me = await makeUser("Me");
     const other = await makeUser("Other");
     const statusId = await makeStatus(me);
@@ -69,9 +67,10 @@ describe("comments", () => {
       ])
       .execute();
 
-    const comments = await loadComments(db, "status", statusId, me);
-    expect(comments[0].likeCount).toBe(2);
-    expect(comments[0].likedByMe).toBe(true);
+    const { items } = await buildFeed(db, me);
+    const item = items.find((i) => i.kind === "status" && i.id === statusId)!;
+    expect(item.comments[0].likeCount).toBe(2);
+    expect(item.comments[0].likedByMe).toBe(true);
   });
 });
 

@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import Link from "next/link";
 import { searchPeople, type PersonResult } from "@/app/actions";
-import Avatar from "@/app/ui/avatar";
-import FollowButton from "@/app/ui/follow-button";
+import UserRow from "@/app/ui/user-row";
 import { inputClass } from "@/app/ui/style";
 
 // Discover-people search: type a name or email, get matching climbers to
@@ -46,16 +44,13 @@ export default function PeopleSearch() {
       {query.trim().length >= 2 && (
         <ul className="mt-3 space-y-2">
           {results.map((u) => (
-            <li key={u.id} className="flex items-center justify-between gap-3">
-              <Link
-                href={`/users/${u.id}`}
-                className="flex min-w-0 items-center gap-2 text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100"
-              >
-                <Avatar name={u.name} src={u.avatarUrl} size={28} />
-                <span className="truncate">{u.name}</span>
-              </Link>
-              <FollowButton followeeId={u.id} initialFollowing={u.following} />
-            </li>
+            <UserRow
+              key={u.id}
+              id={u.id}
+              name={u.name}
+              avatarUrl={u.avatarUrl}
+              initialFollowing={u.following}
+            />
           ))}
           {searched && !pending && results.length === 0 && (
             <li className="text-sm text-zinc-500">No people found.</li>

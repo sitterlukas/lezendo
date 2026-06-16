@@ -1,13 +1,11 @@
-import Link from "next/link";
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import { buildFeed, suggestedUsers } from "@/lib/feed";
 import FeedItemCard from "@/app/ui/feed-item";
 import StatusComposer from "@/app/ui/status-composer";
-import FollowButton from "@/app/ui/follow-button";
 import LoginToAdd from "@/app/ui/login-to-add";
-import Avatar from "@/app/ui/avatar";
 import PeopleSearch from "@/app/ui/people-search";
+import UserRow from "@/app/ui/user-row";
 
 export const dynamic = "force-dynamic";
 
@@ -111,16 +109,13 @@ async function SuggestedToFollow({ viewerId }: { viewerId: number }) {
       {suggestions.length > 0 ? (
         <ul className="mt-4 space-y-3">
           {suggestions.map((u) => (
-            <li key={u.id} className="flex items-center justify-between gap-3">
-              <Link
-                href={`/users/${u.id}`}
-                className="flex min-w-0 items-center gap-2 font-medium text-zinc-900 hover:underline dark:text-zinc-100"
-              >
-                <Avatar name={u.name} src={u.avatarUrl} size={32} />
-                <span className="truncate">{u.name}</span>
-              </Link>
-              <FollowButton followeeId={u.id} initialFollowing={false} />
-            </li>
+            <UserRow
+              key={u.id}
+              id={u.id}
+              name={u.name}
+              avatarUrl={u.avatarUrl}
+              initialFollowing={false}
+            />
           ))}
         </ul>
       ) : (
