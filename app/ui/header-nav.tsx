@@ -27,6 +27,9 @@ export default function HeaderNav({
         <Link href="/crags" className={linkCls}>
           Crags
         </Link>
+        <Link href="/feed" className={linkCls}>
+          Feed
+        </Link>
         <Link href="/gear" className={linkCls}>
           Gear
         </Link>
@@ -167,6 +170,9 @@ export default function HeaderNav({
           <nav className="mx-auto flex max-w-5xl flex-col px-6 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
             <Link href="/crags" className={mobileLinkCls}>
               Crags
+            </Link>
+            <Link href="/feed" className={mobileLinkCls}>
+              Feed
             </Link>
             <Link href="/gear" className={mobileLinkCls}>
               Gear
