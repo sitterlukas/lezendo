@@ -9,12 +9,13 @@ import {
   recoverRoute,
 } from "@/app/actions";
 import Modal from "@/app/ui/modal";
-import ConfirmSubmit from "@/app/ui/confirm-submit";
+import DeleteButton from "@/app/ui/delete-button";
 import ImageGallery from "@/app/ui/image-gallery";
 import EntityReviews from "@/app/ui/entity-reviews";
 import RouteCard from "@/app/ui/route-card";
 import CragFields from "@/app/ui/crag-fields";
 import { CreateSectorModal, CreateRouteModal } from "@/app/ui/create-modals";
+import LoginToAdd from "@/app/ui/login-to-add";
 import FactList from "@/app/ui/fact-list";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
@@ -304,32 +305,32 @@ export default async function CragPage({
             </Modal>
           )}
 
-          {currentUser && <CreateSectorModal cragId={crag.id} />}
-
-          {currentUser && (
-            <CreateRouteModal
-              cragId={crag.id}
-              sectors={sectors}
-              gradingSystems={gradingSystems}
-              equivalencies={gradeEquivalencies}
-              defaultSystemId={
-                currentUser?.preferred_rope_grading_system_id ??
-                currentUser?.preferred_boulder_grading_system_id
-              }
-            />
+          {currentUser ? (
+            <>
+              <CreateSectorModal cragId={crag.id} />
+              <CreateRouteModal
+                cragId={crag.id}
+                sectors={sectors}
+                gradingSystems={gradingSystems}
+                equivalencies={gradeEquivalencies}
+                defaultSystemId={
+                  currentUser?.preferred_rope_grading_system_id ??
+                  currentUser?.preferred_boulder_grading_system_id
+                }
+              />
+            </>
+          ) : (
+            <LoginToAdd label="Log in to add sectors & routes" />
           )}
           {canEdit(crag.created_by) && (
             <form action={deleteCrag}>
               <input type="hidden" name="crag_id" value={crag.id} />
-              <ConfirmSubmit
+              <DeleteButton
                 title={`Delete ${crag.name}?`}
                 message={`This will permanently delete ${crag.name}, all its sectors, and all its routes. This cannot be undone.`}
                 confirmLabel="Delete crag"
-                triggerAriaLabel="Delete crag"
-                triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-3 py-1.5 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
-              >
-                Delete
-              </ConfirmSubmit>
+                ariaLabel="Delete crag"
+              />
             </form>
           )}
         </div>

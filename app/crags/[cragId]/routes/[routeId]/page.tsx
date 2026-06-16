@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import db, { type TickType } from "@/lib/db";
 import { logAscent, updateRoute, deleteRoute } from "@/app/actions";
 import Modal from "@/app/ui/modal";
-import ConfirmSubmit from "@/app/ui/confirm-submit";
+import DeleteButton from "@/app/ui/delete-button";
 import ImageGallery from "@/app/ui/image-gallery";
 import EntityReviews from "@/app/ui/entity-reviews";
 import Select from "@/app/ui/select";
@@ -238,15 +238,12 @@ export default async function RoutePage({
                 <form action={deleteRoute}>
                   <input type="hidden" name="route_id" value={route.id} />
                   <input type="hidden" name="crag_id" value={cragIdNum} />
-                  <ConfirmSubmit
+                  <DeleteButton
                     title={`Delete ${route.name}?`}
                     message="This will permanently delete the route and all logged ascents for it."
                     confirmLabel="Delete route"
-                    triggerAriaLabel="Delete route"
-                    triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-3 py-1.5 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
-                  >
-                    Delete route
-                  </ConfirmSubmit>
+                    ariaLabel="Delete route"
+                  />
                 </form>
                 <Modal
                   triggerLabel="Edit route"

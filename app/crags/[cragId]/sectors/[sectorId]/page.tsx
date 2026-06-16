@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import db from "@/lib/db";
 import { updateSector, deleteSector } from "@/app/actions";
 import Modal from "@/app/ui/modal";
-import ConfirmSubmit from "@/app/ui/confirm-submit";
+import DeleteButton from "@/app/ui/delete-button";
 import ImageGallery from "@/app/ui/image-gallery";
 import SectorMapQR from "@/app/ui/sector-map-qr";
 import EntityReviews from "@/app/ui/entity-reviews";
@@ -12,6 +12,7 @@ import RouteCard from "@/app/ui/route-card";
 import GradeHistogram from "@/app/ui/grade-histogram";
 import SectorFields from "@/app/ui/sector-fields";
 import { CreateRouteModal } from "@/app/ui/create-modals";
+import LoginToAdd from "@/app/ui/login-to-add";
 import FactList from "@/app/ui/fact-list";
 import { resolveGrade } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
@@ -189,7 +190,7 @@ export default async function SectorPage({
             </Modal>
           )}
 
-          {currentUser && (
+          {currentUser ? (
             <CreateRouteModal
               cragId={crag.id}
               fixedSectorId={sector.id}
@@ -200,21 +201,20 @@ export default async function SectorPage({
                 currentUser?.preferred_boulder_grading_system_id
               }
             />
+          ) : (
+            <LoginToAdd label="Log in to add a route" />
           )}
 
           {canEdit(sector.created_by) && (
             <form action={deleteSector}>
               <input type="hidden" name="sector_id" value={sector.id} />
               <input type="hidden" name="crag_id" value={cragIdNum} />
-              <ConfirmSubmit
+              <DeleteButton
                 title={`Delete ${sector.name}?`}
                 message={`This will permanently delete the sector "${sector.name}". Routes inside it will remain but become unsectored.`}
                 confirmLabel="Delete sector"
-                triggerAriaLabel="Delete sector"
-                triggerClassName="inline-flex items-center gap-1 rounded border border-red-200 bg-transparent px-3 py-1.5 text-xs font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30"
-              >
-                Delete
-              </ConfirmSubmit>
+                ariaLabel="Delete sector"
+              />
             </form>
           )}
         </div>

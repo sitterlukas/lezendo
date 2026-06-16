@@ -5,6 +5,7 @@ import { sql } from "kysely";
 import { recoverCrag } from "@/app/actions";
 import FilterPill from "@/app/ui/filter-pill";
 import { CreateCragModal } from "@/app/ui/create-modals";
+import LoginToAdd from "@/app/ui/login-to-add";
 
 const PAGE_SIZE = 24;
 
@@ -246,11 +247,13 @@ export default async function CragsPage({
           )}
         </form>
 
-        {currentUser && (
-          <div>
+        <div>
+          {currentUser ? (
             <CreateCragModal allCountries={allCountries} />
-          </div>
-        )}
+          ) : (
+            <LoginToAdd label="Log in to add a crag" />
+          )}
+        </div>
       </div>
 
       {/* Country filter tabs */}

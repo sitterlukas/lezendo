@@ -87,7 +87,7 @@ export default function CreateModal({
         onClick={(e) => {
           if (e.target === dialogRef.current) close();
         }}
-        className="m-auto w-full max-w-lg rounded bg-white p-0 shadow-xl backdrop:bg-black/50 dark:bg-zinc-900 dark:text-zinc-100"
+        className="m-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded bg-white p-0 shadow-xl backdrop:bg-black/50 dark:bg-zinc-900 dark:text-zinc-100 max-[544px]:max-w-[calc(100%-2rem)]"
       >
         <div className="p-6">
           <div className="flex items-start justify-between gap-4">

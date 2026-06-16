@@ -40,7 +40,7 @@ export default function ConfirmSubmit({
         onClick={(event) => {
           if (event.target === dialogRef.current) dialogRef.current?.close();
         }}
-        className="m-auto w-full max-w-sm rounded bg-white p-0 shadow-xl backdrop:bg-black/50 dark:bg-zinc-900 dark:text-zinc-100"
+        className="m-auto max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded bg-white p-0 shadow-xl backdrop:bg-black/50 dark:bg-zinc-900 dark:text-zinc-100 max-[544px]:max-w-[calc(100%-2rem)]"
       >
         <div className="p-6">
           <h2 className="text-lg font-semibold">{title}</h2>
