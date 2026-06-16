@@ -237,7 +237,6 @@ export interface Database {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var kyselyDb: Kysely<Database> | undefined;
 }
 

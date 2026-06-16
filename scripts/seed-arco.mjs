@@ -136,7 +136,6 @@ try {
   }
 
   let p = 0; // index into uploaded photo URLs
-  const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   console.log("Uploading photos to Vercel Blob…");
   const urls = [];

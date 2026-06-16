@@ -6,6 +6,12 @@ import prettier from "eslint-config-prettier";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  // Migrations are frozen in time and take Kysely<any> on purpose (they must
+  // not depend on the live, evolving Database type), so allow `any` there.
+  {
+    files: ["migrations/**/*.ts"],
+    rules: { "@typescript-eslint/no-explicit-any": "off" },
+  },
   // Turn off ESLint rules that conflict with Prettier. Keep last.
   prettier,
   // Override default ignores of eslint-config-next.
