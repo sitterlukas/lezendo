@@ -217,15 +217,31 @@ export async function deleteAscent(formData: FormData) {
   const ascentId = Number(formData.get("ascent_id"));
   if (!Number.isInteger(ascentId)) return;
 
-  // The user_id condition makes sure users can only delete their own ticks.
-  await db
-    .deleteFrom("ascents")
+  // Verify ownership before deleting — only the owner may delete their tick.
+  const owned = await db
+    .selectFrom("ascents")
+    .select("id")
     .where("id", "=", ascentId)
     .where("user_id", "=", userId)
+    .executeTakeFirst();
+  if (!owned) return;
+
+  await db.deleteFrom("ascents").where("id", "=", ascentId).execute();
+
+  await db
+    .deleteFrom("likes")
+    .where("target_type", "=", "ascent")
+    .where("target_id", "=", ascentId)
+    .execute();
+  await db
+    .deleteFrom("comments")
+    .where("target_type", "=", "ascent")
+    .where("target_id", "=", ascentId)
     .execute();
 
   revalidatePath("/profile");
   revalidatePath("/crags");
+  revalidatePath("/feed");
 }
 
 export async function addGearItem(formData: FormData) {
