@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { sql } from "kysely";
@@ -9,6 +10,13 @@ import Avatar from "@/app/ui/avatar";
 import { inputClass } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Forum",
+  description:
+    "Ask questions, share beta and talk climbing with the Whipperbook community.",
+  alternates: { canonical: "/forum" },
+};
 
 export default async function ForumPage() {
   const session = await auth();

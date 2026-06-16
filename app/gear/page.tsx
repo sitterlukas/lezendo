@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import db, { type GearCategory } from "@/lib/db";
@@ -27,6 +28,13 @@ const categoryMeta: Record<GearCategory, { label: string }> = {
 };
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Gear",
+  description:
+    "Climbing gear reviews and ratings — ropes, harnesses, shoes, protection and more — from the Whipperbook community.",
+  alternates: { canonical: "/gear" },
+};
 
 export default async function GearPage() {
   const session = await auth();

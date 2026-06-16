@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
@@ -23,6 +24,32 @@ import { gradeRange, stylesPresent } from "@/lib/route-stats";
 import { inputClass, typeLabel, typeBadge } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ cragId: string }>;
+}): Promise<Metadata> {
+  const id = Number((await params).cragId);
+  if (!Number.isInteger(id)) return {};
+  const crag = await db
+    .selectFrom("crags")
+    .select(["name", "description"])
+    .where("id", "=", id)
+    .where("deleted", "=", false)
+    .executeTakeFirst();
+  if (!crag) return {};
+  const description =
+    crag.description ??
+    `Routes, sectors and ascents at ${crag.name} on Whipperbook.`;
+  const url = `/crags/${id}`;
+  return {
+    title: crag.name,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title: crag.name, description, url },
+  };
+}
 
 export default async function CragPage({
   params,

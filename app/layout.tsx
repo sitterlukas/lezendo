@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { auth } from "@/auth";
 import HeaderNav from "@/app/ui/header-nav";
 import db from "@/lib/db";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 // Runs before paint so the stored/system theme applies without a flash.
@@ -20,10 +21,46 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const title = "Whipperbook — Every route. Every ascent. Yours.";
+const description =
+  "A route database and personal climbing logbook. Explore crags, sectors and routes, log your ascents, and track your progress.";
+
 export const metadata: Metadata = {
-  title: "Whipperbook — Every route. Every ascent. Yours.",
-  description:
-    "A route database and personal climbing logbook. Explore crags, log ascents, track your progress.",
+  metadataBase: new URL(siteUrl()),
+  title: {
+    default: title,
+    template: "%s · Whipperbook",
+  },
+  description,
+  applicationName: "Whipperbook",
+  keywords: [
+    "climbing",
+    "route database",
+    "climbing logbook",
+    "crags",
+    "ascents",
+    "bouldering",
+    "sport climbing",
+    "trad climbing",
+  ],
+  alternates: { canonical: "/" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Whipperbook",
+    title,
+    description,
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 export default async function RootLayout({

@@ -168,28 +168,27 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Feed call-to-action (signed-in) */}
-      {currentUser && (
-        <section className="mx-auto max-w-5xl px-6 pt-16">
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-blue-200 bg-blue-50 p-6 dark:border-blue-900/50 dark:bg-blue-950/30">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-blue-900 dark:text-blue-100">
-                Your feed
-              </h2>
-              <p className="mt-1 max-w-md text-sm text-blue-800/70 dark:text-blue-200/70">
-                See what the climbers you follow are up to, and share your own
-                ascents, statuses, and photos.
-              </p>
-            </div>
-            <Link
-              href="/feed"
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
-            >
-              Open feed →
-            </Link>
+      {/* Feed call-to-action */}
+      <section className="mx-auto max-w-5xl px-6 pt-16">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-blue-200 bg-blue-50 p-6 dark:border-blue-900/50 dark:bg-blue-950/30">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-blue-900 dark:text-blue-100">
+              Your feed
+            </h2>
+            <p className="mt-1 max-w-md text-sm text-blue-800/70 dark:text-blue-200/70">
+              {currentUser
+                ? "See what the climbers you follow are up to, and share your own ascents, statuses, and photos."
+                : "Follow climbers to see their ascents, statuses, and photos — and share your own. Log in to get started."}
+            </p>
           </div>
-        </section>
-      )}
+          <Link
+            href={currentUser ? "/feed" : "/login"}
+            className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+          >
+            {currentUser ? "Open feed →" : "Log in to start →"}
+          </Link>
+        </div>
+      </section>
 
       {/* Features */}
       <section className="mx-auto max-w-5xl px-6 py-20">

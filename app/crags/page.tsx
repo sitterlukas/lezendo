@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import db from "@/lib/db";
@@ -10,6 +11,13 @@ import LoginToAdd from "@/app/ui/login-to-add";
 const PAGE_SIZE = 24;
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Crags",
+  description:
+    "Browse climbing crags — sport, trad and bouldering — with sectors, routes, grades and topos on Whipperbook.",
+  alternates: { canonical: "/crags" },
+};
 
 export default async function CragsPage({
   searchParams,
