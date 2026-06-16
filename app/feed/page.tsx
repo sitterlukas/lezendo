@@ -6,6 +6,7 @@ import FeedItemCard from "@/app/ui/feed-item";
 import StatusComposer from "@/app/ui/status-composer";
 import FollowButton from "@/app/ui/follow-button";
 import LoginToAdd from "@/app/ui/login-to-add";
+import Avatar from "@/app/ui/avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function FeedPage() {
   }
 
   const isAdmin = viewer.role === "admin";
-  const [{ items }, crags, routes] = await Promise.all([
+  const [{ items }, crags, routes, followRow] = await Promise.all([
     buildFeed(db, viewer.id),
     db
       .selectFrom("crags")
@@ -48,7 +49,14 @@ export default async function FeedPage() {
       .where("deleted", "=", false)
       .orderBy("name")
       .execute(),
+    db
+      .selectFrom("follows")
+      .select("followee_id")
+      .where("follower_id", "=", viewer.id)
+      .limit(1)
+      .executeTakeFirst(),
   ]);
+  const followsNobody = !followRow;
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
@@ -57,9 +65,11 @@ export default async function FeedPage() {
         <StatusComposer crags={crags} routes={routes} />
       </header>
 
-      {items.length === 0 ? (
-        <FeedEmptyState viewerId={viewer.id} />
-      ) : (
+      {/* Until you follow someone, keep the "who to follow" prompt above your
+          feed — even after you've posted your own statuses. */}
+      {followsNobody && <SuggestedToFollow viewerId={viewer.id} />}
+
+      {items.length > 0 ? (
         <div className="mt-8 space-y-4">
           {items.map((item) => (
             <FeedItemCard
@@ -70,33 +80,45 @@ export default async function FeedPage() {
             />
           ))}
         </div>
+      ) : (
+        !followsNobody && (
+          <div className="mt-8 border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
+            <p className="font-medium">No activity yet.</p>
+            <p className="mt-1 text-sm text-zinc-500">
+              The climbers you follow haven&apos;t posted anything yet.
+            </p>
+          </div>
+        )
       )}
     </main>
   );
 }
 
-async function FeedEmptyState({ viewerId }: { viewerId: number }) {
+async function SuggestedToFollow({ viewerId }: { viewerId: number }) {
   const suggestions = await suggestedUsers(db, viewerId);
   return (
-    <div className="mt-8 border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
-      <p className="font-medium">Your feed is empty.</p>
+    <div className="mt-8 rounded border border-zinc-200 p-5 dark:border-zinc-800">
+      <p className="font-medium">Find climbers to follow</p>
       <p className="mt-1 text-sm text-zinc-500">
-        Follow some climbers to see their statuses and ascents here.
+        Follow people to fill your feed with their statuses and ascents.
       </p>
-      {suggestions.length > 0 && (
-        <ul className="mx-auto mt-6 max-w-sm space-y-3 text-left">
+      {suggestions.length > 0 ? (
+        <ul className="mt-4 space-y-3">
           {suggestions.map((u) => (
             <li key={u.id} className="flex items-center justify-between gap-3">
               <Link
                 href={`/users/${u.id}`}
-                className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+                className="flex min-w-0 items-center gap-2 font-medium text-zinc-900 hover:underline dark:text-zinc-100"
               >
-                {u.name}
+                <Avatar name={u.name} src={u.avatarUrl} size={32} />
+                <span className="truncate">{u.name}</span>
               </Link>
               <FollowButton followeeId={u.id} initialFollowing={false} />
             </li>
           ))}
         </ul>
+      ) : (
+        <p className="mt-4 text-sm text-zinc-400">No other climbers yet.</p>
       )}
     </div>
   );

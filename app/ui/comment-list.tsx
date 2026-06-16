@@ -6,6 +6,7 @@ import { addComment } from "@/app/actions";
 import type { FeedTargetType } from "@/lib/db";
 import { inputClass } from "@/app/ui/style";
 import Avatar from "@/app/ui/avatar";
+import LikeButton from "@/app/ui/like-button";
 
 export type CommentView = {
   id: number;
@@ -13,6 +14,8 @@ export type CommentView = {
   authorName: string;
   authorAvatar: string | null;
   body: string;
+  likeCount: number;
+  likedByMe: boolean;
 };
 
 export default function CommentList({
@@ -50,7 +53,7 @@ export default function CommentList({
           <Link href={`/users/${c.authorId}`} className="mt-0.5 shrink-0">
             <Avatar name={c.authorName} src={c.authorAvatar} size={22} />
           </Link>
-          <p>
+          <p className="min-w-0 flex-1">
             <Link
               href={`/users/${c.authorId}`}
               className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
@@ -59,6 +62,13 @@ export default function CommentList({
             </Link>{" "}
             <span className="text-zinc-700 dark:text-zinc-300">{c.body}</span>
           </p>
+          <LikeButton
+            targetType="comment"
+            targetId={c.id}
+            initialLiked={c.likedByMe}
+            initialCount={c.likeCount}
+            disabled={!canComment}
+          />
         </div>
       ))}
       {canComment && (

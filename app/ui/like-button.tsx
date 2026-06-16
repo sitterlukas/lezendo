@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toggleLike } from "@/app/actions";
-import type { FeedTargetType } from "@/lib/db";
+import type { LikeTargetType } from "@/lib/db";
 
 export default function LikeButton({
   targetType,
@@ -11,7 +11,7 @@ export default function LikeButton({
   initialCount,
   disabled,
 }: {
-  targetType: FeedTargetType;
+  targetType: LikeTargetType;
   targetId: number;
   initialLiked: boolean;
   initialCount: number;
@@ -40,7 +40,9 @@ export default function LikeButton({
       disabled={disabled || pending}
       aria-pressed={liked}
       className={`inline-flex items-center gap-1 transition disabled:opacity-50 ${
-        liked ? "text-red-500" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+        liked
+          ? "text-red-500"
+          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
       }`}
     >
       {liked ? "♥" : "♡"} {count}
