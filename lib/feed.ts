@@ -2,7 +2,11 @@ import type { Kysely } from "kysely";
 import { sql } from "kysely";
 import type { Database, TickType } from "@/lib/db";
 
-export type FeedAuthor = { id: number; name: string };
+export type FeedAuthor = {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+};
 export type FeedPhoto = { id: number; url: string; uploaded_by: number | null };
 
 type FeedBase = {
@@ -36,8 +40,7 @@ const PAGE_SIZE = 20;
 // to unit-test. Ties broken by id desc for determinism.
 export function sortFeedNewestFirst(items: FeedItem[]): FeedItem[] {
   return [...items].sort(
-    (a, b) =>
-      b.createdAt.getTime() - a.createdAt.getTime() || b.id - a.id,
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id - a.id,
   );
 }
 
@@ -63,6 +66,7 @@ async function buildFor(
       "statuses.created_at",
       "users.id as author_id",
       "users.name as author_name",
+      "users.avatar_url as author_avatar",
       "crags.id as crag_id",
       "crags.name as crag_name",
     ])
@@ -82,6 +86,7 @@ async function buildFor(
       "ascents.created_at",
       "users.id as author_id",
       "users.name as author_name",
+      "users.avatar_url as author_avatar",
       "routes.id as route_id",
       "routes.name as route_name",
       "routes.grade",
@@ -117,30 +122,42 @@ async function buildFor(
   }
 
   const merged: FeedItem[] = [
-    ...statusRows.map((r): FeedItem => ({
-      kind: "status",
-      id: r.id,
-      author: { id: r.author_id, name: r.author_name },
-      createdAt: r.created_at,
-      body: r.body,
-      crag: r.crag_id != null ? { id: r.crag_id, name: r.crag_name! } : null,
-      photos: photosByStatus.get(r.id) ?? [],
-      likeCount: 0,
-      likedByMe: false,
-      commentCount: 0,
-    })),
-    ...ascentRows.map((r): FeedItem => ({
-      kind: "ascent",
-      id: r.id,
-      author: { id: r.author_id, name: r.author_name },
-      createdAt: r.created_at,
-      tickType: r.tick_type,
-      route: { id: r.route_id, name: r.route_name, grade: r.grade },
-      crag: { id: r.crag_id, name: r.crag_name },
-      likeCount: 0,
-      likedByMe: false,
-      commentCount: 0,
-    })),
+    ...statusRows.map(
+      (r): FeedItem => ({
+        kind: "status",
+        id: r.id,
+        author: {
+          id: r.author_id,
+          name: r.author_name,
+          avatarUrl: r.author_avatar,
+        },
+        createdAt: r.created_at,
+        body: r.body,
+        crag: r.crag_id != null ? { id: r.crag_id, name: r.crag_name! } : null,
+        photos: photosByStatus.get(r.id) ?? [],
+        likeCount: 0,
+        likedByMe: false,
+        commentCount: 0,
+      }),
+    ),
+    ...ascentRows.map(
+      (r): FeedItem => ({
+        kind: "ascent",
+        id: r.id,
+        author: {
+          id: r.author_id,
+          name: r.author_name,
+          avatarUrl: r.author_avatar,
+        },
+        createdAt: r.created_at,
+        tickType: r.tick_type,
+        route: { id: r.route_id, name: r.route_name, grade: r.grade },
+        crag: { id: r.crag_id, name: r.crag_name },
+        likeCount: 0,
+        likedByMe: false,
+        commentCount: 0,
+      }),
+    ),
   ];
 
   const items = sortFeedNewestFirst(merged).slice(0, limit);
@@ -188,7 +205,8 @@ async function attachInteractions(
       .groupBy(["target_type", "target_id"])
       .execute();
     const map = new Map<string, number>();
-    for (const r of rows) map.set(`${r.target_type}:${r.target_id}`, Number(r.n));
+    for (const r of rows)
+      map.set(`${r.target_type}:${r.target_id}`, Number(r.n));
     return map;
   }
 
@@ -280,6 +298,7 @@ export async function loadComments(
       "comments.created_at",
       "users.id as author_id",
       "users.name as author_name",
+      "users.avatar_url as author_avatar",
     ])
     .where("comments.target_type", "=", targetType)
     .where("comments.target_id", "=", targetId)
@@ -287,7 +306,11 @@ export async function loadComments(
     .execute();
   return rows.map((r) => ({
     id: r.id,
-    author: { id: r.author_id, name: r.author_name },
+    author: {
+      id: r.author_id,
+      name: r.author_name,
+      avatarUrl: r.author_avatar,
+    },
     body: r.body,
     createdAt: r.created_at,
   }));

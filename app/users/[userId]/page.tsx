@@ -4,6 +4,7 @@ import db from "@/lib/db";
 import FollowButton from "@/app/ui/follow-button";
 import { buildProfileTimeline } from "@/lib/feed";
 import FeedItemCard from "@/app/ui/feed-item";
+import Avatar from "@/app/ui/avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function UserProfilePage({
 
   const profile = await db
     .selectFrom("users")
-    .select(["id", "name"])
+    .select(["id", "name", "avatar_url"])
     .where("id", "=", profileId)
     .executeTakeFirst();
   if (!profile) notFound();
@@ -65,21 +66,29 @@ export default async function UserProfilePage({
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{profile.name}</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            <span className="font-medium text-zinc-700 dark:text-zinc-300">
-              {following}
-            </span>{" "}
-            following ·{" "}
-            <span className="font-medium text-zinc-700 dark:text-zinc-300">
-              {followers}
-            </span>{" "}
-            {Number(followers) === 1 ? "follower" : "followers"}
-          </p>
+        <div className="flex items-center gap-4">
+          <Avatar name={profile.name} src={profile.avatar_url} size={64} />
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {profile.name}
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                {following}
+              </span>{" "}
+              following ·{" "}
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                {followers}
+              </span>{" "}
+              {Number(followers) === 1 ? "follower" : "followers"}
+            </p>
+          </div>
         </div>
         {viewer && !isSelf && (
-          <FollowButton followeeId={profileId} initialFollowing={viewerFollows} />
+          <FollowButton
+            followeeId={profileId}
+            initialFollowing={viewerFollows}
+          />
         )}
       </header>
 

@@ -5,11 +5,13 @@ import Link from "next/link";
 import { addComment } from "@/app/actions";
 import type { FeedTargetType } from "@/lib/db";
 import { inputClass } from "@/app/ui/style";
+import Avatar from "@/app/ui/avatar";
 
 export type CommentView = {
   id: number;
   authorId: number;
   authorName: string;
+  authorAvatar: string | null;
   body: string;
 };
 
@@ -44,15 +46,20 @@ export default function CommentList({
   return (
     <div className="mt-3 space-y-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
       {comments.map((c) => (
-        <p key={c.id} className="text-sm">
-          <Link
-            href={`/users/${c.authorId}`}
-            className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
-          >
-            {c.authorName}
-          </Link>{" "}
-          <span className="text-zinc-700 dark:text-zinc-300">{c.body}</span>
-        </p>
+        <div key={c.id} className="flex items-start gap-2 text-sm">
+          <Link href={`/users/${c.authorId}`} className="mt-0.5 shrink-0">
+            <Avatar name={c.authorName} src={c.authorAvatar} size={22} />
+          </Link>
+          <p>
+            <Link
+              href={`/users/${c.authorId}`}
+              className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+            >
+              {c.authorName}
+            </Link>{" "}
+            <span className="text-zinc-700 dark:text-zinc-300">{c.body}</span>
+          </p>
+        </div>
       ))}
       {canComment && (
         <form onSubmit={submit} className="flex gap-2">

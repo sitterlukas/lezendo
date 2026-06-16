@@ -5,6 +5,7 @@ import db from "@/lib/db";
 import { createTopic } from "@/app/actions";
 import Modal from "@/app/ui/modal";
 import LoginToAdd from "@/app/ui/login-to-add";
+import Avatar from "@/app/ui/avatar";
 import { inputClass } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function ForumPage() {
       "forum_topics.title",
       "forum_topics.created_at",
       "users.name as author",
+      "users.avatar_url as author_avatar",
       eb.fn.count<number>("forum_posts.id").as("post_count"),
       sql<Date | null>`MAX(forum_posts.created_at)`.as("last_post_at"),
     ])
@@ -36,6 +38,7 @@ export default async function ForumPage() {
       "forum_topics.title",
       "forum_topics.created_at",
       "users.name",
+      "users.avatar_url",
     ])
     .orderBy("forum_topics.created_at", "desc")
     .execute();
@@ -110,18 +113,25 @@ export default async function ForumPage() {
                 href={`/forum/${topic.id}`}
                 className="flex items-center justify-between gap-6 px-4 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
               >
-                <div className="min-w-0">
-                  <p className="truncate font-semibold leading-snug">
-                    {topic.title}
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    {topic.author} ·{" "}
-                    {topic.created_at.toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar
+                    name={topic.author}
+                    src={topic.author_avatar}
+                    size={36}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold leading-snug">
+                      {topic.title}
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      {topic.author} ·{" "}
+                      {topic.created_at.toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-sm font-medium">

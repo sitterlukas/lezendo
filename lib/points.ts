@@ -52,6 +52,7 @@ function buildRankIndex(
 export interface LeaderboardRow {
   user_id: number;
   name: string;
+  avatar_url: string | null;
   points: number;
 }
 
@@ -78,6 +79,7 @@ export async function loadLeaderboard(opts: {
     .select((eb) => [
       "ascents.user_id as user_id",
       "users.name as name",
+      "users.avatar_url as avatar_url",
       "ge.discipline as discipline",
       "ge.equivalency_id as rank",
       eb.fn.count<number>("ascents.id").as("n"),
@@ -87,6 +89,7 @@ export async function loadLeaderboard(opts: {
     .groupBy([
       "ascents.user_id",
       "users.name",
+      "users.avatar_url",
       "ge.discipline",
       "ge.equivalency_id",
     ]);
@@ -106,7 +109,13 @@ export async function loadLeaderboard(opts: {
     const userId = Number(r.user_id);
     const existing = totals.get(userId);
     if (existing) existing.points += points;
-    else totals.set(userId, { user_id: userId, name: r.name, points });
+    else
+      totals.set(userId, {
+        user_id: userId,
+        name: r.name,
+        avatar_url: r.avatar_url,
+        points,
+      });
   }
 
   return [...totals.values()].sort((a, b) => b.points - a.points);

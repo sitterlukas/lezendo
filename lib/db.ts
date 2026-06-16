@@ -103,6 +103,7 @@ export interface UsersTable {
   email: string;
   name: string;
   password_hash: string | null;
+  avatar_url: string | null;
   role: Generated<UserRole>;
   preferred_rope_grading_system_id: number | null;
   preferred_boulder_grading_system_id: number | null;
