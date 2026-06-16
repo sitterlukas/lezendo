@@ -32,49 +32,48 @@ export default async function UserProfilePage({
         .executeTakeFirst()) ?? null)
     : null;
 
-  const [{ followers }, { following }] = await Promise.all([
-    db
-      .selectFrom("follows")
-      .select((eb) => eb.fn.countAll<number>().as("followers"))
-      .where("followee_id", "=", profileId)
-      .executeTakeFirstOrThrow(),
-    db
-      .selectFrom("follows")
-      .select((eb) => eb.fn.countAll<number>().as("following"))
-      .where("follower_id", "=", profileId)
-      .executeTakeFirstOrThrow(),
-  ]);
-
   const isSelf = viewer?.id === profileId;
-  let viewerFollows = false;
-  if (viewer && !isSelf) {
-    const row = await db
-      .selectFrom("follows")
-      .select("follower_id")
-      .where("follower_id", "=", viewer.id)
-      .where("followee_id", "=", profileId)
-      .executeTakeFirst();
-    viewerFollows = !!row;
-  }
 
-  const ascents = await db
-    .selectFrom("ascents")
-    .innerJoin("routes", "routes.id", "ascents.route_id")
-    .innerJoin("crags", "crags.id", "routes.crag_id")
-    .select([
-      "ascents.id",
-      "ascents.tick_type",
-      "ascents.created_at",
-      "routes.id as route_id",
-      "routes.name as route_name",
-      "routes.grade",
-      "crags.id as crag_id",
-      "crags.name as crag_name",
-    ])
-    .where("ascents.user_id", "=", profileId)
-    .orderBy("ascents.created_at", "desc")
-    .limit(50)
-    .execute();
+  const [{ followers }, { following }, viewerFollowsRow, ascents] =
+    await Promise.all([
+      db
+        .selectFrom("follows")
+        .select((eb) => eb.fn.countAll<number>().as("followers"))
+        .where("followee_id", "=", profileId)
+        .executeTakeFirstOrThrow(),
+      db
+        .selectFrom("follows")
+        .select((eb) => eb.fn.countAll<number>().as("following"))
+        .where("follower_id", "=", profileId)
+        .executeTakeFirstOrThrow(),
+      viewer && !isSelf
+        ? db
+            .selectFrom("follows")
+            .select("follower_id")
+            .where("follower_id", "=", viewer.id)
+            .where("followee_id", "=", profileId)
+            .executeTakeFirst()
+        : Promise.resolve(null),
+      db
+        .selectFrom("ascents")
+        .innerJoin("routes", "routes.id", "ascents.route_id")
+        .innerJoin("crags", "crags.id", "routes.crag_id")
+        .select([
+          "ascents.id",
+          "ascents.tick_type",
+          "ascents.created_at",
+          "routes.id as route_id",
+          "routes.name as route_name",
+          "routes.grade",
+          "crags.id as crag_id",
+          "crags.name as crag_name",
+        ])
+        .where("ascents.user_id", "=", profileId)
+        .orderBy("ascents.created_at", "desc")
+        .limit(50)
+        .execute(),
+    ]);
+  const viewerFollows = !!viewerFollowsRow;
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
@@ -89,7 +88,7 @@ export default async function UserProfilePage({
             <span className="font-medium text-zinc-700 dark:text-zinc-300">
               {followers}
             </span>{" "}
-            {followers === 1 ? "follower" : "followers"}
+            {Number(followers) === 1 ? "follower" : "followers"}
           </p>
         </div>
         {viewer && !isSelf && (
