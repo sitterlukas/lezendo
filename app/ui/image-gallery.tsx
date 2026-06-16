@@ -11,8 +11,8 @@ import type { ImageEntityType } from "@/lib/db";
 type GalleryImage = { id: number; url: string; uploaded_by: number | null };
 
 // How many thumbnails to show before the user expands the gallery. The add/
-// login tile takes the next cell, so collapsed shows 4 photos + the tile.
-const COLLAPSED_COUNT = 4;
+// upload tile takes the next cell, so collapsed shows 3 photos + the tile.
+const COLLAPSED_COUNT = 3;
 
 export default function ImageGallery({
   images,
@@ -21,6 +21,7 @@ export default function ImageGallery({
   entityType,
   entityId,
   canUpload,
+  promptLogin = true,
 }: {
   images: GalleryImage[];
   currentUserId: number | null;
@@ -28,6 +29,9 @@ export default function ImageGallery({
   entityType: ImageEntityType;
   entityId: number;
   canUpload: boolean;
+  // Whether to nudge logged-out visitors to sign in to add photos. Off where
+  // only the owner could ever upload (e.g. a status in the feed).
+  promptLogin?: boolean;
 }) {
   // Index of the photo shown in the lightbox, or null when closed.
   const [index, setIndex] = useState<number | null>(null);
@@ -78,7 +82,6 @@ export default function ImageGallery({
   // lightbox; expanding only affects how many thumbnails the grid shows.
   const hasMore = images.length > COLLAPSED_COUNT;
   const visible = expanded ? images : images.slice(0, COLLAPSED_COUNT);
-  const hiddenCount = images.length - COLLAPSED_COUNT;
 
   return (
     <>
@@ -151,7 +154,7 @@ export default function ImageGallery({
         )}
       </ul>
 
-      {!canUpload && (
+      {promptLogin && currentUserId === null && (
         <div className="mt-3">
           <LoginToAdd to="to add photos" />
         </div>
@@ -163,7 +166,7 @@ export default function ImageGallery({
           onClick={() => setExpanded((v) => !v)}
           className="mt-3 inline-flex items-center gap-1.5 rounded border border-zinc-300 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
         >
-          {expanded ? "Show less" : `Show ${hiddenCount} more`}
+          {expanded ? "Show less" : `Show all ${images.length} photos`}
           <svg
             className={`transition-transform ${expanded ? "rotate-180" : ""}`}
             width="12"

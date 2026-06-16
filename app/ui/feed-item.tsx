@@ -104,14 +104,17 @@ export default function FeedItemCard({
               📍 {item.crag.name}
             </Link>
           )}
-          {item.photos.length > 0 && (
+          {/* The author (or an admin) can add/remove this status's photos
+              right here; everyone else sees them read-only. */}
+          {(item.photos.length > 0 || canDelete) && (
             <ImageGallery
               images={item.photos}
               currentUserId={viewerId}
               isAdmin={isAdmin}
               entityType="status"
               entityId={item.id}
-              canUpload={false}
+              canUpload={canDelete}
+              promptLogin={false}
             />
           )}
         </>
