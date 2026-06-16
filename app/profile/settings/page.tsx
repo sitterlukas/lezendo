@@ -1,11 +1,16 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { logout, updateName } from "@/app/actions/auth";
 import ProfileTabs from "@/app/profile/tabs";
 import AvatarUpload from "@/app/ui/avatar-upload";
+import Avatar from "@/app/ui/avatar";
+import FollowButton from "@/app/ui/follow-button";
 import GradingSystemForm from "./grading-system-form";
 import db from "@/lib/db";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
+
+type FollowUser = { id: number; name: string; avatar_url: string | null };
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -39,6 +44,24 @@ export default async function SettingsPage() {
   if (!user) {
     redirect("/login");
   }
+
+  const [following, followers] = await Promise.all([
+    db
+      .selectFrom("follows")
+      .innerJoin("users", "users.id", "follows.followee_id")
+      .select(["users.id", "users.name", "users.avatar_url"])
+      .where("follows.follower_id", "=", user.id)
+      .orderBy("users.name")
+      .execute(),
+    db
+      .selectFrom("follows")
+      .innerJoin("users", "users.id", "follows.follower_id")
+      .select(["users.id", "users.name", "users.avatar_url"])
+      .where("follows.followee_id", "=", user.id)
+      .orderBy("users.name")
+      .execute(),
+  ]);
+  const followingIds = new Set(following.map((u) => u.id));
 
   const memberSince = user.created_at.toLocaleDateString("en-GB", {
     day: "numeric",
@@ -108,6 +131,21 @@ export default async function SettingsPage() {
         </dl>
       </section>
 
+      <div className="mt-6 grid gap-6 sm:grid-cols-2">
+        <FollowSection
+          title="Following"
+          users={following}
+          followingIds={followingIds}
+          empty="You're not following anyone yet."
+        />
+        <FollowSection
+          title="Followers"
+          users={followers}
+          followingIds={followingIds}
+          empty="No followers yet."
+        />
+      </div>
+
       <form action={logout} className="mt-8">
         <button
           type="submit"
@@ -117,5 +155,50 @@ export default async function SettingsPage() {
         </button>
       </form>
     </main>
+  );
+}
+
+function FollowSection({
+  title,
+  users,
+  followingIds,
+  empty,
+}: {
+  title: string;
+  users: FollowUser[];
+  followingIds: Set<number>;
+  empty: string;
+}) {
+  return (
+    <section className="rounded border border-zinc-200 dark:border-zinc-800">
+      <h2 className="border-b border-zinc-200 px-5 py-3 text-sm font-semibold dark:border-zinc-800">
+        {title}
+        <span className="ml-1.5 font-normal text-zinc-400">{users.length}</span>
+      </h2>
+      {users.length === 0 ? (
+        <p className="px-5 py-4 text-sm text-zinc-500">{empty}</p>
+      ) : (
+        <ul className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+          {users.map((u) => (
+            <li
+              key={u.id}
+              className="flex items-center justify-between gap-3 px-5 py-3"
+            >
+              <Link
+                href={`/users/${u.id}`}
+                className="flex min-w-0 items-center gap-2 text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+              >
+                <Avatar name={u.name} src={u.avatar_url} size={28} />
+                <span className="truncate">{u.name}</span>
+              </Link>
+              <FollowButton
+                followeeId={u.id}
+                initialFollowing={followingIds.has(u.id)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

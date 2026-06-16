@@ -1022,6 +1022,7 @@ export async function followUser(formData: FormData) {
 
   revalidatePath(`/users/${followeeId}`);
   revalidatePath("/feed");
+  revalidatePath("/profile", "layout");
 }
 
 export async function unfollowUser(formData: FormData) {
@@ -1039,6 +1040,7 @@ export async function unfollowUser(formData: FormData) {
 
   revalidatePath(`/users/${followeeId}`);
   revalidatePath("/feed");
+  revalidatePath("/profile", "layout");
 }
 
 export async function createStatus(formData: FormData): Promise<CreateResult> {

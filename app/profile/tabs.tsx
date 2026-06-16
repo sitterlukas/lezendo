@@ -3,7 +3,7 @@ import Link from "next/link";
 const tabs = [
   { href: "/profile/statistics", label: "Statistics", key: "statistics" },
   { href: "/profile/gear", label: "Gear", key: "gear" },
-  { href: "/profile/settings", label: "Settings", key: "settings" },
+  { href: "/profile/settings", label: "Profile", key: "settings" },
 ] as const;
 
 export default function ProfileTabs({
