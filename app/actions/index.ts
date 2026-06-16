@@ -942,6 +942,17 @@ export async function saveImage(
   const userId = await currentUserId();
   if (!userId) return;
 
+  // Statuses are capped at 5 photos.
+  if (entityType === "status") {
+    const { count } = await db
+      .selectFrom("images")
+      .select((eb) => eb.fn.countAll<number>().as("count"))
+      .where("entity_type", "=", "status")
+      .where("entity_id", "=", entityId)
+      .executeTakeFirstOrThrow();
+    if (Number(count) >= 5) return;
+  }
+
   await db
     .insertInto("images")
     .values({
@@ -953,6 +964,7 @@ export async function saveImage(
     .execute();
 
   revalidatePath("/crags", "layout");
+  if (entityType === "status") revalidatePath("/feed");
 }
 
 export async function deleteImage(imageId: number) {
