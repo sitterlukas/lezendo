@@ -197,6 +197,28 @@ export async function logAscent(formData: FormData) {
   const date = dateRaw ? new Date(dateRaw) : null;
   if (date && Number.isNaN(date.getTime())) return;
 
+  const route = await db
+    .selectFrom("routes")
+    .select("crag_id")
+    .where("id", "=", routeId)
+    .executeTakeFirst();
+  if (!route) return;
+
+  // Find or create the (climber, crag, day) activity this ascent belongs to,
+  // so feed likes/comments have a stable target. `DO UPDATE` (a no-op set) lets
+  // the upsert RETURN the existing row's id on conflict.
+  const day = (date ?? new Date()).toISOString().slice(0, 10);
+  const activity = await db
+    .insertInto("ascent_activities")
+    .values({ user_id: userId, crag_id: route.crag_id, activity_date: day })
+    .onConflict((oc) =>
+      oc
+        .columns(["user_id", "crag_id", "activity_date"])
+        .doUpdateSet({ crag_id: route.crag_id }),
+    )
+    .returning("id")
+    .executeTakeFirstOrThrow();
+
   await db
     .insertInto("ascents")
     .values({
@@ -205,18 +227,20 @@ export async function logAscent(formData: FormData) {
       tick_type: tickType,
       ...(date ? { ascent_date: date } : {}),
       notes: notes || null,
+      activity_id: activity.id,
     })
     .execute();
 
   revalidatePath("/crags", "layout");
   revalidatePath("/profile");
+  revalidatePath("/feed");
 }
 
 // Remove a feed target's polymorphic interactions before the row itself:
 // likes on it, its comments, and the likes on those comments (none are tied by
 // a DB foreign key, so they'd otherwise orphan).
 async function deleteTargetInteractions(
-  targetType: "status" | "ascent",
+  targetType: "status" | "activity",
   targetId: number,
 ) {
   const commentRows = await db
@@ -255,14 +279,31 @@ export async function deleteAscent(formData: FormData) {
   // Verify ownership before deleting — only the owner may delete their tick.
   const owned = await db
     .selectFrom("ascents")
-    .select("id")
+    .select(["id", "activity_id"])
     .where("id", "=", ascentId)
     .where("user_id", "=", userId)
     .executeTakeFirst();
   if (!owned) return;
 
-  await deleteTargetInteractions("ascent", ascentId);
   await db.deleteFrom("ascents").where("id", "=", ascentId).execute();
+
+  // If that was the last ascent in its activity, remove the now-empty activity
+  // and its feed interactions (likes/comments target the activity).
+  if (owned.activity_id !== null) {
+    const remaining = await db
+      .selectFrom("ascents")
+      .select("id")
+      .where("activity_id", "=", owned.activity_id)
+      .limit(1)
+      .executeTakeFirst();
+    if (!remaining) {
+      await deleteTargetInteractions("activity", owned.activity_id);
+      await db
+        .deleteFrom("ascent_activities")
+        .where("id", "=", owned.activity_id)
+        .execute();
+    }
+  }
 
   revalidatePath("/profile");
   revalidatePath("/crags");
@@ -1190,8 +1231,10 @@ export async function createStatus(formData: FormData): Promise<CreateResult> {
   return { ok: true, id: row.id };
 }
 
-const feedTargetTypes: FeedTargetType[] = ["status", "ascent"];
-const likeTargetTypes: LikeTargetType[] = ["status", "ascent", "comment"];
+// What the feed lets you comment on / like. Ascents are grouped into a
+// per-day "activity", so feed interactions on ascents target the activity.
+const feedTargetTypes: FeedTargetType[] = ["status", "activity"];
+const likeTargetTypes: LikeTargetType[] = ["status", "activity", "comment"];
 
 export async function toggleLike(formData: FormData) {
   const userId = await currentUserId();

@@ -1,11 +1,19 @@
-import { Kysely, PostgresDialect, type Generated } from "kysely";
+import {
+  Kysely,
+  PostgresDialect,
+  type Generated,
+  type ColumnType,
+} from "kysely";
 
 export type DeletionEntityType = "crag" | "sector" | "route";
 export type DeletionAction = "delete" | "recover";
 export type ImageEntityType = "crag" | "sector" | "route" | "status";
-export type FeedTargetType = "status" | "ascent";
+// What a status/comment/like can point at. Ascents are grouped into a per-day
+// "activity", so feed interactions on ascents target the activity, not the row.
+// ('ascent' is retained for legacy/back-compat with the DB CHECK.)
+export type FeedTargetType = "status" | "ascent" | "activity";
 // Comments can also be liked, so likes target a wider set than comments do.
-export type LikeTargetType = "status" | "ascent" | "comment";
+export type LikeTargetType = FeedTargetType | "comment";
 export type ReviewEntityType = "crag" | "sector" | "route";
 import { Pool } from "pg";
 
@@ -88,6 +96,15 @@ export interface DeletionLogTable {
   created_at: Generated<Date>;
 }
 
+export interface AscentActivitiesTable {
+  id: Generated<number>;
+  user_id: number;
+  crag_id: number;
+  // Stored/inserted as a 'YYYY-MM-DD' string so day grouping is timezone-safe.
+  activity_date: ColumnType<string, string, string>;
+  created_at: Generated<Date>;
+}
+
 export interface AscentsTable {
   id: Generated<number>;
   route_id: number;
@@ -95,6 +112,7 @@ export interface AscentsTable {
   tick_type: TickType;
   ascent_date: Generated<Date>;
   notes: string | null;
+  activity_id: number | null;
   created_at: Generated<Date>;
 }
 
@@ -221,6 +239,7 @@ export interface Database {
   grading_systems: GradingSystemsTable;
   grade_equivalencies: GradeEquivalenciesTable;
   ascents: AscentsTable;
+  ascent_activities: AscentActivitiesTable;
   users: UsersTable;
   gear_items: GearItemsTable;
   gear_reviews: GearReviewsTable;
