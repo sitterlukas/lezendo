@@ -123,6 +123,9 @@ export interface UsersTable {
   email: string;
   name: string;
   password_hash: string | null;
+  email_verified_at: Date | null;
+  verification_token_hash: string | null;
+  verification_token_expires_at: Date | null;
   avatar_url: string | null;
   role: Generated<UserRole>;
   preferred_rope_grading_system_id: number | null;
