@@ -5,6 +5,9 @@ import ImageGallery from "@/app/ui/image-gallery";
 import DeleteButton from "@/app/ui/delete-button";
 import LikeButton from "@/app/ui/like-button";
 import { deleteStatus } from "@/app/actions";
+import db from "@/lib/db";
+import { loadComments } from "@/lib/feed";
+import CommentList from "@/app/ui/comment-list";
 
 const tickVerb: Record<string, string> = {
   onsight: "Onsighted",
@@ -14,7 +17,7 @@ const tickVerb: Record<string, string> = {
   attempt: "Tried",
 };
 
-export default function FeedItemCard({
+export default async function FeedItemCard({
   item,
   viewerId,
   isAdmin,
@@ -23,6 +26,16 @@ export default function FeedItemCard({
   viewerId: number | null;
   isAdmin: boolean;
 }) {
+  const comments =
+    item.commentCount > 0
+      ? (await loadComments(db, item.kind, item.id)).map((c) => ({
+          id: c.id,
+          authorId: c.author.id,
+          authorName: c.author.name,
+          body: c.body,
+        }))
+      : [];
+
   const canDelete =
     item.kind === "status" && (isAdmin || viewerId === item.author.id);
 
@@ -105,8 +118,13 @@ export default function FeedItemCard({
           initialCount={item.likeCount}
           disabled={viewerId === null}
         />
-        <span>💬 {item.commentCount}</span>
       </div>
+      <CommentList
+        targetType={item.kind}
+        targetId={item.id}
+        comments={comments}
+        canComment={viewerId !== null}
+      />
     </article>
   );
 }
