@@ -67,6 +67,9 @@ export default function CreateModal({
     const id = createdId;
     close();
     if (id !== null) router.push(doneHref(id));
+    // Refetch server data — when doneHref is the current route (e.g. a status
+    // returning to /feed) push alone won't show the just-created item.
+    router.refresh();
   }
 
   return (
@@ -76,8 +79,19 @@ export default function CreateModal({
         onClick={open}
         className="inline-flex items-center gap-1 rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
       >
-        <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-          <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 20 20"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M10 4v12M4 10h12"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
         </svg>
         {triggerLabel}
       </button>
@@ -97,7 +111,8 @@ export default function CreateModal({
                 <p className="mt-0.5 text-sm text-zinc-500">{subtitle}</p>
               )}
               <p className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-400">
-                Step {step} of 2 · {step === 1 ? "Details" : "Photos & location"}
+                Step {step} of 2 ·{" "}
+                {step === 1 ? "Details" : "Photos & location"}
               </p>
             </div>
             <button
@@ -106,8 +121,19 @@ export default function CreateModal({
               aria-label="Close"
               className="rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
             >
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="m5 5 10 10M15 5 5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="m5 5 10 10M15 5 5 15"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
           </div>
@@ -117,7 +143,10 @@ export default function CreateModal({
               <form onSubmit={handleSubmit} className="grid gap-4">
                 {children}
                 {error && (
-                  <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
+                  <p
+                    role="alert"
+                    className="text-sm font-medium text-red-600 dark:text-red-400"
+                  >
                     {error}
                   </p>
                 )}
