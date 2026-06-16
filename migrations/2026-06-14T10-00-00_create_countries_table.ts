@@ -1,4 +1,4 @@
-import { type Kysely, sql } from "kysely";
+import { type Kysely } from "kysely";
 
 const COUNTRIES = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola",
