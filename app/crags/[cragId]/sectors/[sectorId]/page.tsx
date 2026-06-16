@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
@@ -20,6 +21,41 @@ import { gradeBuckets, gradeRange, stylesPresent } from "@/lib/route-stats";
 import { typeLabel, typeBadge } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ cragId: string; sectorId: string }>;
+}): Promise<Metadata> {
+  const { cragId, sectorId } = await params;
+  const c = Number(cragId);
+  const s = Number(sectorId);
+  if (!Number.isInteger(c) || !Number.isInteger(s)) return {};
+  const sector = await db
+    .selectFrom("sectors")
+    .innerJoin("crags", "crags.id", "sectors.crag_id")
+    .select([
+      "sectors.name as name",
+      "sectors.description as description",
+      "crags.name as cragName",
+    ])
+    .where("sectors.id", "=", s)
+    .where("sectors.crag_id", "=", c)
+    .where("sectors.deleted", "=", false)
+    .executeTakeFirst();
+  if (!sector) return {};
+  const title = `${sector.name} · ${sector.cragName}`;
+  const description =
+    sector.description ??
+    `Routes and topos at ${sector.name}, ${sector.cragName}, on Whipperbook.`;
+  const url = `/crags/${c}/sectors/${s}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url },
+  };
+}
 
 export default async function SectorPage({
   params,

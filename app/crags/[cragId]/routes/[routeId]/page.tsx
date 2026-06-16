@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
@@ -34,6 +35,42 @@ const tickBadge: Record<TickType, string> = {
   attempt:
     "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300",
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ cragId: string; routeId: string }>;
+}): Promise<Metadata> {
+  const { cragId, routeId } = await params;
+  const c = Number(cragId);
+  const r = Number(routeId);
+  if (!Number.isInteger(c) || !Number.isInteger(r)) return {};
+  const route = await db
+    .selectFrom("routes")
+    .innerJoin("crags", "crags.id", "routes.crag_id")
+    .select([
+      "routes.name as name",
+      "routes.grade as grade",
+      "routes.description as description",
+      "crags.name as cragName",
+    ])
+    .where("routes.id", "=", r)
+    .where("routes.crag_id", "=", c)
+    .where("routes.deleted", "=", false)
+    .executeTakeFirst();
+  if (!route) return {};
+  const title = `${route.name} (${route.grade}) · ${route.cragName}`;
+  const description =
+    route.description ??
+    `${route.name}, graded ${route.grade}, at ${route.cragName}. Beta, topos and ascents on Whipperbook.`;
+  const url = `/crags/${c}/routes/${r}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url },
+  };
+}
 
 export default async function RoutePage({
   params,

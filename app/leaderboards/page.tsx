@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import db from "@/lib/db";
@@ -15,6 +16,13 @@ import RankCrown from "@/app/ui/rank-crown";
 import Avatar from "@/app/ui/avatar";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Leaderboards",
+  description:
+    "See the top climbers by points across sport, bouldering and combined disciplines on Whipperbook.",
+  alternates: { canonical: "/leaderboards" },
+};
 
 export default async function LeaderboardPage({
   searchParams,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
@@ -7,6 +8,29 @@ import ForumPost from "@/app/ui/forum-post";
 import ForumTopicActions from "@/app/ui/forum-topic-actions";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ topicId: string }>;
+}): Promise<Metadata> {
+  const id = Number((await params).topicId);
+  if (!Number.isInteger(id)) return {};
+  const topic = await db
+    .selectFrom("forum_topics")
+    .select("title")
+    .where("id", "=", id)
+    .executeTakeFirst();
+  if (!topic) return {};
+  const description = `${topic.title} — a discussion on the Whipperbook climbing forum.`;
+  const url = `/forum/${id}`;
+  return {
+    title: topic.title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title: topic.title, description, url },
+  };
+}
 
 export default async function TopicPage({
   params,
