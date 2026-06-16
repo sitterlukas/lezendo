@@ -26,6 +26,31 @@ export function gradePoints(index: number): number {
   return Math.round(POINTS_BASE * POINTS_GROWTH ** index);
 }
 
+// Build a reusable lookup for the points a single route is worth, given its
+// grading system + grade. Returns null when the grade isn't in a known system.
+// Same scoring as the leaderboard (one send of that grade).
+export function buildRoutePoints(
+  eqs: GradeEquivalency[],
+): (gradingSystemId: number, grade: string) => number | null {
+  const indexByRank = buildRankIndex(eqs);
+  const byKey = new Map<
+    string,
+    { discipline: "rope" | "boulder"; rank: number }
+  >();
+  for (const e of eqs) {
+    byKey.set(`${e.gradingSystemId}|${e.grade.toLowerCase()}`, {
+      discipline: e.discipline,
+      rank: e.rank,
+    });
+  }
+  return (gradingSystemId, grade) => {
+    const hit = byKey.get(`${gradingSystemId}|${grade.toLowerCase()}`);
+    if (!hit) return null;
+    const index = indexByRank.get(hit.discipline)?.get(hit.rank);
+    return index === undefined ? null : gradePoints(index);
+  };
+}
+
 /**
  * Map each (discipline, equivalency_id) to its 0-based ordinal position, so the
  * easiest grade in a discipline is index 0 regardless of the raw rank spacing.

@@ -1,6 +1,8 @@
 import type { Kysely } from "kysely";
 import { sql } from "kysely";
 import type { Database, TickType } from "@/lib/db";
+import { buildRoutePoints } from "@/lib/points";
+import { loadGradeEquivalencies } from "@/lib/grade-data";
 
 export type FeedAuthor = {
   id: number;
@@ -36,6 +38,7 @@ export type FeedItem =
       tickType: TickType;
       route: { id: number; name: string; grade: string };
       crag: { id: number; name: string };
+      points: number | null;
     });
 
 export type FeedPage = { items: FeedItem[]; nextCursor: Date | null };
@@ -103,6 +106,7 @@ async function buildFor(
       "routes.id as route_id",
       "routes.name as route_name",
       "routes.grade",
+      "routes.grading_system_id",
       "crags.id as crag_id",
       "crags.name as crag_name",
     ])
@@ -133,6 +137,12 @@ async function buildFor(
       photosByStatus.set(p.entity_id, list);
     }
   }
+
+  // Points each ascent's route is worth (same scoring as the leaderboard).
+  const routePoints =
+    ascentRows.length > 0
+      ? buildRoutePoints(await loadGradeEquivalencies())
+      : null;
 
   const merged: FeedItem[] = [
     ...statusRows.map(
@@ -175,6 +185,7 @@ async function buildFor(
         tickType: r.tick_type,
         route: { id: r.route_id, name: r.route_name, grade: r.grade },
         crag: { id: r.crag_id, name: r.crag_name },
+        points: routePoints?.(r.grading_system_id, r.grade) ?? null,
         likeCount: 0,
         likedByMe: false,
         commentCount: 0,
