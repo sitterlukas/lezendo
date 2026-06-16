@@ -99,6 +99,7 @@ export async function up(db: Kysely<any>): Promise<void> {
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
+  await sql`DELETE FROM images WHERE entity_type = 'status'`.execute(db);
   await sql`ALTER TABLE images DROP CONSTRAINT images_entity_type_check`.execute(
     db
   );

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { STATUS_MAX_LEN } from "@/lib/constants";
+import { STATUS_MAX_LEN, COMMENT_MAX_LEN } from "@/lib/constants";
 import db, {
   type ClimbStyle,
   type FeedTargetType,
@@ -226,8 +226,6 @@ export async function deleteAscent(formData: FormData) {
     .executeTakeFirst();
   if (!owned) return;
 
-  await db.deleteFrom("ascents").where("id", "=", ascentId).execute();
-
   await db
     .deleteFrom("likes")
     .where("target_type", "=", "ascent")
@@ -238,6 +236,8 @@ export async function deleteAscent(formData: FormData) {
     .where("target_type", "=", "ascent")
     .where("target_id", "=", ascentId)
     .execute();
+
+  await db.deleteFrom("ascents").where("id", "=", ascentId).execute();
 
   revalidatePath("/profile");
   revalidatePath("/crags");
@@ -1109,6 +1109,7 @@ export async function toggleLike(formData: FormData) {
   }
 
   revalidatePath("/feed");
+  revalidatePath("/users", "layout");
 }
 
 export async function addComment(formData: FormData) {
@@ -1121,7 +1122,8 @@ export async function addComment(formData: FormData) {
   if (
     !feedTargetTypes.includes(targetType) ||
     !Number.isInteger(targetId) ||
-    !body
+    !body ||
+    body.length > COMMENT_MAX_LEN
   )
     return;
 
@@ -1131,6 +1133,7 @@ export async function addComment(formData: FormData) {
     .execute();
 
   revalidatePath("/feed");
+  revalidatePath("/users", "layout");
 }
 
 export async function deleteComment(formData: FormData) {
@@ -1149,6 +1152,7 @@ export async function deleteComment(formData: FormData) {
 
   await db.deleteFrom("comments").where("id", "=", commentId).execute();
   revalidatePath("/feed");
+  revalidatePath("/users", "layout");
 }
 
 export async function deleteStatus(formData: FormData) {
