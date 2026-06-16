@@ -116,20 +116,27 @@ export default async function FeedItemCard({
           )}
         </>
       ) : (
-        <p className="mt-2 text-zinc-800 dark:text-zinc-200">
-          {tickVerb[item.tickType] ?? "Climbed"}{" "}
-          <Link
-            href={`/crags/${item.crag.id}/routes/${item.route.id}`}
-            className="font-medium hover:underline"
-          >
-            {item.route.name}
-          </Link>{" "}
-          <span className="text-zinc-500">{item.route.grade}</span>{" "}
-          <span className="text-zinc-400">at</span>{" "}
-          <Link href={`/crags/${item.crag.id}`} className="hover:underline">
-            {item.crag.name}
-          </Link>
-        </p>
+        <>
+          <p className="mt-2 text-zinc-800 dark:text-zinc-200">
+            {tickVerb[item.tickType] ?? "Climbed"}{" "}
+            <Link
+              href={`/crags/${item.crag.id}/routes/${item.route.id}`}
+              className="font-medium hover:underline"
+            >
+              {item.route.name}
+            </Link>{" "}
+            <span className="text-zinc-500">{item.route.grade}</span>{" "}
+            <span className="text-zinc-400">at</span>{" "}
+            <Link href={`/crags/${item.crag.id}`} className="hover:underline">
+              {item.crag.name}
+            </Link>
+          </p>
+          {item.points != null && item.tickType !== "attempt" && (
+            <span className="mt-2 inline-block rounded bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+              +{item.points} pts
+            </span>
+          )}
+        </>
       )}
 
       <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500">
