@@ -1331,6 +1331,38 @@ export async function deleteComment(formData: FormData) {
   revalidatePath("/users", "layout");
 }
 
+export async function editStatus(formData: FormData): Promise<ActionResult> {
+  const user = await currentUserFull();
+  if (!user) return { ok: false, error: "You must be logged in." };
+
+  const statusId = Number(formData.get("status_id"));
+  if (!Number.isInteger(statusId))
+    return { ok: false, error: "Invalid status." };
+
+  const status = await db
+    .selectFrom("statuses")
+    .select(["id", "user_id"])
+    .where("id", "=", statusId)
+    .executeTakeFirst();
+  if (!status || !canModify(user, status.user_id))
+    return { ok: false, error: "Not allowed." };
+
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) return { ok: false, error: "Write something first." };
+  if (body.length > STATUS_MAX_LEN)
+    return { ok: false, error: `Keep it under ${STATUS_MAX_LEN} characters.` };
+
+  await db
+    .updateTable("statuses")
+    .set({ body })
+    .where("id", "=", statusId)
+    .execute();
+
+  revalidatePath("/feed");
+  revalidatePath("/users", "layout");
+  return { ok: true };
+}
+
 export async function deleteStatus(formData: FormData) {
   const user = await currentUserFull();
   if (!user) return;

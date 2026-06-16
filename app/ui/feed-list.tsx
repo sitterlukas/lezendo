@@ -22,6 +22,17 @@ export default function FeedList({
   const [cursor, setCursor] = useState(initialCursor);
   const [pending, startTransition] = useTransition();
 
+  // Re-sync when the server sends fresh data (router.refresh after posting,
+  // editing, or managing photos). Adjusting state during render on a changed
+  // prop is the React-recommended pattern; it resets to the first page, which
+  // is fine. Client-only "load more" doesn't change the prop, so it's safe.
+  const [syncedFrom, setSyncedFrom] = useState(initialItems);
+  if (syncedFrom !== initialItems) {
+    setSyncedFrom(initialItems);
+    setItems(initialItems);
+    setCursor(initialCursor);
+  }
+
   function loadMore() {
     startTransition(async () => {
       const page = await loadFeedPage(cursor);
