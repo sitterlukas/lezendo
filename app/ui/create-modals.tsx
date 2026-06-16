@@ -6,15 +6,27 @@ import CragFields from "@/app/ui/crag-fields";
 import SectorFields from "@/app/ui/sector-fields";
 import RouteFields from "@/app/ui/route-fields";
 import ImageUpload from "@/app/ui/image-upload";
+import MapPicker from "@/app/ui/map-picker";
 import FieldLabel from "@/app/ui/field-label";
 import Select from "@/app/ui/select";
-import { addCrag, addSector, addRoute, updateSectorLocation } from "@/app/actions";
+import {
+  addCrag,
+  addSector,
+  addRoute,
+  updateSectorLocation,
+} from "@/app/actions";
 import { inputClass } from "@/app/ui/style";
 import type { GradeEquivalency } from "@/lib/grade-conversion";
 
 type System = { id: number; name: string; slug: string };
 
-function Step2Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Step2Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <p className="text-sm font-medium">{title}</p>
@@ -94,7 +106,7 @@ export function CreateSectorModal({ cragId }: { cragId: number }) {
             <ImageUpload entityType="sector" entityId={id} />
           </Step2Section>
           <Step2Section title="Location">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3">
               <LocationMini sectorId={id} kind="sector" label="Sector" />
               <LocationMini sectorId={id} kind="parking" label="Parking" />
             </div>
@@ -125,25 +137,8 @@ function LocationMini({
       <input type="hidden" name="sector_id" value={sectorId} />
       <input type="hidden" name="kind" value={kind} />
       <p className="text-xs font-medium">{label}</p>
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <input
-          name="latitude"
-          type="number"
-          step="any"
-          min={-90}
-          max={90}
-          placeholder="Lat"
-          className={inputClass}
-        />
-        <input
-          name="longitude"
-          type="number"
-          step="any"
-          min={-180}
-          max={180}
-          placeholder="Lng"
-          className={inputClass}
-        />
+      <div className="mt-2">
+        <MapPicker />
       </div>
       <button
         type="submit"

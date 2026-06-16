@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { deleteImage } from "@/app/actions";
+import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageUpload from "@/app/ui/image-upload";
+import LoginToAdd from "@/app/ui/login-to-add";
 import type { ImageEntityType } from "@/lib/db";
 
 type GalleryImage = { id: number; url: string; uploaded_by: number | null };
@@ -111,10 +112,12 @@ export default function ImageGallery({
                   });
                 }}
               >
-                <button
-                  type="submit"
-                  aria-label="Delete photo"
-                  className="flex h-6 w-6 items-center justify-center rounded bg-black/60 text-white transition hover:bg-red-600"
+                <ConfirmSubmit
+                  title="Delete photo?"
+                  message="This photo will be permanently removed. This cannot be undone."
+                  confirmLabel="Delete"
+                  triggerAriaLabel="Delete photo"
+                  triggerClassName="flex h-6 w-6 items-center justify-center rounded bg-black/60 text-white transition hover:bg-red-600"
                 >
                   <svg
                     width="10"
@@ -130,40 +133,29 @@ export default function ImageGallery({
                       strokeLinecap="round"
                     />
                   </svg>
-                </button>
+                </ConfirmSubmit>
               </form>
             )}
           </li>
         ))}
-        {/* Last cell: upload tile when signed in, otherwise a prompt to log in. */}
-        <li className="w-40">
-          {canUpload ? (
+        {/* Last cell: upload tile for signed-in users. Logged-out visitors get
+            a text prompt below the grid instead (see LoginToAdd). */}
+        {canUpload && (
+          <li className="w-40">
             <ImageUpload
               entityType={entityType}
               entityId={entityId}
               variant="tile"
             />
-          ) : (
-            <Link
-              href="/login"
-              className="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded border border-dashed border-zinc-300 text-zinc-500 transition hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-900/60 dark:hover:text-zinc-300"
-            >
-              <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path
-                  d="M10 3v10m0-10-3 3m3-3 3 3M3 14v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span className="px-2 text-center text-xs font-medium">
-                Log in to add photos
-              </span>
-            </Link>
-          )}
-        </li>
+          </li>
+        )}
       </ul>
+
+      {!canUpload && (
+        <div className="mt-3">
+          <LoginToAdd label="Log in to add photos" />
+        </div>
+      )}
 
       {hasMore && (
         <button

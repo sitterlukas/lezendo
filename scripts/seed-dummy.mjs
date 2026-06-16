@@ -49,9 +49,9 @@ async function main() {
   const pw = await hash("password", 10);
   const users = {};
   for (const u of [
-    { key: "admin", email: "admin@lezendo.test", name: "Ada Admin", role: "admin" },
-    { key: "lukas", email: "lukas@lezendo.test", name: "Lukas Climber", role: "member" },
-    { key: "mara", email: "mara@lezendo.test", name: "Mara Boulder", role: "member" },
+    { key: "admin", email: "admin@whipperbook.test", name: "Ada Admin", role: "admin" },
+    { key: "lukas", email: "lukas@whipperbook.test", name: "Lukas Climber", role: "member" },
+    { key: "mara", email: "mara@whipperbook.test", name: "Mara Boulder", role: "member" },
   ]) {
     const { rows } = await pool.query(
       `INSERT INTO users (email, name, password_hash, role,

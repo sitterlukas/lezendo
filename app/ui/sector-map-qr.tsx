@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 import Modal from "@/app/ui/modal";
+import MapPicker from "@/app/ui/map-picker";
 import { updateSectorLocation } from "@/app/actions";
-import { inputClass } from "@/app/ui/style";
 
 type Point = {
   key: "sector" | "parking";
@@ -76,11 +76,13 @@ function LocationForm({
   sectorId,
   name,
   triggerLabel,
+  center,
 }: {
   point: Point;
   sectorId: number;
   name: string;
   triggerLabel: string;
+  center?: [number, number];
 }) {
   const isSet = point.latitude !== null && point.longitude !== null;
   const verb = isSet ? "Edit" : "Add";
@@ -92,47 +94,17 @@ function LocationForm({
       title={`${verb} ${point.label.toLowerCase()} location`}
       subtitle={`Set the ${point.label.toLowerCase()} coordinates for ${name}.`}
     >
-      <form action={updateSectorLocation} className="grid gap-4 sm:grid-cols-2">
+      <form action={updateSectorLocation} className="grid gap-4">
         <input type="hidden" name="sector_id" value={sectorId} />
         <input type="hidden" name="kind" value={point.key} />
-        <label>
-          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Latitude
-          </span>
-          <input
-            name="latitude"
-            type="number"
-            step="any"
-            min={-90}
-            max={90}
-            required
-            defaultValue={point.latitude ?? ""}
-            placeholder="e.g. 45.93580"
-            className={inputClass}
-          />
-        </label>
-        <label>
-          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            Longitude
-          </span>
-          <input
-            name="longitude"
-            type="number"
-            step="any"
-            min={-180}
-            max={180}
-            required
-            defaultValue={point.longitude ?? ""}
-            placeholder="e.g. 10.88610"
-            className={inputClass}
-          />
-        </label>
-        <p className="text-xs text-zinc-500 sm:col-span-2">
-          Tip: right-click a spot in Google Maps and copy the coordinates.
-        </p>
+        <MapPicker
+          defaultLat={point.latitude}
+          defaultLng={point.longitude}
+          center={center}
+        />
         <button
           type="submit"
-          className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 sm:col-span-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
           Save location
         </button>
@@ -146,11 +118,13 @@ async function LocationCard({
   sectorId,
   name,
   canEdit,
+  center,
 }: {
   point: Point;
   sectorId: number;
   name: string;
   canEdit: boolean;
+  center?: [number, number];
 }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${point.latitude},${point.longitude}`;
   const svg = await QRCode.toString(mapsUrl, {
@@ -210,6 +184,7 @@ async function LocationCard({
               sectorId={sectorId}
               name={name}
               triggerLabel="Edit"
+              center={center}
             />
           )}
         </div>
@@ -222,10 +197,12 @@ function AddLocationPlaceholder({
   point,
   sectorId,
   name,
+  center,
 }: {
   point: Point;
   sectorId: number;
   name: string;
+  center?: [number, number];
 }) {
   return (
     <div className="flex min-h-[7rem] flex-col items-center justify-center gap-2 rounded border border-dashed border-zinc-300 p-4 text-center dark:border-zinc-700">
@@ -238,6 +215,7 @@ function AddLocationPlaceholder({
         sectorId={sectorId}
         name={name}
         triggerLabel={`Add ${point.label.toLowerCase()} location`}
+        center={center}
       />
     </div>
   );
@@ -291,6 +269,10 @@ export default async function SectorMapQR({
   );
   if (slots.length === 0) return null;
 
+  // Open each picker near the wall when the sector coords are known.
+  const sectorCenter: [number, number] | undefined =
+    latitude !== null && longitude !== null ? [latitude, longitude] : undefined;
+
   return (
     <section className="flex h-full flex-col rounded border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900/50">
       <h2 className="text-xl font-bold tracking-tight">Location</h2>
@@ -303,6 +285,7 @@ export default async function SectorMapQR({
               sectorId={sectorId}
               name={name}
               canEdit={canEdit}
+              center={sectorCenter}
             />
           ) : (
             <AddLocationPlaceholder
@@ -310,6 +293,7 @@ export default async function SectorMapQR({
               point={point}
               sectorId={sectorId}
               name={name}
+              center={sectorCenter}
             />
           ),
         )}

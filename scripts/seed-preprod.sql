@@ -1,4 +1,4 @@
--- Lezendo demo seed — generated from the dev database 2026-06-15.
+-- Whipperbook demo seed — generated from the dev database 2026-06-15.
 -- Loads demo CONTENT (users, crags, sectors, routes, images, ascents,
 -- gear, forum, reviews). Assumes the schema and migration-seeded
 -- reference data (grading_systems, grade_equivalencies, countries)
@@ -14,9 +14,9 @@ TRUNCATE entity_reviews, forum_posts, forum_topics, gear_reviews,
   RESTART IDENTITY CASCADE;
 
 -- ============================ users ============================
-INSERT INTO public.users (id, email, name, password_hash, created_at, role, preferred_rope_grading_system_id, preferred_boulder_grading_system_id) VALUES (1, 'admin@lezendo.test', 'Ada Admin', '$2b$10$3WHDEHzpwuWbOrosFq/ay.Nn7StGnnOF2/ufosLrSTvjP9g2NTuzK', '2026-06-15 08:53:53.632167+00', 'admin', 1, 5);
-INSERT INTO public.users (id, email, name, password_hash, created_at, role, preferred_rope_grading_system_id, preferred_boulder_grading_system_id) VALUES (2, 'lukas@lezendo.test', 'Lukas Climber', '$2b$10$3WHDEHzpwuWbOrosFq/ay.Nn7StGnnOF2/ufosLrSTvjP9g2NTuzK', '2026-06-15 08:53:53.635876+00', 'member', 1, 5);
-INSERT INTO public.users (id, email, name, password_hash, created_at, role, preferred_rope_grading_system_id, preferred_boulder_grading_system_id) VALUES (3, 'mara@lezendo.test', 'Mara Boulder', '$2b$10$3WHDEHzpwuWbOrosFq/ay.Nn7StGnnOF2/ufosLrSTvjP9g2NTuzK', '2026-06-15 08:53:53.636968+00', 'member', 1, 5);
+INSERT INTO public.users (id, email, name, password_hash, created_at, role, preferred_rope_grading_system_id, preferred_boulder_grading_system_id) VALUES (1, 'admin@whipperbook.test', 'Ada Admin', '$2b$10$3WHDEHzpwuWbOrosFq/ay.Nn7StGnnOF2/ufosLrSTvjP9g2NTuzK', '2026-06-15 08:53:53.632167+00', 'admin', 1, 5);
+INSERT INTO public.users (id, email, name, password_hash, created_at, role, preferred_rope_grading_system_id, preferred_boulder_grading_system_id) VALUES (2, 'lukas@whipperbook.test', 'Lukas Climber', '$2b$10$3WHDEHzpwuWbOrosFq/ay.Nn7StGnnOF2/ufosLrSTvjP9g2NTuzK', '2026-06-15 08:53:53.635876+00', 'member', 1, 5);
+INSERT INTO public.users (id, email, name, password_hash, created_at, role, preferred_rope_grading_system_id, preferred_boulder_grading_system_id) VALUES (3, 'mara@whipperbook.test', 'Mara Boulder', '$2b$10$3WHDEHzpwuWbOrosFq/ay.Nn7StGnnOF2/ufosLrSTvjP9g2NTuzK', '2026-06-15 08:53:53.636968+00', 'member', 1, 5);
 INSERT INTO public.users (id, email, name, password_hash, created_at, role, preferred_rope_grading_system_id, preferred_boulder_grading_system_id) VALUES (4, 'lukas.sitter@gmail.con', 'Lukyno', '$2b$12$rF2a07OiGsOGFKzX7CYe7e3qeBqyrQJErgrrdjmnfIDYR99CEywWi', '2026-06-15 11:20:01.778405+00', 'member', 3, 4);
 SELECT pg_catalog.setval('public.users_id_seq', 4, true);
 
