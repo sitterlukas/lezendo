@@ -130,7 +130,12 @@ export default async function EntityReviews({
             >
               <div className="flex flex-wrap items-center gap-2">
                 <Stars rating={review.rating} className="text-sm" />
-                <span className="text-sm font-medium">{review.author}</span>
+                <Link
+                  href={`/users/${review.user_id}`}
+                  className="text-sm font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+                >
+                  {review.author}
+                </Link>
                 <span className="ml-auto text-xs text-zinc-500">
                   {review.created_at.toLocaleDateString("en-GB", dateOpts)}
                 </span>
