@@ -974,3 +974,38 @@ export async function deleteImage(imageId: number) {
 
   revalidatePath("/crags", "layout");
 }
+
+export async function followUser(formData: FormData) {
+  const userId = await currentUserId();
+  if (userId === null) return;
+
+  const followeeId = Number(formData.get("followee_id"));
+  if (!Number.isInteger(followeeId) || followeeId === userId) return;
+
+  // Idempotent: ignore if the follow already exists.
+  await db
+    .insertInto("follows")
+    .values({ follower_id: userId, followee_id: followeeId })
+    .onConflict((oc) => oc.columns(["follower_id", "followee_id"]).doNothing())
+    .execute();
+
+  revalidatePath(`/users/${followeeId}`);
+  revalidatePath("/feed");
+}
+
+export async function unfollowUser(formData: FormData) {
+  const userId = await currentUserId();
+  if (userId === null) return;
+
+  const followeeId = Number(formData.get("followee_id"));
+  if (!Number.isInteger(followeeId)) return;
+
+  await db
+    .deleteFrom("follows")
+    .where("follower_id", "=", userId)
+    .where("followee_id", "=", followeeId)
+    .execute();
+
+  revalidatePath(`/users/${followeeId}`);
+  revalidatePath("/feed");
+}
