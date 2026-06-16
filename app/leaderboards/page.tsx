@@ -88,8 +88,8 @@ export default async function LeaderboardPage({
         </div>
       ) : (
         <>
-          <div className="mt-8 overflow-hidden rounded border border-zinc-200 dark:border-zinc-800">
-            <table className="w-full text-sm">
+          <div className="mt-8 overflow-x-auto rounded border border-zinc-200 dark:border-zinc-800">
+            <table className="w-full min-w-[20rem] text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50">
                   <th className="w-12 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">
