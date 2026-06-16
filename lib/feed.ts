@@ -45,14 +45,14 @@ export type FeedItem =
     })
   | (FeedBase & {
       kind: "ascent";
-      crag: { id: number; name: string };
-      // One post per (climber, crag, day): a lone tick, or several batched.
-      // `id` (FeedBase) is the stable ascent_activity id — likes/comments
-      // attach to it, so they survive logging more climbs that day.
+      // One post per (climber, day) across crags: a lone tick or several
+      // batched. `id` (FeedBase) is the stable ascent_activity id — likes/
+      // comments attach to it, so they survive logging more climbs that day.
       climbs: {
         id: number;
         tickType: TickType;
         route: { id: number; name: string; grade: string };
+        crag: { id: number; name: string };
         points: number | null;
       }[];
     });
@@ -212,6 +212,7 @@ async function buildFor(
           id: r.id,
           tickType: r.tick_type,
           route: { id: r.route_id, name: r.route_name, grade: r.grade },
+          crag: { id: r.crag_id, name: r.crag_name },
           points: routePoints?.(r.grading_system_id, r.grade) ?? null,
         }));
       return {
@@ -223,7 +224,6 @@ async function buildFor(
           avatarUrl: rep.author_avatar,
         },
         createdAt: rep.created_at,
-        crag: { id: rep.crag_id, name: rep.crag_name },
         climbs,
         likeCount: 0,
         likedByMe: false,

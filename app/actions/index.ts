@@ -205,17 +205,15 @@ export async function logAscent(formData: FormData) {
     .executeTakeFirst();
   if (!route) return;
 
-  // Find or create the (climber, crag, day) activity this ascent belongs to,
-  // so feed likes/comments have a stable target. `DO UPDATE` (a no-op set) lets
-  // the upsert RETURN the existing row's id on conflict.
+  // Find or create the (climber, day) activity this ascent belongs to (across
+  // crags), so feed likes/comments have a stable target. `DO UPDATE` (a no-op
+  // set) lets the upsert RETURN the existing row's id on conflict.
   const day = (date ?? new Date()).toISOString().slice(0, 10);
   const activity = await db
     .insertInto("ascent_activities")
     .values({ user_id: userId, crag_id: route.crag_id, activity_date: day })
     .onConflict((oc) =>
-      oc
-        .columns(["user_id", "crag_id", "activity_date"])
-        .doUpdateSet({ crag_id: route.crag_id }),
+      oc.columns(["user_id", "activity_date"]).doUpdateSet({ user_id: userId }),
     )
     .returning("id")
     .executeTakeFirstOrThrow();

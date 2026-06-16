@@ -108,7 +108,7 @@ describe("buildFeed", () => {
     if (ascent?.kind !== "ascent") throw new Error("expected an ascent item");
     expect(ascent.id).toBe(activityId);
     expect(ascent.climbs).toHaveLength(2);
-    expect(ascent.crag.id).toBe(cragId);
+    expect(ascent.climbs[0].crag.id).toBe(cragId);
   });
 
   it("keeps a stable activity id so likes survive a later same-day ascent", async () => {
