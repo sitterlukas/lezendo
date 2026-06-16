@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import db from "@/lib/db";
-import { buildFeed } from "@/lib/feed";
+import { buildFeed, loadComments } from "@/lib/feed";
 import { makeUser } from "./db";
 
 async function makeStatus(userId: number): Promise<number> {
@@ -11,6 +11,28 @@ async function makeStatus(userId: number): Promise<number> {
     .executeTakeFirstOrThrow();
   return row.id;
 }
+
+describe("comments", () => {
+  it("reports commentCount and loads comments oldest-first", async () => {
+    const me = await makeUser("Me");
+    const statusId = await makeStatus(me);
+
+    await db
+      .insertInto("comments")
+      .values([
+        { user_id: me, target_type: "status", target_id: statusId, body: "first", created_at: new Date("2026-06-10T00:00:00Z") },
+        { user_id: me, target_type: "status", target_id: statusId, body: "second", created_at: new Date("2026-06-11T00:00:00Z") },
+      ])
+      .execute();
+
+    const { items } = await buildFeed(db, me);
+    const item = items.find((i) => i.kind === "status" && i.id === statusId)!;
+    expect(item.commentCount).toBe(2);
+
+    const comments = await loadComments(db, "status", statusId);
+    expect(comments.map((c) => c.body)).toEqual(["first", "second"]);
+  });
+});
 
 describe("feed interaction counts", () => {
   it("reports likeCount and likedByMe", async () => {

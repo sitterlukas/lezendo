@@ -259,6 +259,40 @@ export async function buildProfileTimeline(
   return buildFor(db, viewerId, [profileId], before);
 }
 
+export type FeedComment = {
+  id: number;
+  author: FeedAuthor;
+  body: string;
+  createdAt: Date;
+};
+
+export async function loadComments(
+  db: Kysely<Database>,
+  targetType: "status" | "ascent",
+  targetId: number,
+): Promise<FeedComment[]> {
+  const rows = await db
+    .selectFrom("comments")
+    .innerJoin("users", "users.id", "comments.user_id")
+    .select([
+      "comments.id",
+      "comments.body",
+      "comments.created_at",
+      "users.id as author_id",
+      "users.name as author_name",
+    ])
+    .where("comments.target_type", "=", targetType)
+    .where("comments.target_id", "=", targetId)
+    .orderBy("comments.created_at", "asc")
+    .execute();
+  return rows.map((r) => ({
+    id: r.id,
+    author: { id: r.author_id, name: r.author_name },
+    body: r.body,
+    createdAt: r.created_at,
+  }));
+}
+
 // A few users to suggest following: most-followed, excluding the viewer and
 // anyone they already follow. Used on the empty feed.
 export async function suggestedUsers(

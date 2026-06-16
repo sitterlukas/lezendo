@@ -1095,6 +1095,46 @@ export async function toggleLike(formData: FormData) {
   revalidatePath("/feed");
 }
 
+export async function addComment(formData: FormData) {
+  const userId = await currentUserId();
+  if (userId === null) return;
+
+  const targetType = String(formData.get("target_type")) as FeedTargetType;
+  const targetId = Number(formData.get("target_id"));
+  const body = String(formData.get("body") ?? "").trim();
+  if (
+    !feedTargetTypes.includes(targetType) ||
+    !Number.isInteger(targetId) ||
+    !body
+  )
+    return;
+
+  await db
+    .insertInto("comments")
+    .values({ user_id: userId, target_type: targetType, target_id: targetId, body })
+    .execute();
+
+  revalidatePath("/feed");
+}
+
+export async function deleteComment(formData: FormData) {
+  const user = await currentUserFull();
+  if (!user) return;
+
+  const commentId = Number(formData.get("comment_id"));
+  if (!Number.isInteger(commentId)) return;
+
+  const comment = await db
+    .selectFrom("comments")
+    .select(["id", "user_id"])
+    .where("id", "=", commentId)
+    .executeTakeFirst();
+  if (!comment || !canModify(user, comment.user_id)) return;
+
+  await db.deleteFrom("comments").where("id", "=", commentId).execute();
+  revalidatePath("/feed");
+}
+
 export async function deleteStatus(formData: FormData) {
   const user = await currentUserFull();
   if (!user) return;
