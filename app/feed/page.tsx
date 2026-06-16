@@ -34,11 +34,17 @@ export default async function FeedPage() {
   }
 
   const isAdmin = viewer.role === "admin";
-  const [{ items }, crags] = await Promise.all([
+  const [{ items }, crags, routes] = await Promise.all([
     buildFeed(db, viewer.id),
     db
       .selectFrom("crags")
       .select(["id", "name"])
+      .where("deleted", "=", false)
+      .orderBy("name")
+      .execute(),
+    db
+      .selectFrom("routes")
+      .select(["id", "name", "grade", "crag_id"])
       .where("deleted", "=", false)
       .orderBy("name")
       .execute(),
@@ -48,7 +54,7 @@ export default async function FeedPage() {
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-4xl font-bold tracking-tight">Feed</h1>
-        <StatusComposer crags={crags} />
+        <StatusComposer crags={crags} routes={routes} />
       </header>
 
       {items.length === 0 ? (

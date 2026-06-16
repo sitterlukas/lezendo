@@ -9,16 +9,29 @@ import { STATUS_MAX_LEN } from "@/lib/constants";
 import { inputClass } from "@/app/ui/style";
 
 type Crag = { id: number; name: string };
+type Route = { id: number; name: string; grade: string; crag_id: number };
 
-export default function StatusComposer({ crags }: { crags: Crag[] }) {
+export default function StatusComposer({
+  crags,
+  routes,
+}: {
+  crags: Crag[];
+  routes: Route[];
+}) {
   const [text, setText] = useState("");
+  const [cragId, setCragId] = useState("");
   const remaining = STATUS_MAX_LEN - text.length;
+
+  // Once a crag is picked, offer its routes so you can share a specific route.
+  const cragRoutes = cragId
+    ? routes.filter((r) => String(r.crag_id) === cragId)
+    : [];
 
   return (
     <CreateModal
       triggerLabel="Post status"
       title="Post a status"
-      subtitle="Share what's on your mind. Add photos and tag a crag (optional)."
+      subtitle="Share what's on your mind. Tag a crag or route, add photos (optional)."
       action={createStatus}
       canSubmit={text.trim().length > 0 && remaining >= 0}
       submitLabel="Post"
@@ -50,7 +63,11 @@ export default function StatusComposer({ crags }: { crags: Crag[] }) {
         <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
           Crag (optional)
         </span>
-        <Select name="crag_id" defaultValue="">
+        <Select
+          name="crag_id"
+          value={cragId}
+          onChange={(e) => setCragId(e.target.value)}
+        >
           <option value="">—</option>
           {crags.map((c) => (
             <option key={c.id} value={c.id}>
@@ -59,6 +76,22 @@ export default function StatusComposer({ crags }: { crags: Crag[] }) {
           ))}
         </Select>
       </label>
+      {cragRoutes.length > 0 && (
+        <label>
+          <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+            Route (optional)
+          </span>
+          {/* key remounts the select when the crag changes, clearing any prior pick */}
+          <Select key={cragId} name="route_id" defaultValue="">
+            <option value="">—</option>
+            {cragRoutes.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name} · {r.grade}
+              </option>
+            ))}
+          </Select>
+        </label>
+      )}
     </CreateModal>
   );
 }

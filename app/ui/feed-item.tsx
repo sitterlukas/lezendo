@@ -81,6 +81,19 @@ export default async function FeedItemCard({
           <p className="mt-2 whitespace-pre-wrap text-zinc-800 dark:text-zinc-200">
             {item.body}
           </p>
+          {item.route && (
+            <Link
+              href={`/crags/${item.route.crag.id}/routes/${item.route.id}`}
+              className="mt-2 flex flex-wrap items-center gap-x-2 rounded border border-zinc-200 px-3 py-2 text-sm transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/60"
+            >
+              <span className="text-zinc-400">🧗</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {item.route.name}
+              </span>
+              <span className="text-zinc-500">{item.route.grade}</span>
+              <span className="text-zinc-400">· {item.route.crag.name}</span>
+            </Link>
+          )}
           {item.crag && (
             <Link
               href={`/crags/${item.crag.id}`}
