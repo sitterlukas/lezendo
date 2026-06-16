@@ -17,6 +17,7 @@ import db, {
 } from "@/lib/db";
 import { gradesForSystem, disciplineOf } from "@/lib/grade-conversion";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
+import { buildFeed, type FeedPage } from "@/lib/feed";
 
 const styles: ClimbStyle[] = ["sport", "trad", "boulder"];
 
@@ -1176,6 +1177,14 @@ export async function searchPeople(query: string): Promise<PersonResult[]> {
     avatarUrl: r.avatar_url,
     following: followed.has(r.id),
   }));
+}
+
+// Next page of the home feed, for the "Load more" button. `before` is the
+// cursor (oldest createdAt shown). Dates round-trip through server actions.
+export async function loadFeedPage(before: Date | null): Promise<FeedPage> {
+  const viewerId = await currentUserId();
+  if (viewerId === null) return { items: [], nextCursor: null };
+  return buildFeed(db, viewerId, before);
 }
 
 export async function createStatus(formData: FormData): Promise<CreateResult> {
