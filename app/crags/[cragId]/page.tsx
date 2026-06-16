@@ -305,7 +305,7 @@ export default async function CragPage({
             </Modal>
           )}
 
-          {currentUser ? (
+          {currentUser && (
             <>
               <CreateSectorModal cragId={crag.id} />
               <CreateRouteModal
@@ -319,8 +319,6 @@ export default async function CragPage({
                 }
               />
             </>
-          ) : (
-            <LoginToAdd to="to add sectors & routes" />
           )}
           {canEdit(crag.created_by) && (
             <form action={deleteCrag}>
@@ -398,6 +396,11 @@ export default async function CragPage({
           <p className="mt-1 text-sm text-zinc-500">
             Add a sector to organise the wall, or go straight to adding a route.
           </p>
+          {!currentUser && (
+            <div className="mt-3 flex justify-center">
+              <LoginToAdd to="to add sectors & routes" />
+            </div>
+          )}
         </div>
       )}
 
@@ -411,6 +414,11 @@ export default async function CragPage({
                 {sectors.length} {sectors.length === 1 ? "sector" : "sectors"}
               </span>
             </div>
+            {!currentUser && (
+              <div className="mt-2">
+                <LoginToAdd to="to add sectors & routes" />
+              </div>
+            )}
             <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {sectors.map((sector) => {
                 const sectorRoutes = routesBySector.get(sector.id) ?? [];
