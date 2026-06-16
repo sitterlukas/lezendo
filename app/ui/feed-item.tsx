@@ -3,6 +3,7 @@ import type { FeedItem } from "@/lib/feed";
 import TimeAgo from "@/app/ui/time-ago";
 import ImageGallery from "@/app/ui/image-gallery";
 import DeleteButton from "@/app/ui/delete-button";
+import LikeButton from "@/app/ui/like-button";
 import { deleteStatus } from "@/app/actions";
 
 const tickVerb: Record<string, string> = {
@@ -97,7 +98,13 @@ export default function FeedItemCard({
       )}
 
       <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500">
-        <span>♥ {item.likeCount}</span>
+        <LikeButton
+          targetType={item.kind}
+          targetId={item.id}
+          initialLiked={item.likedByMe}
+          initialCount={item.likeCount}
+          disabled={viewerId === null}
+        />
         <span>💬 {item.commentCount}</span>
       </div>
     </article>

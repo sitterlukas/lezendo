@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { STATUS_MAX_LEN } from "@/lib/constants";
 import db, {
   type ClimbStyle,
+  type FeedTargetType,
   type GearCategory,
   type TickType,
   type DeletionEntityType,
@@ -1058,6 +1059,40 @@ export async function createStatus(
   revalidatePath("/feed");
   revalidatePath(`/users/${userId}`);
   return { ok: true, id: row.id };
+}
+
+const feedTargetTypes: FeedTargetType[] = ["status", "ascent"];
+
+export async function toggleLike(formData: FormData) {
+  const userId = await currentUserId();
+  if (userId === null) return;
+
+  const targetType = String(formData.get("target_type")) as FeedTargetType;
+  const targetId = Number(formData.get("target_id"));
+  if (!feedTargetTypes.includes(targetType) || !Number.isInteger(targetId))
+    return;
+
+  const existing = await db
+    .selectFrom("likes")
+    .select("id")
+    .where("user_id", "=", userId)
+    .where("target_type", "=", targetType)
+    .where("target_id", "=", targetId)
+    .executeTakeFirst();
+
+  if (existing) {
+    await db.deleteFrom("likes").where("id", "=", existing.id).execute();
+  } else {
+    await db
+      .insertInto("likes")
+      .values({ user_id: userId, target_type: targetType, target_id: targetId })
+      .onConflict((oc) =>
+        oc.columns(["user_id", "target_type", "target_id"]).doNothing(),
+      )
+      .execute();
+  }
+
+  revalidatePath("/feed");
 }
 
 export async function deleteStatus(formData: FormData) {
