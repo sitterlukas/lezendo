@@ -25,7 +25,6 @@ export default async function SettingsPage() {
         "id",
         "name",
         "email",
-        "password_hash",
         "avatar_url",
         "preferred_rope_grading_system_id",
         "preferred_boulder_grading_system_id",
@@ -124,7 +123,7 @@ export default async function SettingsPage() {
           <div className="flex items-center justify-between px-6 py-4">
             <dt className="text-sm text-zinc-500">Log-in method</dt>
             <dd className="text-sm font-medium">
-              {user.password_hash ? "Email & password" : "Google"}
+              {session.provider === "google" ? "Google" : "Email & password"}
             </dd>
           </div>
         </dl>
