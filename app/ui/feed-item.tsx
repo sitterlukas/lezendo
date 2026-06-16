@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import type { FeedItem } from "@/lib/feed";
 import TimeAgo from "@/app/ui/time-ago";

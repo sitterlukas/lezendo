@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import db from "@/lib/db";
 import { buildFeed, suggestedUsers } from "@/lib/feed";
-import FeedItemCard from "@/app/ui/feed-item";
+import FeedList from "@/app/ui/feed-list";
 import StatusComposer from "@/app/ui/status-composer";
 import LoginToAdd from "@/app/ui/login-to-add";
 import PeopleSearch from "@/app/ui/people-search";
@@ -34,7 +34,7 @@ export default async function FeedPage() {
   }
 
   const isAdmin = viewer.role === "admin";
-  const [{ items }, crags, routes, followRow] = await Promise.all([
+  const [{ items, nextCursor }, crags, routes, followRow] = await Promise.all([
     buildFeed(db, viewer.id),
     db
       .selectFrom("crags")
@@ -74,16 +74,12 @@ export default async function FeedPage() {
       {followsNobody && <SuggestedToFollow viewerId={viewer.id} />}
 
       {items.length > 0 ? (
-        <div className="mt-8 space-y-4">
-          {items.map((item) => (
-            <FeedItemCard
-              key={`${item.kind}:${item.id}`}
-              item={item}
-              viewerId={viewer.id}
-              isAdmin={isAdmin}
-            />
-          ))}
-        </div>
+        <FeedList
+          initialItems={items}
+          initialCursor={nextCursor}
+          viewerId={viewer.id}
+          isAdmin={isAdmin}
+        />
       ) : (
         !followsNobody && (
           <div className="mt-8 border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
