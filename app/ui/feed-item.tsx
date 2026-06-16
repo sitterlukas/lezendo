@@ -9,6 +9,7 @@ import LikeButton from "@/app/ui/like-button";
 import Avatar from "@/app/ui/avatar";
 import { deleteStatus } from "@/app/actions";
 import CommentList from "@/app/ui/comment-list";
+import StatusEditModal from "@/app/ui/status-edit-modal";
 
 const tickVerb: Record<string, string> = {
   onsight: "Onsighted",
@@ -37,9 +38,6 @@ export default function FeedItemCard({
     likedByMe: c.likedByMe,
   }));
 
-  const canDelete =
-    item.kind === "status" && (isAdmin || viewerId === item.author.id);
-
   // Ascent posts are grouped into an "activity"; likes/comments target that.
   const targetType = item.kind === "ascent" ? "activity" : "status";
 
@@ -62,8 +60,15 @@ export default function FeedItemCard({
           </Link>
           <TimeAgo date={item.createdAt} />
         </div>
-        {canDelete && (
-          <span className="ml-auto">
+        {item.kind === "status" && (isAdmin || viewerId === item.author.id) && (
+          <span className="ml-auto flex items-center gap-1">
+            <StatusEditModal
+              statusId={item.id}
+              body={item.body}
+              photos={item.photos}
+              viewerId={viewerId}
+              isAdmin={isAdmin}
+            />
             <form action={deleteStatus}>
               <input type="hidden" name="status_id" value={item.id} />
               <DeleteButton
@@ -104,16 +109,16 @@ export default function FeedItemCard({
               📍 {item.crag.name}
             </Link>
           )}
-          {/* The author (or an admin) can add/remove this status's photos
-              right here; everyone else sees them read-only. */}
-          {(item.photos.length > 0 || canDelete) && (
+          {/* Read-only in the feed (no delete/upload affordances); the author
+              manages photos via the Edit dialog. */}
+          {item.photos.length > 0 && (
             <ImageGallery
               images={item.photos}
-              currentUserId={viewerId}
-              isAdmin={isAdmin}
+              currentUserId={null}
+              isAdmin={false}
               entityType="status"
               entityId={item.id}
-              canUpload={canDelete}
+              canUpload={false}
               promptLogin={false}
             />
           )}
