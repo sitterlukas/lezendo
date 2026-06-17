@@ -1,18 +1,30 @@
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
 const ACCESS = "wb.access";
 const REFRESH = "wb.refresh";
 
-// Access/refresh token storage backed by the device keychain/keystore.
+// On native we back tokens with the device keychain/keystore; on web SecureStore
+// has no native module, so fall back to localStorage.
+const store =
+  Platform.OS === "web"
+    ? {
+        getItemAsync: async (k: string) => localStorage.getItem(k),
+        setItemAsync: async (k: string, v: string) => localStorage.setItem(k, v),
+        deleteItemAsync: async (k: string) => localStorage.removeItem(k),
+      }
+    : SecureStore;
+
+// Access/refresh token storage.
 export const tokens = {
-  get: () => SecureStore.getItemAsync(ACCESS),
-  getRefresh: () => SecureStore.getItemAsync(REFRESH),
+  get: () => store.getItemAsync(ACCESS),
+  getRefresh: () => store.getItemAsync(REFRESH),
   set: async (a: string, r: string) => {
-    await SecureStore.setItemAsync(ACCESS, a);
-    await SecureStore.setItemAsync(REFRESH, r);
+    await store.setItemAsync(ACCESS, a);
+    await store.setItemAsync(REFRESH, r);
   },
   clear: async () => {
-    await SecureStore.deleteItemAsync(ACCESS);
-    await SecureStore.deleteItemAsync(REFRESH);
+    await store.deleteItemAsync(ACCESS);
+    await store.deleteItemAsync(REFRESH);
   },
 };

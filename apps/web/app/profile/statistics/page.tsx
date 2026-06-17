@@ -3,9 +3,7 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { makeQueryClient } from "@/lib/api/get-query-client";
 import { serverApi } from "@/lib/api/client";
 import { statisticsQuery, ApiError } from "@whipperbook/api-client";
-import StatisticsClient, {
-  type StatisticsResponse,
-} from "./statistics-client";
+import StatisticsClient, { type StatisticsResponse } from "./statistics-client";
 
 export const dynamic = "force-dynamic";
 
