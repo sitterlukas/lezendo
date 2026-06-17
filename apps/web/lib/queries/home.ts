@@ -1,7 +1,7 @@
 import db, { type ClimbStyle } from "@/lib/db";
-import { resolveGrade } from "@/lib/grade-conversion";
+import { resolveGrade } from "@whipperbook/core";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
-import { periodStart, type Period, type Discipline } from "@/lib/leaderboard";
+import { periodStart, type Period, type Discipline } from "@whipperbook/core";
 import { loadLeaderboard } from "@/lib/points";
 import { type LeaderboardRow } from "@/lib/queries/leaderboards";
 

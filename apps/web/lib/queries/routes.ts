@@ -1,6 +1,6 @@
 import db, { type CragsTable, type RoutesTable, type TickType } from "@/lib/db";
 import { type Selectable } from "kysely";
-import { resolveGrade, type GradeEquivalency } from "@/lib/grade-conversion";
+import { resolveGrade, type GradeEquivalency } from "@whipperbook/core";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
 import { type CragDetailViewer } from "@/lib/queries/crags";
 

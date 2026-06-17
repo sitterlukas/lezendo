@@ -15,7 +15,7 @@ import CragFields from "@/app/ui/crag-fields";
 import { CreateSectorModal, CreateRouteModal } from "@/app/ui/create-modals";
 import LoginToAdd from "@/app/ui/login-to-add";
 import FactList from "@/app/ui/fact-list";
-import { gradeRange, stylesPresent } from "@/lib/route-stats";
+import { gradeRange, stylesPresent } from "@whipperbook/core";
 import { inputClass, typeLabel, typeBadge } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";

@@ -1,4 +1,4 @@
-import { timeAgo } from "@/lib/time-ago";
+import { timeAgo } from "@whipperbook/core";
 
 // Renders relative time inside a <time> with a full-date tooltip. Server
 // component: the feed is `force-dynamic`, so the server timestamp is fine and

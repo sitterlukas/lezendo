@@ -5,8 +5,8 @@ import {
   gradeBuckets,
   tickStats,
   type ResolvedRoute,
-} from "@/lib/route-stats";
-import type { GradeEquivalency } from "@/lib/grade-conversion";
+} from "./route-stats";
+import type { GradeEquivalency } from "./grade-conversion";
 
 const eqs: GradeEquivalency[] = [
   {

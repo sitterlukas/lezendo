@@ -1,7 +1,7 @@
 import db from "@/lib/db";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
 import { loadUserPoints } from "@/lib/points";
-import { type GradeEquivalency } from "@/lib/grade-conversion";
+import { type GradeEquivalency } from "@whipperbook/core";
 
 export type MeCore = {
   id: number;

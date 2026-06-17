@@ -11,7 +11,7 @@ import ImageGallery from "@/app/ui/image-gallery";
 import EntityReviews from "@/app/ui/entity-reviews";
 import Select from "@/app/ui/select";
 import FactList from "@/app/ui/fact-list";
-import { tickStats } from "@/lib/route-stats";
+import { tickStats } from "@whipperbook/core";
 import GradeSelect from "@/app/ui/grade-select";
 import { typeLabel, typeBadge } from "@/app/ui/style";
 

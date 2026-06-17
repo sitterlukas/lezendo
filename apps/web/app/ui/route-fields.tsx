@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Select from "./select";
 import GradeSelect from "./grade-select";
 import FieldLabel from "@/app/ui/field-label";
-import { disciplineOf, type GradeEquivalency } from "@/lib/grade-conversion";
+import { disciplineOf, type GradeEquivalency } from "@whipperbook/core";
 
 type System = { id: number; name: string; slug: string };
 

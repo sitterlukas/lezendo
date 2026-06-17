@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api-client";
 import Select from "@/app/ui/select";
-import { disciplineOf, type GradeEquivalency } from "@/lib/grade-conversion";
+import { disciplineOf, type GradeEquivalency } from "@whipperbook/core";
 
 export default function GradingSystemForm({
   gradingSystems,

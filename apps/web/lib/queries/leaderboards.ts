@@ -1,4 +1,4 @@
-import { periodStart, type Period, type Discipline } from "@/lib/leaderboard";
+import { periodStart, type Period, type Discipline } from "@whipperbook/core";
 import { loadLeaderboard } from "@/lib/points";
 
 export type LeaderboardRow = {

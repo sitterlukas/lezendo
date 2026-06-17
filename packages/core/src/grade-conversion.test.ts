@@ -5,7 +5,7 @@ import {
   gradesForSystem,
   resolveGrade,
   type GradeEquivalency,
-} from "@/lib/grade-conversion";
+} from "./grade-conversion";
 
 // French + YDS share the rope discipline (same rank scale); Font is boulder.
 const eqs: GradeEquivalency[] = [

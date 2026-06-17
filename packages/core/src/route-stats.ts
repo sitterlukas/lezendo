@@ -1,8 +1,8 @@
 // Pure helpers for summarising a set of routes — grade range, styles present,
 // grade distribution and ascent tick stats. No `db` import (like
 // `grade-conversion.ts`), so these stay testable and usable from client code.
-import { gradeRank, type GradeEquivalency } from "@/lib/grade-conversion";
-import type { ClimbStyle, TickType } from "@/lib/db";
+import { gradeRank, type GradeEquivalency } from "./grade-conversion";
+import type { ClimbStyle, TickType } from "./types";
 
 // The shape produced by spreading a route with `resolveGrade(...)`: `grade` is
 // the displayed (possibly converted) grade, `originalGrade` the stored one.

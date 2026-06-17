@@ -1,6 +1,6 @@
 import { route, ok } from "@/lib/api/respond";
 import { getUser } from "@/lib/api/auth";
-import { parsePeriod, parseDiscipline } from "@/lib/leaderboard";
+import { parsePeriod, parseDiscipline } from "@whipperbook/core";
 import { getLeaderboard } from "@/lib/queries/leaderboards";
 
 // GET /api/leaderboards?period=&discipline= — top climbers + viewer rank.

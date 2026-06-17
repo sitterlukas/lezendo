@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api-client";
-import { STATUS_MAX_LEN } from "@/lib/constants";
+import { STATUS_MAX_LEN } from "@whipperbook/core";
 import { inputClass } from "@/app/ui/style";
 import ImageGallery from "@/app/ui/image-gallery";
 import SectorSelect, { type SectorOption } from "@/app/ui/sector-select";

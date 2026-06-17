@@ -6,7 +6,7 @@ import {
   disciplines,
   disciplineLabel,
   type Discipline,
-} from "@/lib/leaderboard";
+} from "@whipperbook/core";
 
 /**
  * Discipline filter as a custom dropdown (a styled popover, not a native

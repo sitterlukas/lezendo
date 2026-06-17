@@ -33,7 +33,10 @@ export function periodStart(period: Period): Date | null {
 }
 
 /** Coerce an untrusted query value into a valid Period, falling back to `fallback`. */
-export function parsePeriod(value: unknown, fallback: Period = "month"): Period {
+export function parsePeriod(
+  value: unknown,
+  fallback: Period = "month",
+): Period {
   return periods.includes(value as Period) ? (value as Period) : fallback;
 }
 

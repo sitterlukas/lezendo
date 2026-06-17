@@ -4,7 +4,7 @@ import { useState } from "react";
 import CreateModal from "@/app/ui/create-modal";
 import ImageUpload from "@/app/ui/image-upload";
 import SectorSelect, { type SectorOption } from "@/app/ui/sector-select";
-import { STATUS_MAX_LEN } from "@/lib/constants";
+import { STATUS_MAX_LEN } from "@whipperbook/core";
 import { inputClass } from "@/app/ui/style";
 
 export default function StatusComposer({

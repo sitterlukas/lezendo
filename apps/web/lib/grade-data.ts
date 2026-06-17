@@ -1,6 +1,6 @@
 import { cache } from "react";
 import db from "@/lib/db";
-import type { GradeEquivalency } from "@/lib/grade-conversion";
+import type { GradeEquivalency } from "@whipperbook/core";
 
 /**
  * Load all grade equivalencies (joined with their system slug) — the single

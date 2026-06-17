@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
 import { type StatisticsData } from "@/lib/queries/me";
 import ProfileTabs from "@/app/profile/tabs";
-import { POINTS_EXPLAINER } from "@/lib/points";
+import { POINTS_EXPLAINER } from "@whipperbook/core";
 
 export const dynamic = "force-dynamic";
 

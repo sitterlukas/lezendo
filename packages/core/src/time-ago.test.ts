@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { timeAgo } from "@/lib/time-ago";
+import { timeAgo } from "./time-ago";
 
 const now = new Date("2026-06-16T12:00:00Z");
 const ago = (ms: number) => new Date(now.getTime() - ms);

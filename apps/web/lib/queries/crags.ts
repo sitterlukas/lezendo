@@ -1,6 +1,6 @@
 import db, { type ClimbStyle, type CragsTable } from "@/lib/db";
 import { sql, type Selectable } from "kysely";
-import { resolveGrade, type GradeEquivalency } from "@/lib/grade-conversion";
+import { resolveGrade, type GradeEquivalency } from "@whipperbook/core";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
 
 const PAGE_SIZE = 24;

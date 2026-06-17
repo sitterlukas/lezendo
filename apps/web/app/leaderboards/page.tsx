@@ -7,8 +7,8 @@ import {
   periodLabel,
   parsePeriod,
   parseDiscipline,
-} from "@/lib/leaderboard";
-import { POINTS_EXPLAINER } from "@/lib/points";
+} from "@whipperbook/core";
+import { POINTS_EXPLAINER } from "@whipperbook/core";
 import DisciplineSelect from "@/app/ui/discipline-select";
 import FilterPill from "@/app/ui/filter-pill";
 import RankCrown from "@/app/ui/rank-crown";

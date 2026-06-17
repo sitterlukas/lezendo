@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parsePeriod, parseDiscipline, periodStart } from "@/lib/leaderboard";
+import { parsePeriod, parseDiscipline, periodStart } from "./leaderboard";
 
 describe("parsePeriod", () => {
   it("accepts valid periods", () => {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Select from "./select";
-import { gradesForSystem, type GradeEquivalency } from "@/lib/grade-conversion";
+import { gradesForSystem, type GradeEquivalency } from "@whipperbook/core";
 
 interface GradingSystem {
   id: number;

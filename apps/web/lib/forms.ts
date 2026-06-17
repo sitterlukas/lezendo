@@ -1,8 +1,8 @@
 import { z } from "zod";
 import db from "@/lib/db";
-import { gradesForSystem, disciplineOf } from "@/lib/grade-conversion";
+import { gradesForSystem, disciplineOf } from "@whipperbook/core";
 import { loadGradeEquivalencies } from "@/lib/grade-data";
-import { STATUS_MAX_LEN, COMMENT_MAX_LEN } from "@/lib/constants";
+import { STATUS_MAX_LEN, COMMENT_MAX_LEN } from "@whipperbook/core";
 
 // Shared request-body validation for the REST route handlers. Every write route
 // parses its JSON body against one of these Zod schemas via `readJson`, so the

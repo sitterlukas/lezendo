@@ -16,7 +16,7 @@ import SectorFields from "@/app/ui/sector-fields";
 import { CreateRouteModal } from "@/app/ui/create-modals";
 import LoginToAdd from "@/app/ui/login-to-add";
 import FactList from "@/app/ui/fact-list";
-import { gradeBuckets, gradeRange, stylesPresent } from "@/lib/route-stats";
+import { gradeBuckets, gradeRange, stylesPresent } from "@whipperbook/core";
 import { typeLabel, typeBadge } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";

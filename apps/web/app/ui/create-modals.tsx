@@ -11,7 +11,7 @@ import FieldLabel from "@/app/ui/field-label";
 import Select from "@/app/ui/select";
 import { apiFetch } from "@/lib/api-client";
 import { inputClass } from "@/app/ui/style";
-import type { GradeEquivalency } from "@/lib/grade-conversion";
+import type { GradeEquivalency } from "@whipperbook/core";
 
 type System = { id: number; name: string; slug: string };
 
