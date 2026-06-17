@@ -1,5 +1,24 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [
+    "NODE_ENV",
+    "VERCEL",
+    "VERCEL_ENV",
+    "VERCEL_URL",
+    "DATABASE_URL",
+    "DATABASE_URL_UNPOOLED",
+    "TEST_DATABASE_URL",
+    "POSTGRES_*",
+    "PG*",
+    "NEON_*",
+    "VITE_*",
+    "AUTH_*",
+    "NEXTAUTH_*",
+    "NEXT_PUBLIC_*",
+    "BLOB_*",
+    "RESEND_API_KEY",
+    "EMAIL_FROM"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
