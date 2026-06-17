@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import db from "@/lib/db";
+import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
+import { type StatisticsData } from "@/lib/queries/me";
 import ProfileTabs from "@/app/profile/tabs";
-import { loadUserPoints, POINTS_EXPLAINER } from "@/lib/points";
+import { POINTS_EXPLAINER } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -91,75 +91,17 @@ const styleBadge = {
 } as const;
 
 export default async function StatisticsPage() {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) redirect("/login");
-
-  const user = await db
-    .selectFrom("users")
-    .select("id")
-    .where("email", "=", email.toLowerCase())
-    .executeTakeFirst();
-  if (!user) redirect("/login");
-
-  const [tickRows, styleRows, gradeRows, uniqueRoutes, uniqueCrags, points] =
-    await Promise.all([
-      // Ascents grouped by tick type
-      db
-        .selectFrom("ascents")
-        .select((eb) => ["tick_type", eb.fn.count<number>("id").as("count")])
-        .where("user_id", "=", user.id)
-        .groupBy("tick_type")
-        .execute(),
-
-      // Sends (non-attempt) grouped by route style
-      db
-        .selectFrom("ascents")
-        .innerJoin("routes", "routes.id", "ascents.route_id")
-        .select((eb) => [
-          "routes.style",
-          eb.fn.count<number>("ascents.id").as("count"),
-        ])
-        .where("ascents.user_id", "=", user.id)
-        .where("ascents.tick_type", "!=", "attempt")
-        .groupBy("routes.style")
-        .execute(),
-
-      // Sends grouped by grade
-      db
-        .selectFrom("ascents")
-        .innerJoin("routes", "routes.id", "ascents.route_id")
-        .select((eb) => [
-          "routes.grade",
-          eb.fn.count<number>("ascents.id").as("count"),
-        ])
-        .where("ascents.user_id", "=", user.id)
-        .where("ascents.tick_type", "!=", "attempt")
-        .groupBy("routes.grade")
-        .execute(),
-
-      // Unique routes climbed
-      db
-        .selectFrom("ascents")
-        .select((eb) => eb.fn.count<number>("route_id").distinct().as("count"))
-        .where("user_id", "=", user.id)
-        .where("tick_type", "!=", "attempt")
-        .executeTakeFirstOrThrow(),
-
-      // Unique crags visited
-      db
-        .selectFrom("ascents")
-        .innerJoin("routes", "routes.id", "ascents.route_id")
-        .select((eb) =>
-          eb.fn.count<number>("routes.crag_id").distinct().as("count"),
-        )
-        .where("ascents.user_id", "=", user.id)
-        .where("ascents.tick_type", "!=", "attempt")
-        .executeTakeFirstOrThrow(),
-
-      // Total points (all-time), split by discipline
-      loadUserPoints(user.id),
-    ]);
+  let data: StatisticsData;
+  try {
+    data = await serverFetch<StatisticsData>("/api/me/statistics");
+  } catch (err) {
+    if (err instanceof ServerFetchError && err.status === 401) {
+      redirect("/login");
+    }
+    throw err;
+  }
+  const { tickRows, styleRows, gradeRows, uniqueRoutes, uniqueCrags, points } =
+    data;
 
   const byTick = Object.fromEntries(
     tickRows.map((r) => [r.tick_type, Number(r.count)]),
@@ -191,8 +133,8 @@ export default async function StatisticsPage() {
 
   const overviewCards = [
     { label: "Sends", value: totalSends },
-    { label: "Routes", value: Number(uniqueRoutes.count) },
-    { label: "Crags", value: Number(uniqueCrags.count) },
+    { label: "Routes", value: uniqueRoutes },
+    { label: "Crags", value: uniqueCrags },
     { label: "Attempts", value: totalAttempts },
   ];
 

@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { editStatus } from "@/app/actions";
+import { apiFetch, ApiError } from "@/lib/api-client";
 import { STATUS_MAX_LEN } from "@/lib/constants";
 import { inputClass } from "@/app/ui/style";
 import ImageGallery from "@/app/ui/image-gallery";
@@ -51,13 +51,15 @@ export default function StatusEditModal({
   function save() {
     setError(null);
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("status_id", String(statusId));
-      fd.set("body", text.trim());
-      fd.set("sector_id", sector);
-      const res = await editStatus(fd);
-      if (res.ok) close();
-      else setError(res.error);
+      try {
+        await apiFetch(`/api/statuses/${statusId}`, {
+          method: "PATCH",
+          body: { body: text.trim(), sector_id: sector },
+        });
+        close();
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Failed to save.");
+      }
     });
   }
 

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { retireGearItem, unretireGearItem } from "@/app/actions";
+import ActionButton from "@/app/ui/action-button";
 import ProfileTabs from "@/app/profile/tabs";
-import db, { type GearCategory, type GearItemsTable } from "@/lib/db";
-import type { Selectable } from "kysely";
+import { serverFetch } from "@/lib/api/server-fetch";
+import { type GearData, type GearItemDto } from "@/lib/queries/gear";
+import { type GearCategory } from "@/lib/db";
 
 const categoryMeta: Record<GearCategory, { label: string }> = {
   rope: { label: "Rope" },
@@ -42,19 +42,7 @@ function ownedFor(from: Date, to: Date): string {
   return parts.join(" ");
 }
 
-type GearItem = Pick<
-  Selectable<GearItemsTable>,
-  | "id"
-  | "name"
-  | "category"
-  | "brand"
-  | "purchased_on"
-  | "retired_on"
-  | "notes"
-  | "created_at"
->;
-
-function GearRow({ item }: { item: GearItem }) {
+function GearRow({ item }: { item: GearItemDto }) {
   const from = item.purchased_on ?? item.created_at;
   const to = item.retired_on ?? new Date();
   const duration = ownedFor(from, to);
@@ -100,55 +88,35 @@ function GearRow({ item }: { item: GearItem }) {
               })}`
             : " · no purchase date"}
         </div>
-        <form
-          action={retired ? unretireGearItem : retireGearItem}
-          className="mt-1.5"
-        >
-          <input type="hidden" name="gear_id" value={item.id} />
-          <button
-            type="submit"
-            className="text-xs font-medium text-zinc-500 underline-offset-2 transition hover:text-zinc-900 hover:underline dark:hover:text-zinc-100"
+        <div className="mt-1.5">
+          <ActionButton
+            endpoint={`/api/gear/${item.id}`}
+            method="PATCH"
+            body={{ retired: !retired }}
+            className="text-xs font-medium text-zinc-500 underline-offset-2 transition hover:text-zinc-900 hover:underline disabled:opacity-50 dark:hover:text-zinc-100"
           >
             {retired ? "Bring back" : "Retire"}
-          </button>
-        </form>
+          </ActionButton>
+        </div>
       </div>
     </li>
   );
 }
 
 export default async function ProfileGearPage() {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
+  const { viewerId, items } = await serverFetch<GearData>("/api/gear");
+  if (viewerId === null) {
     redirect("/login");
   }
 
-  const user = await db
-    .selectFrom("users")
-    .select("id")
-    .where("email", "=", email.toLowerCase())
-    .executeTakeFirst();
-  if (!user) {
-    redirect("/login");
-  }
-
-  const gearItems = await db
-    .selectFrom("gear_items")
-    .select([
-      "id",
-      "name",
-      "category",
-      "brand",
-      "purchased_on",
-      "retired_on",
-      "notes",
-      "created_at",
-    ])
-    .where("user_id", "=", user.id)
-    .orderBy("purchased_on", "asc")
-    .orderBy("created_at", "asc")
-    .execute();
+  // Mirror the old query order: purchased date ascending (no-date last), then
+  // creation time ascending.
+  const gearItems = [...items].sort((a, b) => {
+    const pa = a.purchased_on ? a.purchased_on.getTime() : Infinity;
+    const pb = b.purchased_on ? b.purchased_on.getTime() : Infinity;
+    if (pa !== pb) return pa - pb;
+    return a.created_at.getTime() - b.created_at.getTime();
+  });
 
   const activeItems = gearItems.filter((item) => item.retired_on === null);
   const retiredItems = gearItems.filter((item) => item.retired_on !== null);

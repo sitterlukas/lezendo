@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { auth } from "@/auth";
-import { sql } from "kysely";
-import db from "@/lib/db";
-import { createTopic } from "@/app/actions";
+import { serverFetch } from "@/lib/api/server-fetch";
+import { type ForumTopicListItem } from "@/lib/queries/forum";
+import ApiForm from "@/app/ui/api-form";
 import Modal from "@/app/ui/modal";
 import LoginToAdd from "@/app/ui/login-to-add";
 import Avatar from "@/app/ui/avatar";
 import { inputClass } from "@/app/ui/style";
 
 export const dynamic = "force-dynamic";
+
+type ForumResponse = {
+  viewer: { id: number; role: string } | null;
+  topics: ForumTopicListItem[];
+};
 
 export const metadata: Metadata = {
   title: "Forum",
@@ -19,37 +23,8 @@ export const metadata: Metadata = {
 };
 
 export default async function ForumPage() {
-  const session = await auth();
-  const currentUser = session?.user?.email
-    ? ((await db
-        .selectFrom("users")
-        .select(["id", "role"])
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
-
-  const topics = await db
-    .selectFrom("forum_topics")
-    .innerJoin("users", "users.id", "forum_topics.user_id")
-    .leftJoin("forum_posts", "forum_posts.topic_id", "forum_topics.id")
-    .select((eb) => [
-      "forum_topics.id",
-      "forum_topics.title",
-      "forum_topics.created_at",
-      "users.name as author",
-      "users.avatar_url as author_avatar",
-      eb.fn.count<number>("forum_posts.id").as("post_count"),
-      sql<Date | null>`MAX(forum_posts.created_at)`.as("last_post_at"),
-    ])
-    .groupBy([
-      "forum_topics.id",
-      "forum_topics.title",
-      "forum_topics.created_at",
-      "users.name",
-      "users.avatar_url",
-    ])
-    .orderBy("forum_topics.created_at", "desc")
-    .execute();
+  const { viewer: currentUser, topics } =
+    await serverFetch<ForumResponse>("/api/forum/topics");
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
@@ -69,7 +44,7 @@ export default async function ForumPage() {
             title="Start a new topic"
             subtitle="Ask a question, share beta, or start a discussion."
           >
-            <form action={createTopic} className="grid gap-4">
+            <ApiForm endpoint="/api/forum/topics" className="grid gap-4">
               <label>
                 <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Title
@@ -99,7 +74,7 @@ export default async function ForumPage() {
               >
                 Post topic
               </button>
-            </form>
+            </ApiForm>
           </Modal>
         ) : (
           <LoginToAdd to="to start a topic" />

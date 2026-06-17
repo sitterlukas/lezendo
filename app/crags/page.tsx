@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { auth } from "@/auth";
-import db from "@/lib/db";
-import { sql } from "kysely";
-import { recoverCrag } from "@/app/actions";
+import { serverFetch } from "@/lib/api/server-fetch";
+import { type CragsListData } from "@/lib/queries/crags";
+import ActionButton from "@/app/ui/action-button";
 import FilterPill from "@/app/ui/filter-pill";
 import { CreateCragModal } from "@/app/ui/create-modals";
 import LoginToAdd from "@/app/ui/login-to-add";
 
-const PAGE_SIZE = 24;
-
 export const dynamic = "force-dynamic";
+
+type CragsResponse = CragsListData & {
+  viewer: { id: number; role: string } | null;
+};
 
 export const metadata: Metadata = {
   title: "Crags",
@@ -24,138 +25,27 @@ export default async function CragsPage({
 }: {
   searchParams: Promise<{ q?: string; country?: string; page?: string }>;
 }) {
-  const session = await auth();
-  const currentUser = session?.user?.email
-    ? ((await db
-        .selectFrom("users")
-        .select(["id", "role"])
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
-
   const params = await searchParams;
   const q = params.q?.trim() || "";
   const countryFilter = params.country?.trim() || "";
   const page = Math.max(1, Number(params.page) || 1);
-  const offset = (page - 1) * PAGE_SIZE;
-  const searchPattern = q ? `%${q.replace(/[%_\\]/g, "\\$&")}%` : null;
 
-  // Countries that actually have crags (for filter tabs)
-  const usedCountryRows = await db
-    .selectFrom("crags")
-    .select("country")
-    .distinct()
-    .where("country", "is not", null)
-    .where("deleted", "=", false)
-    .orderBy("country")
-    .execute();
-  const usedCountries = usedCountryRows.map((r) => r.country as string);
+  const reqParams = new URLSearchParams();
+  if (q) reqParams.set("q", q);
+  if (countryFilter) reqParams.set("country", countryFilter);
+  if (page > 1) reqParams.set("page", String(page));
+  const reqQs = reqParams.toString();
 
-  // All countries for "Add crag" autocomplete
-  const allCountryRows = await db
-    .selectFrom("countries")
-    .select("name")
-    .orderBy("name")
-    .execute();
-  const allCountries = allCountryRows.map((r) => r.name);
-
-  // Base query
-  let baseQuery = db
-    .selectFrom("crags")
-    .leftJoin("routes", (join) =>
-      join
-        .onRef("routes.crag_id", "=", "crags.id")
-        .on("routes.deleted", "=", false),
-    )
-    .select((eb) => [
-      "crags.id",
-      "crags.name",
-      "crags.area",
-      "crags.country",
-      "crags.description",
-      eb.fn.count<number>("routes.id").as("routeCount"),
-    ])
-    .groupBy("crags.id")
-    .where("crags.deleted", "=", false)
-    .orderBy(sql`crags.country NULLS LAST`)
-    .orderBy("crags.name");
-
-  if (searchPattern) {
-    baseQuery = baseQuery.where((eb) =>
-      eb.or([
-        eb("crags.name", "ilike", searchPattern),
-        eb("crags.area", "ilike", searchPattern),
-        eb("crags.country", "ilike", searchPattern),
-        eb("crags.description", "ilike", searchPattern),
-      ]),
-    );
-  }
-  if (countryFilter) {
-    baseQuery = baseQuery.where("crags.country", "=", countryFilter);
-  }
-
-  // Paginate when searching or filtering; grouped view fetches all
-  const paginated = searchPattern || countryFilter;
-  const crags = paginated
-    ? await baseQuery.offset(offset).limit(PAGE_SIZE).execute()
-    : await baseQuery.execute();
-
-  // Count for pagination
-  let totalCount = 0;
-  let totalPages = 0;
-  if (paginated) {
-    let countQuery = db
-      .selectFrom("crags")
-      .select((eb) => eb.fn.countAll<number>().as("total"));
-    if (searchPattern) {
-      countQuery = countQuery.where((eb) =>
-        eb.or([
-          eb("name", "ilike", searchPattern),
-          eb("area", "ilike", searchPattern),
-          eb("country", "ilike", searchPattern),
-          eb("description", "ilike", searchPattern),
-        ]),
-      );
-    }
-    if (countryFilter) {
-      countQuery = countQuery.where("country", "=", countryFilter);
-    }
-    countQuery = countQuery.where("deleted", "=", false);
-    const { total } = await countQuery.executeTakeFirstOrThrow();
-    totalCount = Number(total);
-    totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  }
-
-  // Deleted crags for trash section
-  const deletedCrags = await db
-    .selectFrom("crags")
-    .select(["id", "name", "area", "country"])
-    .where("deleted", "=", true)
-    .orderBy("name")
-    .execute();
-
-  const deletedCragLog = await (async () => {
-    if (deletedCrags.length === 0)
-      return new Map<number, { at: Date; by: string }>();
-    const entries = await db
-      .selectFrom("deletion_log")
-      .innerJoin("users", "users.id", "deletion_log.user_id")
-      .select([
-        "deletion_log.entity_id",
-        "deletion_log.created_at",
-        "users.name as by",
-      ])
-      .where("deletion_log.entity_type", "=", "crag")
-      .where("deletion_log.action", "=", "delete")
-      .orderBy("deletion_log.created_at", "desc")
-      .execute();
-    const map = new Map<number, { at: Date; by: string }>();
-    for (const e of entries) {
-      if (!map.has(e.entity_id))
-        map.set(e.entity_id, { at: e.created_at as Date, by: e.by as string });
-    }
-    return map;
-  })();
+  const {
+    viewer: currentUser,
+    crags,
+    usedCountries,
+    allCountries,
+    paginated,
+    totalCount,
+    totalPages,
+    deleted: deletedCrags,
+  } = await serverFetch<CragsResponse>(`/api/crags${reqQs ? `?${reqQs}` : ""}`);
 
   // Group crags by country for the default view
   const groups = crags.reduce<
@@ -363,7 +253,6 @@ export default async function CragsPage({
           </h2>
           <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
             {deletedCrags.map((crag) => {
-              const log = deletedCragLog.get(crag.id);
               return (
                 <li
                   key={crag.id}
@@ -378,10 +267,10 @@ export default async function CragsPage({
                         {[crag.area, crag.country].filter(Boolean).join(", ")}
                       </span>
                     )}
-                    {log && (
+                    {crag.deletedAt && (
                       <span className="ml-3 text-xs text-zinc-400">
-                        · Deleted by {log.by} on{" "}
-                        {log.at.toLocaleDateString("en-GB", {
+                        · Deleted by {crag.deletedBy} on{" "}
+                        {crag.deletedAt.toLocaleDateString("en-GB", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
@@ -389,15 +278,12 @@ export default async function CragsPage({
                       </span>
                     )}
                   </div>
-                  <form action={recoverCrag}>
-                    <input type="hidden" name="crag_id" value={crag.id} />
-                    <button
-                      type="submit"
-                      className="rounded border border-zinc-300 px-3 py-1 text-xs font-medium transition hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                    >
-                      Recover
-                    </button>
-                  </form>
+                  <ActionButton
+                    endpoint={`/api/crags/${crag.id}/recover`}
+                    className="rounded border border-zinc-300 px-3 py-1 text-xs font-medium transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    Recover
+                  </ActionButton>
                 </li>
               );
             })}

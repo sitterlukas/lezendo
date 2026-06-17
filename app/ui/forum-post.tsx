@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { editPost, deletePost } from "@/app/actions";
+import { apiFetch, ApiError } from "@/lib/api-client";
 import Avatar from "@/app/ui/avatar";
 import DeleteButton from "@/app/ui/delete-button";
 import { inputClass } from "@/app/ui/style";
@@ -40,14 +40,16 @@ export default function ForumPost({
   function save() {
     setError(null);
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("post_id", String(postId));
-      fd.set("body", text.trim());
-      const res = await editPost(fd);
-      if (res.ok) {
+      try {
+        await apiFetch(`/api/forum/posts/${postId}`, {
+          method: "PATCH",
+          body: { body: text.trim() },
+        });
         setEditing(false);
         router.refresh();
-      } else setError(res.error);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Failed to save.");
+      }
     });
   }
 
@@ -124,16 +126,14 @@ export default function ForumPost({
             Edit
           </button>
           {!isOp && (
-            <form action={deletePost}>
-              <input type="hidden" name="post_id" value={postId} />
-              <DeleteButton
-                variant="pill"
-                title="Delete post"
-                message="This permanently deletes your reply."
-                confirmLabel="Delete"
-                ariaLabel="Delete post"
-              />
-            </form>
+            <DeleteButton
+              endpoint={`/api/forum/posts/${postId}`}
+              variant="pill"
+              title="Delete post"
+              message="This permanently deletes your reply."
+              confirmLabel="Delete"
+              ariaLabel="Delete post"
+            />
           )}
         </div>
       )}

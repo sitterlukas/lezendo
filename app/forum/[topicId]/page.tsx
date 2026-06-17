@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
 import db from "@/lib/db";
-import { createPost } from "@/app/actions";
+import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
+import { type ForumTopicDetail } from "@/lib/queries/forum";
+import ApiForm from "@/app/ui/api-form";
 import ForumPost from "@/app/ui/forum-post";
 import ForumTopicActions from "@/app/ui/forum-topic-actions";
+
+type TopicResponse = ForumTopicDetail & {
+  viewer: { id: number; role: string } | null;
+};
 
 export const dynamic = "force-dynamic";
 
@@ -37,49 +42,18 @@ export default async function TopicPage({
 }: {
   params: Promise<{ topicId: string }>;
 }) {
-  const session = await auth();
-
   const { topicId } = await params;
   const id = Number(topicId);
   if (!Number.isInteger(id)) notFound();
 
-  const topic = await db
-    .selectFrom("forum_topics")
-    .innerJoin("users", "users.id", "forum_topics.user_id")
-    .select([
-      "forum_topics.id",
-      "forum_topics.title",
-      "forum_topics.created_at",
-      "forum_topics.user_id",
-      "users.name as author",
-    ])
-    .where("forum_topics.id", "=", id)
-    .executeTakeFirst();
-
-  if (!topic) notFound();
-
-  const posts = await db
-    .selectFrom("forum_posts")
-    .innerJoin("users", "users.id", "forum_posts.user_id")
-    .select([
-      "forum_posts.id",
-      "forum_posts.body",
-      "forum_posts.created_at",
-      "forum_posts.user_id",
-      "users.name as author",
-      "users.avatar_url as author_avatar",
-    ])
-    .where("forum_posts.topic_id", "=", id)
-    .orderBy("forum_posts.created_at", "asc")
-    .execute();
-
-  const currentUser = session?.user?.email
-    ? ((await db
-        .selectFrom("users")
-        .select(["id", "role"])
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
+  let data: TopicResponse;
+  try {
+    data = await serverFetch<TopicResponse>(`/api/forum/topics/${id}`);
+  } catch (err) {
+    if (err instanceof ServerFetchError && err.status === 404) notFound();
+    throw err;
+  }
+  const { topic, posts, viewer: currentUser } = data;
 
   const canManageTopic =
     !!currentUser &&
@@ -160,8 +134,11 @@ export default async function TopicPage({
           Reply
         </h2>
         {currentUser ? (
-          <form action={createPost} className="mt-4 grid gap-3">
-            <input type="hidden" name="topic_id" value={topic.id} />
+          <ApiForm
+            endpoint={`/api/forum/topics/${topic.id}/posts`}
+            resetOnSuccess
+            className="mt-4 grid gap-3"
+          >
             <textarea
               name="body"
               placeholder="Write your reply…"
@@ -177,7 +154,7 @@ export default async function TopicPage({
                 Post reply
               </button>
             </div>
-          </form>
+          </ApiForm>
         ) : (
           <p className="mt-4 text-sm text-zinc-500">
             <Link

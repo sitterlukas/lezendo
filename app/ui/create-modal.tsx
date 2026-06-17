@@ -2,17 +2,17 @@
 
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import type { CreateResult } from "@/app/actions";
+import { apiFetch, ApiError } from "@/lib/api-client";
 
-// Two-step create dialog: step 1 collects info and calls `action` (which returns
-// the new id), step 2 lets the user enrich the new entity (photos / location)
-// via `renderStep2(id)`, then "Done →" navigates to `doneHref(id)`.
-// Rendered only by per-entity client wrappers, so function props are fine.
+// Two-step create dialog: step 1 collects info and POSTs it to `endpoint`
+// (which returns the new id), step 2 lets the user enrich the new entity
+// (photos / location) via `renderStep2(id)`, then "Done →" navigates to
+// `doneHref(id)`. Rendered only by per-entity client wrappers.
 export default function CreateModal({
   triggerLabel,
   title,
   subtitle,
-  action,
+  endpoint,
   children,
   renderStep2,
   doneHref,
@@ -22,7 +22,7 @@ export default function CreateModal({
   triggerLabel: string;
   title: string;
   subtitle?: string;
-  action: (formData: FormData) => Promise<CreateResult>;
+  endpoint: string;
   children: ReactNode;
   renderStep2: (id: number) => ReactNode;
   doneHref: (id: number) => string;
@@ -51,15 +51,20 @@ export default function CreateModal({
   }
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const body = Object.fromEntries(new FormData(e.currentTarget));
     setError(null);
     startTransition(async () => {
-      const res = await action(formData);
-      if (res.ok) {
+      try {
+        const res = await apiFetch<{ id: number }>(endpoint, {
+          method: "POST",
+          body,
+        });
         setCreatedId(res.id);
         setStep(2);
-      } else {
-        setError(res.error);
+      } catch (err) {
+        setError(
+          err instanceof ApiError ? err.message : "Something went wrong.",
+        );
       }
     });
   }

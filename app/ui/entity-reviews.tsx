@@ -1,8 +1,10 @@
 import Link from "next/link";
-import db, { type ReviewEntityType } from "@/lib/db";
-import { addEntityReview, deleteEntityReview } from "@/app/actions";
+import { type ReviewEntityType } from "@/lib/db";
+import { serverFetch } from "@/lib/api/server-fetch";
+import { type EntityReviewDto } from "@/lib/queries/reviews";
 import Stars from "@/app/ui/stars";
 import StarRatingInput from "@/app/ui/star-rating-input";
+import ApiForm from "@/app/ui/api-form";
 import DeleteButton from "@/app/ui/delete-button";
 import Avatar from "@/app/ui/avatar";
 import { inputClass } from "@/app/ui/style";
@@ -24,22 +26,9 @@ export default async function EntityReviews({
   currentUserId: number | null;
   isAdmin: boolean;
 }) {
-  const reviews = await db
-    .selectFrom("entity_reviews as r")
-    .innerJoin("users as u", "u.id", "r.user_id")
-    .select([
-      "r.id",
-      "r.user_id",
-      "r.rating",
-      "r.body",
-      "r.created_at",
-      "u.name as author",
-      "u.avatar_url as author_avatar",
-    ])
-    .where("r.entity_type", "=", entityType)
-    .where("r.entity_id", "=", entityId)
-    .orderBy("r.created_at", "desc")
-    .execute();
+  const reviews = await serverFetch<EntityReviewDto[]>(
+    `/api/reviews?entityType=${entityType}&entityId=${entityId}`,
+  );
 
   const count = reviews.length;
   const avg = count
@@ -74,7 +63,7 @@ export default async function EntityReviews({
       {/* Add / edit form, or a prompt to log in */}
       {currentUserId ? (
         <div className="mt-5 rounded border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
-          <form action={addEntityReview}>
+          <ApiForm endpoint="/api/reviews">
             <input type="hidden" name="entity_type" value={entityType} />
             <input type="hidden" name="entity_id" value={entityId} />
             <p className="text-sm font-medium">
@@ -96,18 +85,18 @@ export default async function EntityReviews({
             >
               {myReview ? "Update review" : "Post review"}
             </button>
-          </form>
+          </ApiForm>
           {myReview && (
-            <form action={deleteEntityReview} className="mt-2">
-              <input type="hidden" name="review_id" value={myReview.id} />
+            <div className="mt-2">
               <DeleteButton
+                endpoint={`/api/reviews/${myReview.id}`}
                 title="Remove your review?"
                 message="This permanently deletes your review."
                 confirmLabel="Remove review"
                 ariaLabel="Remove your review"
                 label="Remove review"
               />
-            </form>
+            </div>
           )}
         </div>
       ) : (
@@ -149,16 +138,14 @@ export default async function EntityReviews({
                   {review.created_at.toLocaleDateString("en-GB", dateOpts)}
                 </span>
                 {isAdmin && (
-                  <form action={deleteEntityReview}>
-                    <input type="hidden" name="review_id" value={review.id} />
-                    <DeleteButton
-                      variant="icon"
-                      title="Delete review?"
-                      message="This permanently deletes this review."
-                      confirmLabel="Delete review"
-                      ariaLabel="Delete review"
-                    />
-                  </form>
+                  <DeleteButton
+                    endpoint={`/api/reviews/${review.id}`}
+                    variant="icon"
+                    title="Delete review?"
+                    message="This permanently deletes this review."
+                    confirmLabel="Delete review"
+                    ariaLabel="Delete review"
+                  />
                 )}
               </div>
               {review.body && (

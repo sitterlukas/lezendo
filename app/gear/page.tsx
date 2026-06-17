@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { auth } from "@/auth";
-import db, { type GearCategory } from "@/lib/db";
-import {
-  addGearItem,
-  addGearReview,
-  deleteGearItem,
-  deleteGearReview,
-} from "@/app/actions";
+import { serverFetch } from "@/lib/api/server-fetch";
+import { type GearData } from "@/lib/queries/gear";
+import { type GearCategory } from "@/lib/db";
 import Modal from "@/app/ui/modal";
 import Select from "@/app/ui/select";
+import ApiForm from "@/app/ui/api-form";
 import DeleteButton from "@/app/ui/delete-button";
 import LoginToAdd from "@/app/ui/login-to-add";
 import Stars from "@/app/ui/stars";
@@ -37,48 +33,12 @@ export const metadata: Metadata = {
 };
 
 export default async function GearPage() {
-  const session = await auth();
-  const email = session?.user?.email;
-  const user = email
-    ? ((await db
-        .selectFrom("users")
-        .select("id")
-        .where("email", "=", email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
-
-  const [gearItems, reviews] = await Promise.all([
-    user
-      ? db
-          .selectFrom("gear_items")
-          .select([
-            "id",
-            "name",
-            "category",
-            "brand",
-            "purchased_on",
-            "retired_on",
-            "notes",
-          ])
-          .where("user_id", "=", user.id)
-          .orderBy("created_at", "desc")
-          .execute()
-      : Promise.resolve([]),
-    db
-      .selectFrom("gear_reviews")
-      .innerJoin("users", "users.id", "gear_reviews.user_id")
-      .select([
-        "gear_reviews.id",
-        "gear_reviews.user_id",
-        "gear_reviews.product",
-        "gear_reviews.rating",
-        "gear_reviews.body",
-        "gear_reviews.created_at",
-        "users.name as author",
-      ])
-      .orderBy("gear_reviews.created_at", "desc")
-      .execute(),
-  ]);
+  const {
+    viewerId,
+    items: gearItems,
+    reviews,
+  } = await serverFetch<GearData>("/api/gear");
+  const isAuthed = viewerId !== null;
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -96,18 +56,22 @@ export default async function GearPage() {
           <div>
             <h2 className="text-2xl font-semibold tracking-tight">Your gear</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              {user
+              {isAuthed
                 ? `${gearItems.length} ${gearItems.length === 1 ? "item" : "items"} in your rack.`
                 : "Log in to track your rope, draws, and rubber."}
             </p>
           </div>
-          {user && (
+          {isAuthed && (
             <Modal
               triggerLabel="Add gear"
               title="Add gear"
               subtitle="Track what's in your pack and how old it is."
             >
-              <form action={addGearItem} className="grid gap-4 sm:grid-cols-2">
+              <ApiForm
+                endpoint="/api/gear"
+                resetOnSuccess
+                className="grid gap-4 sm:grid-cols-2"
+              >
                 <label className="sm:col-span-2">
                   <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                     Name
@@ -168,12 +132,12 @@ export default async function GearPage() {
                 >
                   Add gear
                 </button>
-              </form>
+              </ApiForm>
             </Modal>
           )}
         </div>
 
-        {!user ? (
+        {!isAuthed ? (
           <div className="mt-6 border border-dashed border-zinc-300 py-12 text-center dark:border-zinc-700">
             <p className="font-medium">Track your own rack</p>
             <p className="mx-auto mt-1 max-w-md text-sm text-zinc-500">
@@ -206,16 +170,14 @@ export default async function GearPage() {
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold leading-snug">{item.name}</h3>
                   </div>
-                  <form action={deleteGearItem}>
-                    <input type="hidden" name="gear_id" value={item.id} />
-                    <DeleteButton
-                      variant="icon"
-                      title="Remove gear?"
-                      message={`This removes “${item.name}” from your rack. This can't be undone.`}
-                      confirmLabel="Remove gear"
-                      ariaLabel={`Remove ${item.name}`}
-                    />
-                  </form>
+                  <DeleteButton
+                    endpoint={`/api/gear/${item.id}`}
+                    variant="icon"
+                    title="Remove gear?"
+                    message={`This removes “${item.name}” from your rack. This can't be undone.`}
+                    confirmLabel="Remove gear"
+                    ariaLabel={`Remove ${item.name}`}
+                  />
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
                   <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
@@ -260,7 +222,7 @@ export default async function GearPage() {
               from fellow climbers.
             </p>
           </div>
-          {!user ? (
+          {!isAuthed ? (
             <LoginToAdd to="to write a review" />
           ) : (
             <Modal
@@ -268,7 +230,11 @@ export default async function GearPage() {
               title="Write a review"
               subtitle="Help other climbers pick their next piece of gear."
             >
-              <form action={addGearReview} className="grid gap-4">
+              <ApiForm
+                endpoint="/api/gear-reviews"
+                resetOnSuccess
+                className="grid gap-4"
+              >
                 <label>
                   <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                     Product
@@ -304,7 +270,7 @@ export default async function GearPage() {
                 >
                   Publish review
                 </button>
-              </form>
+              </ApiForm>
             </Modal>
           )}
         </div>
@@ -334,17 +300,15 @@ export default async function GearPage() {
                       year: "numeric",
                     })}
                   </span>
-                  {user && review.user_id === user.id && (
-                    <form action={deleteGearReview}>
-                      <input type="hidden" name="review_id" value={review.id} />
-                      <DeleteButton
-                        variant="icon"
-                        title="Delete review?"
-                        message={`This deletes your review of “${review.product}”. This can't be undone.`}
-                        confirmLabel="Delete review"
-                        ariaLabel={`Delete review of ${review.product}`}
-                      />
-                    </form>
+                  {review.user_id === viewerId && (
+                    <DeleteButton
+                      endpoint={`/api/gear-reviews/${review.id}`}
+                      variant="icon"
+                      title="Delete review?"
+                      message={`This deletes your review of “${review.product}”. This can't be undone.`}
+                      confirmLabel="Delete review"
+                      ariaLabel={`Delete review of ${review.product}`}
+                    />
                   )}
                 </div>
                 <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">

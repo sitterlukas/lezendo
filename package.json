@@ -22,6 +22,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.4.0",
     "bcryptjs": "^3.0.3",
+    "jose": "^6.2.3",
     "kysely": "^0.29.2",
     "leaflet": "^1.9.4",
     "next": "16.2.9",
@@ -30,7 +31,8 @@
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "resend": "^6.12.4"
+    "resend": "^6.12.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
 import db from "@/lib/db";
-import { updateSector, deleteSector } from "@/app/actions";
+import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
+import { type SectorDetailData } from "@/lib/queries/sectors";
 import Modal from "@/app/ui/modal";
+import ApiForm from "@/app/ui/api-form";
 import DeleteButton from "@/app/ui/delete-button";
 import ImageGallery from "@/app/ui/image-gallery";
 import SectorMapQR from "@/app/ui/sector-map-qr";
@@ -15,8 +16,6 @@ import SectorFields from "@/app/ui/sector-fields";
 import { CreateRouteModal } from "@/app/ui/create-modals";
 import LoginToAdd from "@/app/ui/login-to-add";
 import FactList from "@/app/ui/fact-list";
-import { resolveGrade } from "@/lib/grade-conversion";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
 import { gradeBuckets, gradeRange, stylesPresent } from "@/lib/route-stats";
 import { typeLabel, typeBadge } from "@/app/ui/style";
 
@@ -62,106 +61,37 @@ export default async function SectorPage({
 }: {
   params: Promise<{ cragId: string; sectorId: string }>;
 }) {
-  const session = await auth();
-  const currentUser = session?.user?.email
-    ? ((await db
-        .selectFrom("users")
-        .select([
-          "id",
-          "role",
-          "preferred_rope_grading_system_id",
-          "preferred_boulder_grading_system_id",
-        ])
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
-
   const { cragId, sectorId } = await params;
   const cragIdNum = Number(cragId);
   const sectorIdNum = Number(sectorId);
   if (!Number.isInteger(cragIdNum) || !Number.isInteger(sectorIdNum))
     notFound();
 
-  const [gradingSystems, gradeEquivalencies] = await Promise.all([
-    db
-      .selectFrom("grading_systems")
-      .select(["id", "name", "slug"])
-      .orderBy("id")
-      .execute(),
-    loadGradeEquivalencies(),
-  ]);
-
-  const [crag, sector] = await Promise.all([
-    db
-      .selectFrom("crags")
-      .selectAll()
-      .where("id", "=", cragIdNum)
-      .where("deleted", "=", false)
-      .executeTakeFirst(),
-    db
-      .selectFrom("sectors")
-      .selectAll()
-      .where("id", "=", sectorIdNum)
-      .where("crag_id", "=", cragIdNum)
-      .where("deleted", "=", false)
-      .executeTakeFirst(),
-  ]);
-  if (!crag || !sector) notFound();
-
-  const images = await db
-    .selectFrom("images")
-    .select(["id", "url", "uploaded_by"])
-    .where("entity_type", "=", "sector")
-    .where("entity_id", "=", sectorIdNum)
-    .orderBy("created_at")
-    .execute();
-
-  const routes = await db
-    .selectFrom("routes")
-    .select([
-      "id",
-      "name",
-      "grade",
-      "grading_system_id",
-      "style",
-      "height_m",
-      "description",
-    ])
-    .where("crag_id", "=", cragIdNum)
-    .where("sector_id", "=", sectorIdNum)
-    .where("deleted", "=", false)
-    .orderBy("name")
-    .execute();
-
-  const tickedRouteIds = new Set<number>();
-  if (currentUser) {
-    const ticked = await db
-      .selectFrom("ascents")
-      .select("route_id")
-      .distinct()
-      .where("user_id", "=", currentUser.id)
-      .execute();
-    for (const t of ticked) tickedRouteIds.add(t.route_id);
+  let data: SectorDetailData;
+  try {
+    data = await serverFetch<SectorDetailData>(
+      `/api/sectors/${sectorIdNum}?cragId=${cragIdNum}`,
+    );
+  } catch (err) {
+    if (err instanceof ServerFetchError && err.status === 404) notFound();
+    throw err;
   }
+
+  const {
+    crag,
+    sector,
+    viewer: currentUser,
+    images,
+    gradingSystems,
+    gradeEquivalencies,
+    routes: resolvedRoutes,
+  } = data;
+  const tickedRouteIds = new Set(data.tickedRouteIds);
 
   function canEdit(createdBy: number | null) {
     if (!currentUser) return false;
     return currentUser.role === "admin" || currentUser.id === createdBy;
   }
-
-  const resolvedRoutes = routes.map((r) => ({
-    ...r,
-    ...resolveGrade(
-      r.grade,
-      r.grading_system_id,
-      gradingSystems,
-      {
-        rope: currentUser?.preferred_rope_grading_system_id,
-        boulder: currentUser?.preferred_boulder_grading_system_id,
-      },
-      gradeEquivalencies,
-    ),
-  }));
 
   const buckets = gradeBuckets(resolvedRoutes, gradeEquivalencies);
   const range = gradeRange(resolvedRoutes, gradeEquivalencies);
@@ -206,8 +136,11 @@ export default async function SectorPage({
               variant="ghost"
               title={`Edit sector: ${sector.name}`}
             >
-              <form action={updateSector} className="grid gap-4">
-                <input type="hidden" name="sector_id" value={sector.id} />
+              <ApiForm
+                endpoint={`/api/sectors/${sector.id}`}
+                method="PATCH"
+                className="grid gap-4"
+              >
                 <SectorFields
                   defaults={{
                     name: sector.name,
@@ -222,7 +155,7 @@ export default async function SectorPage({
                 >
                   Save changes
                 </button>
-              </form>
+              </ApiForm>
             </Modal>
           )}
 
@@ -242,16 +175,13 @@ export default async function SectorPage({
           )}
 
           {canEdit(sector.created_by) && (
-            <form action={deleteSector}>
-              <input type="hidden" name="sector_id" value={sector.id} />
-              <input type="hidden" name="crag_id" value={cragIdNum} />
-              <DeleteButton
-                title={`Delete ${sector.name}?`}
-                message={`This will permanently delete the sector "${sector.name}". Routes inside it will remain but become unsectored.`}
-                confirmLabel="Delete sector"
-                ariaLabel="Delete sector"
-              />
-            </form>
+            <DeleteButton
+              endpoint={`/api/sectors/${sector.id}`}
+              title={`Delete ${sector.name}?`}
+              message={`This will permanently delete the sector "${sector.name}". Routes inside it will remain but become unsectored.`}
+              confirmLabel="Delete sector"
+              ariaLabel="Delete sector"
+            />
           )}
         </div>
       </header>
@@ -261,7 +191,7 @@ export default async function SectorPage({
         className="mt-6"
         variant="inline"
         items={[
-          { label: "Routes", value: routes.length || null },
+          { label: "Routes", value: resolvedRoutes.length || null },
           {
             label: "Grades",
             value: range
@@ -322,11 +252,12 @@ export default async function SectorPage({
       <div className="mt-12 flex items-baseline gap-3">
         <h2 className="text-xl font-bold tracking-tight">Routes</h2>
         <span className="text-sm text-zinc-500">
-          {routes.length} {routes.length === 1 ? "route" : "routes"}
+          {resolvedRoutes.length}{" "}
+          {resolvedRoutes.length === 1 ? "route" : "routes"}
         </span>
       </div>
 
-      {routes.length === 0 ? (
+      {resolvedRoutes.length === 0 ? (
         <div className="mt-6 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
           <p className="font-medium">No routes in this sector yet.</p>
           <p className="mt-1 text-sm text-zinc-500">

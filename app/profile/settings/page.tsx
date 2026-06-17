@@ -1,64 +1,37 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { logout, updateName } from "@/app/actions/auth";
+import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
+import { type SettingsData } from "@/lib/queries/me";
 import ProfileTabs from "@/app/profile/tabs";
 import AvatarUpload from "@/app/ui/avatar-upload";
 import PeopleSearch from "@/app/ui/people-search";
 import UserRow from "@/app/ui/user-row";
 import GradingSystemForm from "./grading-system-form";
-import db from "@/lib/db";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
+import NameForm from "./name-form";
+import LogoutButton from "./logout-button";
 
 type FollowUser = { id: number; name: string; avatar_url: string | null };
 
+type SettingsResponse = SettingsData & { provider: string | null };
+
 export default async function SettingsPage() {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    redirect("/login");
+  let data: SettingsResponse;
+  try {
+    data = await serverFetch<SettingsResponse>("/api/me/settings");
+  } catch (err) {
+    if (err instanceof ServerFetchError && err.status === 401) {
+      redirect("/login");
+    }
+    throw err;
   }
 
-  const [user, gradingSystems, gradeEquivalencies] = await Promise.all([
-    db
-      .selectFrom("users")
-      .select([
-        "id",
-        "name",
-        "email",
-        "avatar_url",
-        "preferred_rope_grading_system_id",
-        "preferred_boulder_grading_system_id",
-        "created_at",
-      ])
-      .where("email", "=", email.toLowerCase())
-      .executeTakeFirst(),
-    db
-      .selectFrom("grading_systems")
-      .select(["id", "name", "slug"])
-      .orderBy("id")
-      .execute(),
-    loadGradeEquivalencies(),
-  ]);
-  if (!user) {
-    redirect("/login");
-  }
-
-  const [following, followers] = await Promise.all([
-    db
-      .selectFrom("follows")
-      .innerJoin("users", "users.id", "follows.followee_id")
-      .select(["users.id", "users.name", "users.avatar_url"])
-      .where("follows.follower_id", "=", user.id)
-      .orderBy("users.name")
-      .execute(),
-    db
-      .selectFrom("follows")
-      .innerJoin("users", "users.id", "follows.follower_id")
-      .select(["users.id", "users.name", "users.avatar_url"])
-      .where("follows.followee_id", "=", user.id)
-      .orderBy("users.name")
-      .execute(),
-  ]);
+  const {
+    user,
+    gradingSystems,
+    gradeEquivalencies,
+    following,
+    followers,
+    provider,
+  } = data;
   const followingIds = new Set(following.map((u) => u.id));
 
   const memberSince = user.created_at.toLocaleDateString("en-GB", {
@@ -82,29 +55,7 @@ export default async function SettingsPage() {
           </span>
           <AvatarUpload name={user.name} avatarUrl={user.avatar_url} />
         </div>
-        <form
-          action={updateName}
-          className="flex items-end gap-3 border-b border-zinc-200 px-6 py-4 dark:border-zinc-800"
-        >
-          <label className="flex-1">
-            <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-              Display name
-            </span>
-            <input
-              name="name"
-              defaultValue={user.name}
-              required
-              maxLength={100}
-              className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-            />
-          </label>
-          <button
-            type="submit"
-            className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
-            Save
-          </button>
-        </form>
+        <NameForm defaultName={user.name} />
         <GradingSystemForm
           gradingSystems={gradingSystems}
           equivalencies={gradeEquivalencies}
@@ -123,7 +74,7 @@ export default async function SettingsPage() {
           <div className="flex items-center justify-between px-6 py-4">
             <dt className="text-sm text-zinc-500">Log-in method</dt>
             <dd className="text-sm font-medium">
-              {session.provider === "google" ? "Google" : "Email & password"}
+              {provider === "google" ? "Google" : "Email & password"}
             </dd>
           </div>
         </dl>
@@ -149,14 +100,9 @@ export default async function SettingsPage() {
         <PeopleSearch />
       </section>
 
-      <form action={logout} className="mt-8">
-        <button
-          type="submit"
-          className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-        >
-          Log out
-        </button>
-      </form>
+      <div className="mt-8">
+        <LogoutButton />
+      </div>
     </main>
   );
 }
