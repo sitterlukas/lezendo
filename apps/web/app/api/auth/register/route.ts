@@ -29,6 +29,14 @@ export const POST = route(async (request) => {
       400,
     );
   }
+  // Modest complexity floor: at least one letter and one digit, so an 8-char
+  // password can't be all digits or a single dictionary word.
+  if (!/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+    return fail(
+      "Password must contain at least one letter and one number.",
+      400,
+    );
+  }
   if (name.length > 100) {
     return fail("Name must be at most 100 characters.", 400);
   }

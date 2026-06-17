@@ -31,9 +31,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json(jsonResponse);
   } catch (error) {
-    return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 400 },
-    );
+    // Log server-side; return a generic message so we don't leak internals
+    // (token/config details) to the client.
+    console.error("[api] image upload failed", error);
+    return NextResponse.json({ error: "Upload failed." }, { status: 400 });
   }
 }

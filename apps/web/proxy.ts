@@ -17,21 +17,23 @@ export function proxy(request: NextRequest) {
   const authz = request.headers.get("authorization");
   if (authz?.startsWith("Bearer ")) return NextResponse.next();
 
+  // Cookie-authenticated browser writes always carry an Origin, so a missing or
+  // mismatched one means the request didn't come from our pages — block it.
   const origin = request.headers.get("origin");
+  const host = request.headers.get("host");
+  let originHost: string | null = null;
   if (origin) {
-    const host = request.headers.get("host");
-    let originHost: string | null = null;
     try {
       originHost = new URL(origin).host;
     } catch {
       originHost = null;
     }
-    if (originHost !== host) {
-      return NextResponse.json(
-        { error: "Cross-origin request blocked." },
-        { status: 403 },
-      );
-    }
+  }
+  if (originHost !== host) {
+    return NextResponse.json(
+      { error: "Cross-origin request blocked." },
+      { status: 403 },
+    );
   }
 
   return NextResponse.next();

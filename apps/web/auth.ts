@@ -12,6 +12,12 @@ class UnverifiedEmailError extends CredentialsSignin {
   code = "unverified";
 }
 
+// Fail loud at boot rather than silently signing sessions with an empty secret
+// (which would make every JWT trivially forgeable in production).
+if (process.env.NODE_ENV === "production" && !process.env.AUTH_SECRET) {
+  throw new Error("AUTH_SECRET must be set in production.");
+}
+
 const googleEnabled = Boolean(
   process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
 );
@@ -47,6 +53,9 @@ const providers: Provider[] = [
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET,
+  // We run behind Vercel's proxy; trust the forwarded host for callback/cookie
+  // host validation.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",

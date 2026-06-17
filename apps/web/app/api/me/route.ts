@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { route, ok, readJson } from "@/lib/api/respond";
+import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
 import { getMe } from "@whipperbook/db";
 import db from "@whipperbook/db";
@@ -37,10 +37,18 @@ export const PATCH = route(async (request) => {
 
   if (body.name !== undefined) set.name = body.name;
   if (body.preferred_rope_grading_system_id !== undefined) {
+    if (!(await gradingSystemExists(body.preferred_rope_grading_system_id))) {
+      return fail("Invalid grading system.", 400);
+    }
     set.preferred_rope_grading_system_id =
       body.preferred_rope_grading_system_id;
   }
   if (body.preferred_boulder_grading_system_id !== undefined) {
+    if (
+      !(await gradingSystemExists(body.preferred_boulder_grading_system_id))
+    ) {
+      return fail("Invalid grading system.", 400);
+    }
     set.preferred_boulder_grading_system_id =
       body.preferred_boulder_grading_system_id;
   }
@@ -51,3 +59,15 @@ export const PATCH = route(async (request) => {
 
   return ok({ ok: true });
 });
+
+// `null` clears the preference; any non-null id must reference a real grading
+// system so we never persist a dangling reference.
+async function gradingSystemExists(id: number | null): Promise<boolean> {
+  if (id === null) return true;
+  const row = await db
+    .selectFrom("grading_systems")
+    .select("id")
+    .where("id", "=", id)
+    .executeTakeFirst();
+  return Boolean(row);
+}

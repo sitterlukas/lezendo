@@ -1,5 +1,6 @@
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
+import { assertTargetExists } from "@/lib/api/exists";
 import { likeSchema } from "@whipperbook/validation";
 import db from "@whipperbook/db";
 
@@ -8,6 +9,8 @@ import db from "@whipperbook/db";
 export const POST = route(async (request) => {
   const user = await requireUser(request);
   const data = await readJson(request, likeSchema);
+
+  await assertTargetExists(data.target_type, data.target_id);
 
   const existing = await db
     .selectFrom("likes")

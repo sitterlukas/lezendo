@@ -2,6 +2,7 @@ import { z } from "zod";
 import { sql } from "kysely";
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
+import { assertTargetExists } from "@/lib/api/exists";
 import db from "@whipperbook/db";
 
 const schema = z.object({
@@ -16,6 +17,10 @@ const schema = z.object({
 export const POST = route(async (request) => {
   const user = await requireUser(request);
   const { url, entityType, entityId } = await readJson(request, schema);
+
+  // Community-editable, but the target must actually exist (404 otherwise) so
+  // we never attach a photo to a missing/deleted entity.
+  await assertTargetExists(entityType, entityId);
 
   if (entityType === "status") {
     await db.transaction().execute(async (trx) => {

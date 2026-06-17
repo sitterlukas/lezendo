@@ -63,7 +63,7 @@ export default function RegisterForm() {
         <input
           name="password"
           type="password"
-          placeholder="Password (min. 8 characters)"
+          placeholder="Password (min. 8 chars, letter + number)"
           required
           minLength={8}
           autoComplete="new-password"
