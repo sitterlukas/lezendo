@@ -1,6 +1,6 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
-import { cragWriteSchema } from "@/lib/forms";
+import { cragWriteSchema } from "@whipperbook/validation";
 import { getCragsList } from "@/lib/queries/crags";
 import db from "@/lib/db";
 

@@ -1,6 +1,7 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { routeWriteSchema, gradeSystemError } from "@/lib/forms";
+import { routeWriteSchema } from "@whipperbook/validation";
+import { gradeSystemError } from "@/lib/forms";
 import db from "@/lib/db";
 
 // POST /api/routes — create a route. Returns { id } (replaces addRoute).

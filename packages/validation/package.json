@@ -1,0 +1,21 @@
+{
+  "name": "@whipperbook/validation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4",
+    "@whipperbook/core": "*"
+  },
+  "devDependencies": {
+    "vitest": "^3"
+  }
+}

@@ -1,6 +1,6 @@
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { gearReviewCreateSchema } from "@/lib/forms";
+import { gearReviewCreateSchema } from "@whipperbook/validation";
 import db from "@/lib/db";
 
 // POST /api/gear-reviews — review a climbing gear product (replaces

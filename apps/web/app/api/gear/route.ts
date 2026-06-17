@@ -1,6 +1,6 @@
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
-import { gearCreateSchema } from "@/lib/forms";
+import { gearCreateSchema } from "@whipperbook/validation";
 import { getGearItems, getGearReviews } from "@/lib/queries/gear";
 import db from "@/lib/db";
 

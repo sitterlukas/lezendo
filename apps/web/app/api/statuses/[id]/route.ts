@@ -1,10 +1,7 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify } from "@/lib/api/auth";
-import {
-  statusWriteSchema,
-  resolveSectorTag,
-  INVALID_SECTOR,
-} from "@/lib/forms";
+import { statusWriteSchema } from "@whipperbook/validation";
+import { resolveSectorTag, INVALID_SECTOR } from "@/lib/forms";
 import { deleteTargetInteractions } from "@/lib/feed-interactions";
 import db from "@/lib/db";
 

@@ -1,6 +1,6 @@
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { commentCreateSchema } from "@/lib/forms";
+import { commentCreateSchema } from "@whipperbook/validation";
 import db from "@/lib/db";
 
 // POST /api/comments — comment on a status or activity (replaces addComment).

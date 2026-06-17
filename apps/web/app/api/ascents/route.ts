@@ -1,6 +1,6 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { ascentCreateSchema } from "@/lib/forms";
+import { ascentCreateSchema } from "@whipperbook/validation";
 import db from "@/lib/db";
 
 // POST /api/ascents — log an ascent of a route (replaces logAscent).

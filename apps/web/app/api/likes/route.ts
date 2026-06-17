@@ -1,6 +1,6 @@
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { likeSchema } from "@/lib/forms";
+import { likeSchema } from "@whipperbook/validation";
 import db from "@/lib/db";
 
 // POST /api/likes — toggle a like on a status, activity, or comment (replaces

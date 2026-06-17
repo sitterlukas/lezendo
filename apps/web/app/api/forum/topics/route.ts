@@ -1,6 +1,6 @@
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
-import { forumTopicCreateSchema } from "@/lib/forms";
+import { forumTopicCreateSchema } from "@whipperbook/validation";
 import { getForumTopics } from "@/lib/queries/forum";
 import db from "@/lib/db";
 

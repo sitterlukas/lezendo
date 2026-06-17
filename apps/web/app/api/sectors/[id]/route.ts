@@ -1,6 +1,6 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify, getUser } from "@/lib/api/auth";
-import { sectorWriteSchema } from "@/lib/forms";
+import { sectorWriteSchema } from "@whipperbook/validation";
 import { getSectorDetail } from "@/lib/queries/sectors";
 import { setEntityDeleted } from "@/lib/soft-delete";
 import db from "@/lib/db";

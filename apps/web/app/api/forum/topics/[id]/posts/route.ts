@@ -1,6 +1,6 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { forumPostBodySchema } from "@/lib/forms";
+import { forumPostBodySchema } from "@whipperbook/validation";
 import db from "@/lib/db";
 
 type Ctx = { params: Promise<{ id: string }> };

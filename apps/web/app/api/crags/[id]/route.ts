@@ -1,6 +1,6 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify, getUser } from "@/lib/api/auth";
-import { cragWriteSchema } from "@/lib/forms";
+import { cragWriteSchema } from "@whipperbook/validation";
 import { getCragDetail } from "@/lib/queries/crags";
 import { setEntityDeleted } from "@/lib/soft-delete";
 import db from "@/lib/db";
