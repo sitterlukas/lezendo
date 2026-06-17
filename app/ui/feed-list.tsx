@@ -4,7 +4,10 @@ import { useState, useTransition } from "react";
 import type { FeedItem } from "@/lib/feed";
 import FeedItemCard from "@/app/ui/feed-item";
 import { type SectorOption } from "@/app/ui/sector-select";
-import { loadFeedPage } from "@/app/actions";
+import { apiFetch } from "@/lib/api-client";
+
+// apiFetch revives ISO datetime strings to Date, so items arrive feed-ready.
+type FeedPageJson = { items: FeedItem[]; nextCursor: Date | null };
 
 // Renders the feed and appends older items via "Load more", consuming the
 // cursor (oldest createdAt shown) that buildFeed returns.
@@ -38,7 +41,10 @@ export default function FeedList({
 
   function loadMore() {
     startTransition(async () => {
-      const page = await loadFeedPage(cursor);
+      const query = cursor
+        ? `?before=${encodeURIComponent(cursor.toISOString())}`
+        : "";
+      const page = await apiFetch<FeedPageJson>(`/api/feed${query}`);
       setItems((prev) => [...prev, ...page.items]);
       setCursor(page.nextCursor);
     });

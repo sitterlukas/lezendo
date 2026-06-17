@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
-import db from "@/lib/db";
+import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
+import { type UserProfileData } from "@/lib/queries/users";
 import FollowButton from "@/app/ui/follow-button";
-import { buildProfileTimeline, loadSectorOptions } from "@/lib/feed";
 import FeedItemCard from "@/app/ui/feed-item";
 import Avatar from "@/app/ui/avatar";
 
@@ -17,55 +16,24 @@ export default async function UserProfilePage({
   const profileId = Number(userIdRaw);
   if (!Number.isInteger(profileId)) notFound();
 
-  const profile = await db
-    .selectFrom("users")
-    .select(["id", "name", "avatar_url"])
-    .where("id", "=", profileId)
-    .executeTakeFirst();
-  if (!profile) notFound();
+  let data: UserProfileData;
+  try {
+    data = await serverFetch<UserProfileData>(`/api/users/${profileId}`);
+  } catch (err) {
+    if (err instanceof ServerFetchError && err.status === 404) notFound();
+    throw err;
+  }
 
-  const session = await auth();
-  const viewer = session?.user?.email
-    ? ((await db
-        .selectFrom("users")
-        .select(["id", "role"])
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
-
-  const isSelf = viewer?.id === profileId;
-
-  const [{ followers }, { following }, viewerFollowsRow] = await Promise.all([
-    db
-      .selectFrom("follows")
-      .select((eb) => eb.fn.countAll<number>().as("followers"))
-      .where("followee_id", "=", profileId)
-      .executeTakeFirstOrThrow(),
-    db
-      .selectFrom("follows")
-      .select((eb) => eb.fn.countAll<number>().as("following"))
-      .where("follower_id", "=", profileId)
-      .executeTakeFirstOrThrow(),
-    viewer && !isSelf
-      ? db
-          .selectFrom("follows")
-          .select("follower_id")
-          .where("follower_id", "=", viewer.id)
-          .where("followee_id", "=", profileId)
-          .executeTakeFirst()
-      : Promise.resolve(null),
-  ]);
-  const viewerFollows = !!viewerFollowsRow;
-
-  const { items } = await buildProfileTimeline(
-    db,
-    viewer?.id ?? null,
-    profileId,
-  );
-
-  // The edit dialog (own/admin statuses only) needs the sector options.
-  const canEdit = isSelf || viewer?.role === "admin";
-  const sectors = canEdit ? await loadSectorOptions(db) : [];
+  const {
+    profile,
+    viewer,
+    isSelf,
+    viewerFollows,
+    followers,
+    following,
+    items,
+    sectors,
+  } = data;
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">

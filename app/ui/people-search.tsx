@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { searchPeople, type PersonResult } from "@/app/actions";
+import { apiFetch } from "@/lib/api-client";
 import UserRow from "@/app/ui/user-row";
 import { inputClass } from "@/app/ui/style";
+
+type PersonResult = {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+  following: boolean;
+};
 
 // Discover-people search: type a name or email, get matching climbers to
 // follow. Debounced; results show only once you've typed something.
@@ -21,7 +28,9 @@ export default function PeopleSearch() {
     if (q.length < 2) return;
     const t = setTimeout(() => {
       startTransition(async () => {
-        const found = await searchPeople(q);
+        const found = await apiFetch<PersonResult[]>(
+          `/api/people?q=${encodeURIComponent(q)}`,
+        );
         setResults(found);
         setSearched(true);
       });

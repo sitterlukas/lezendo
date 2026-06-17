@@ -3,8 +3,8 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import type { Provider } from "next-auth/providers";
 import { sql } from "kysely";
-import { compare } from "bcryptjs";
 import db from "@/lib/db";
+import { verifyCredentials } from "@/lib/credentials";
 
 // Thrown from `authorize` so the login page can tell "wrong password" apart from
 // "correct password, but email not verified yet" (surfaced as `?error=<code>`).
@@ -28,28 +28,17 @@ const providers: Provider[] = [
       password: {},
     },
     async authorize(credentials) {
-      const email = String(credentials?.email ?? "")
-        .trim()
-        .toLowerCase();
-      const password = String(credentials?.password ?? "");
-      if (!email || !password) return null;
-
-      const user = await db
-        .selectFrom("users")
-        .select(["id", "email", "name", "password_hash", "email_verified_at"])
-        .where("email", "=", email)
-        .executeTakeFirst();
-      // OAuth-only accounts have no password_hash — they must sign in
-      // with their provider.
-      if (!user?.password_hash) return null;
-
-      const valid = await compare(password, user.password_hash);
-      if (!valid) return null;
-
-      // Block login until the email is confirmed (existing accounts were
-      // grandfathered in by the migration).
-      if (!user.email_verified_at) throw new UnverifiedEmailError();
-
+      const result = await verifyCredentials(
+        String(credentials?.email ?? ""),
+        String(credentials?.password ?? ""),
+      );
+      if (!result.ok) {
+        // Block login until the email is confirmed (existing accounts were
+        // grandfathered in by the migration).
+        if (result.reason === "unverified") throw new UnverifiedEmailError();
+        return null;
+      }
+      const { user } = result;
       return { id: String(user.id), email: user.email, name: user.name };
     },
   }),

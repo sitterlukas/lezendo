@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
 import db, { type TickType } from "@/lib/db";
-import { logAscent, updateRoute, deleteRoute } from "@/app/actions";
+import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
+import { type RouteDetailData } from "@/lib/queries/routes";
 import Modal from "@/app/ui/modal";
+import ApiForm from "@/app/ui/api-form";
 import DeleteButton from "@/app/ui/delete-button";
 import ImageGallery from "@/app/ui/image-gallery";
 import EntityReviews from "@/app/ui/entity-reviews";
 import Select from "@/app/ui/select";
 import FactList from "@/app/ui/fact-list";
-import { resolveGrade } from "@/lib/grade-conversion";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
 import { tickStats } from "@/lib/route-stats";
 import GradeSelect from "@/app/ui/grade-select";
 import { typeLabel, typeBadge } from "@/app/ui/style";
@@ -77,87 +76,34 @@ export default async function RoutePage({
 }: {
   params: Promise<{ cragId: string; routeId: string }>;
 }) {
-  const session = await auth();
-  const currentUser = session?.user?.email
-    ? ((await db
-        .selectFrom("users")
-        .select([
-          "id",
-          "role",
-          "preferred_rope_grading_system_id",
-          "preferred_boulder_grading_system_id",
-        ])
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
-
   const { cragId, routeId } = await params;
   const cragIdNum = Number(cragId);
   const routeIdNum = Number(routeId);
   if (!Number.isInteger(cragIdNum) || !Number.isInteger(routeIdNum)) notFound();
 
-  const [crag, route, sectors, gradingSystems, gradeEquivalencies] =
-    await Promise.all([
-      db
-        .selectFrom("crags")
-        .selectAll()
-        .where("id", "=", cragIdNum)
-        .where("deleted", "=", false)
-        .executeTakeFirst(),
-      db
-        .selectFrom("routes")
-        .selectAll()
-        .where("id", "=", routeIdNum)
-        .where("crag_id", "=", cragIdNum)
-        .where("deleted", "=", false)
-        .executeTakeFirst(),
-      db
-        .selectFrom("sectors")
-        .select(["id", "name"])
-        .where("crag_id", "=", cragIdNum)
-        .where("deleted", "=", false)
-        .orderBy("name")
-        .execute(),
-      db
-        .selectFrom("grading_systems")
-        .select(["id", "name", "slug"])
-        .orderBy("id")
-        .execute(),
-      loadGradeEquivalencies(),
-    ]);
-  if (!crag || !route) notFound();
+  let data: RouteDetailData;
+  try {
+    data = await serverFetch<RouteDetailData>(
+      `/api/routes/${routeIdNum}?cragId=${cragIdNum}`,
+    );
+  } catch (err) {
+    if (err instanceof ServerFetchError && err.status === 404) notFound();
+    throw err;
+  }
 
-  const sector = route.sector_id
-    ? await db
-        .selectFrom("sectors")
-        .select(["id", "name"])
-        .where("id", "=", route.sector_id)
-        .executeTakeFirst()
-    : null;
-
-  const images = await db
-    .selectFrom("images")
-    .select(["id", "url", "uploaded_by"])
-    .where("entity_type", "=", "route")
-    .where("entity_id", "=", routeIdNum)
-    .orderBy("created_at")
-    .execute();
-
-  const allAscents = await db
-    .selectFrom("ascents")
-    .innerJoin("users", "users.id", "ascents.user_id")
-    .select([
-      "ascents.id",
-      "ascents.user_id",
-      "ascents.tick_type",
-      "ascents.ascent_date",
-      "ascents.notes",
-      "users.name as author",
-    ])
-    .where("ascents.route_id", "=", routeIdNum)
-    .orderBy("ascents.ascent_date", "desc")
-    .orderBy("ascents.created_at", "desc")
-    .execute();
+  const {
+    crag,
+    route,
+    sector,
+    sectors,
+    viewer: currentUser,
+    gradingSystems,
+    gradeEquivalencies,
+    images,
+    ascents: allAscents,
+    displayGrade,
+    displaySystemName,
+  } = data;
 
   const myAscents = currentUser
     ? allAscents.filter((a) => a.user_id === currentUser.id)
@@ -177,17 +123,6 @@ export default async function RoutePage({
     if (!currentUser) return false;
     return currentUser.role === "admin" || currentUser.id === createdBy;
   }
-
-  const { grade: displayGrade, systemName: displaySystemName } = resolveGrade(
-    route.grade,
-    route.grading_system_id,
-    gradingSystems,
-    {
-      rope: currentUser?.preferred_rope_grading_system_id,
-      boulder: currentUser?.preferred_boulder_grading_system_id,
-    },
-    gradeEquivalencies,
-  );
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
@@ -272,26 +207,23 @@ export default async function RoutePage({
           <div className="flex flex-wrap items-center gap-2">
             {canEdit(route.created_by) && (
               <>
-                <form action={deleteRoute}>
-                  <input type="hidden" name="route_id" value={route.id} />
-                  <input type="hidden" name="crag_id" value={cragIdNum} />
-                  <DeleteButton
-                    title={`Delete ${route.name}?`}
-                    message="This will permanently delete the route and all logged ascents for it."
-                    confirmLabel="Delete route"
-                    ariaLabel="Delete route"
-                  />
-                </form>
+                <DeleteButton
+                  endpoint={`/api/routes/${route.id}`}
+                  title={`Delete ${route.name}?`}
+                  message="This will permanently delete the route and all logged ascents for it."
+                  confirmLabel="Delete route"
+                  ariaLabel="Delete route"
+                />
                 <Modal
                   triggerLabel="Edit route"
                   variant="ghost"
                   title={`Edit ${route.name}`}
                 >
-                  <form
-                    action={updateRoute}
+                  <ApiForm
+                    endpoint={`/api/routes/${route.id}`}
+                    method="PATCH"
                     className="grid gap-4 sm:grid-cols-2"
                   >
-                    <input type="hidden" name="route_id" value={route.id} />
                     <input type="hidden" name="crag_id" value={cragIdNum} />
                     <label className="sm:col-span-2">
                       <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
@@ -444,7 +376,7 @@ export default async function RoutePage({
                     >
                       Save changes
                     </button>
-                  </form>
+                  </ApiForm>
                 </Modal>
               </>
             )}
@@ -529,8 +461,8 @@ export default async function RoutePage({
           Log ascent
         </h2>
         {currentUser ? (
-          <form
-            action={logAscent}
+          <ApiForm
+            endpoint="/api/ascents"
             className="mt-4 flex flex-wrap items-end gap-3"
           >
             <input type="hidden" name="route_id" value={route.id} />
@@ -563,7 +495,7 @@ export default async function RoutePage({
             >
               Log
             </button>
-          </form>
+          </ApiForm>
         ) : (
           <p className="mt-4 text-sm text-zinc-500">
             <Link

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { toggleLike } from "@/app/actions";
+import { apiFetch } from "@/lib/api-client";
 import type { LikeTargetType } from "@/lib/db";
 
 export default function LikeButton({
@@ -26,10 +26,10 @@ export default function LikeButton({
     setLiked(next);
     setCount((c) => c + (next ? 1 : -1));
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("target_type", targetType);
-      fd.set("target_id", String(targetId));
-      await toggleLike(fd);
+      await apiFetch("/api/likes", {
+        method: "POST",
+        body: { target_type: targetType, target_id: targetId },
+      });
     });
   }
 

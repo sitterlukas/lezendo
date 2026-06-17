@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import CreateModal from "@/app/ui/create-modal";
 import CragFields from "@/app/ui/crag-fields";
 import SectorFields from "@/app/ui/sector-fields";
@@ -9,12 +9,7 @@ import ImageUpload from "@/app/ui/image-upload";
 import MapPicker from "@/app/ui/map-picker";
 import FieldLabel from "@/app/ui/field-label";
 import Select from "@/app/ui/select";
-import {
-  addCrag,
-  addSector,
-  addRoute,
-  updateSectorLocation,
-} from "@/app/actions";
+import { apiFetch } from "@/lib/api-client";
 import { inputClass } from "@/app/ui/style";
 import type { GradeEquivalency } from "@/lib/grade-conversion";
 
@@ -41,7 +36,7 @@ export function CreateCragModal({ allCountries }: { allCountries: string[] }) {
     <CreateModal
       triggerLabel="Add crag"
       title="Add a crag"
-      action={addCrag}
+      endpoint="/api/crags"
       doneHref={(id) => `/crags/${id}`}
       renderStep2={(id) => (
         <Step2Section title="Add photos">
@@ -98,7 +93,7 @@ export function CreateSectorModal({ cragId }: { cragId: number }) {
       triggerLabel="Add sector"
       title="Add a sector"
       subtitle="Group routes by wall, face, or area."
-      action={addSector}
+      endpoint="/api/sectors"
       doneHref={(id) => `/crags/${cragId}/sectors/${id}`}
       renderStep2={(id) => (
         <>
@@ -129,22 +124,39 @@ function LocationMini({
   kind: "sector" | "parking";
   label: string;
 }) {
+  const [pending, startTransition] = useTransition();
+  const [saved, setSaved] = useState(false);
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const latitude = String(fd.get("latitude") ?? "");
+    const longitude = String(fd.get("longitude") ?? "");
+    if (!latitude || !longitude) return;
+    startTransition(async () => {
+      await apiFetch(`/api/sectors/${sectorId}/location`, {
+        method: "PATCH",
+        body: { kind, latitude, longitude },
+      });
+      setSaved(true);
+    });
+  }
+
   return (
     <form
-      action={updateSectorLocation}
+      onSubmit={handleSubmit}
       className="rounded border border-zinc-200 p-3 dark:border-zinc-800"
     >
-      <input type="hidden" name="sector_id" value={sectorId} />
-      <input type="hidden" name="kind" value={kind} />
       <p className="text-xs font-medium">{label}</p>
       <div className="mt-2">
         <MapPicker />
       </div>
       <button
         type="submit"
-        className="mt-2 inline-flex items-center gap-1 rounded border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+        disabled={pending}
+        className="mt-2 inline-flex items-center gap-1 rounded border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 transition hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
       >
-        Save {label.toLowerCase()}
+        {saved ? `${label} saved` : `Save ${label.toLowerCase()}`}
       </button>
     </form>
   );
@@ -171,7 +183,7 @@ export function CreateRouteModal({
     <CreateModal
       triggerLabel="Add route"
       title="Add a route"
-      action={addRoute}
+      endpoint="/api/routes"
       canSubmit={valid}
       doneHref={(id) => `/crags/${cragId}/routes/${id}`}
       renderStep2={(id) => (

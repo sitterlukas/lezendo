@@ -1,82 +1,23 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import db from "@/lib/db";
-import { recoverCrag, recoverSector, recoverRoute } from "@/app/actions";
+import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
+import { type AdminDeletedData } from "@/lib/queries/admin";
+import ActionButton from "@/app/ui/action-button";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-
-  const dbUser = session.user.email
-    ? await db
-        .selectFrom("users")
-        .select("role")
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()
-    : null;
-  if (dbUser?.role !== "admin") redirect("/crags");
-
-  const [deletedCrags, deletedSectors, deletedRoutes, auditLog] =
-    await Promise.all([
-      db
-        .selectFrom("crags")
-        .select(["id", "name", "area", "country"])
-        .where("deleted", "=", true)
-        .orderBy("name")
-        .execute(),
-
-      db
-        .selectFrom("sectors")
-        .innerJoin("crags", "crags.id", "sectors.crag_id")
-        .select([
-          "sectors.id",
-          "sectors.name",
-          "sectors.crag_id",
-          "crags.name as crag_name",
-          "crags.deleted as crag_deleted",
-        ])
-        .where("sectors.deleted", "=", true)
-        .orderBy("crags.name")
-        .orderBy("sectors.name")
-        .execute(),
-
-      db
-        .selectFrom("routes")
-        .innerJoin("crags", "crags.id", "routes.crag_id")
-        .leftJoin("sectors", "sectors.id", "routes.sector_id")
-        .select([
-          "routes.id",
-          "routes.name",
-          "routes.grade",
-          "routes.crag_id",
-          "crags.name as crag_name",
-          "crags.deleted as crag_deleted",
-          "sectors.name as sector_name",
-        ])
-        .where("routes.deleted", "=", true)
-        .orderBy("crags.name")
-        .orderBy("routes.name")
-        .execute(),
-
-      db
-        .selectFrom("deletion_log")
-        .innerJoin("users", "users.id", "deletion_log.user_id")
-        .select([
-          "deletion_log.id",
-          "deletion_log.entity_type",
-          "deletion_log.entity_id",
-          "deletion_log.entity_name",
-          "deletion_log.action",
-          "deletion_log.created_at",
-          "users.name as user_name",
-        ])
-        .orderBy("deletion_log.created_at", "desc")
-        .limit(300)
-        .execute(),
-    ]);
+  let data: AdminDeletedData;
+  try {
+    data = await serverFetch<AdminDeletedData>("/api/admin/deleted");
+  } catch (err) {
+    if (err instanceof ServerFetchError) {
+      if (err.status === 401) redirect("/login");
+      if (err.status === 403) redirect("/crags");
+    }
+    throw err;
+  }
+  const { deletedCrags, deletedSectors, deletedRoutes, auditLog } = data;
 
   // Latest delete action per entity (auditLog is newest-first)
   const lastDeleteMap = new Map<string, { by: string; at: Date }>();
@@ -193,15 +134,12 @@ export default async function AdminPage() {
                       </p>
                     )}
                   </div>
-                  <form action={recoverCrag}>
-                    <input type="hidden" name="crag_id" value={crag.id} />
-                    <button
-                      type="submit"
-                      className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-transparent dark:hover:bg-zinc-800"
-                    >
-                      Recover
-                    </button>
-                  </form>
+                  <ActionButton
+                    endpoint={`/api/crags/${crag.id}/recover`}
+                    className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium transition hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-transparent dark:hover:bg-zinc-800"
+                  >
+                    Recover
+                  </ActionButton>
                 </li>
               );
             })}
@@ -256,15 +194,12 @@ export default async function AdminPage() {
                       </p>
                     )}
                   </div>
-                  <form action={recoverSector}>
-                    <input type="hidden" name="sector_id" value={sector.id} />
-                    <button
-                      type="submit"
-                      className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-transparent dark:hover:bg-zinc-800"
-                    >
-                      Recover
-                    </button>
-                  </form>
+                  <ActionButton
+                    endpoint={`/api/sectors/${sector.id}/recover`}
+                    className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium transition hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-transparent dark:hover:bg-zinc-800"
+                  >
+                    Recover
+                  </ActionButton>
                 </li>
               );
             })}
@@ -330,15 +265,12 @@ export default async function AdminPage() {
                       </p>
                     )}
                   </div>
-                  <form action={recoverRoute}>
-                    <input type="hidden" name="route_id" value={route.id} />
-                    <button
-                      type="submit"
-                      className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-transparent dark:hover:bg-zinc-800"
-                    >
-                      Recover
-                    </button>
-                  </form>
+                  <ActionButton
+                    endpoint={`/api/routes/${route.id}/recover`}
+                    className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium transition hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-transparent dark:hover:bg-zinc-800"
+                  >
+                    Recover
+                  </ActionButton>
                 </li>
               );
             })}

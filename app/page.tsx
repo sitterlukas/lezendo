@@ -1,18 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import { auth } from "@/auth";
-import db from "@/lib/db";
-import { resolveGrade } from "@/lib/grade-conversion";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
+import { serverFetch } from "@/lib/api/server-fetch";
+import { type HomeData } from "@/lib/queries/home";
 import { typeLabel, typeBadge } from "@/app/ui/style";
 import {
   periods,
   periodLabel,
-  periodStart,
   parsePeriod,
   parseDiscipline,
 } from "@/lib/leaderboard";
-import { loadLeaderboard, POINTS_EXPLAINER } from "@/lib/points";
+import { POINTS_EXPLAINER } from "@/lib/points";
 import DisciplineSelect from "@/app/ui/discipline-select";
 import FilterPill from "@/app/ui/filter-pill";
 import RankCrown from "@/app/ui/rank-crown";
@@ -28,85 +25,16 @@ export default async function LandingPage({
   const params = await searchParams;
   const period = parsePeriod(params.period);
   const discipline = parseDiscipline(params.discipline);
-  const leaderboardStart = periodStart(period);
-  const session = await auth();
-  const currentUser = session?.user?.email
-    ? ((await db
-        .selectFrom("users")
-        .select([
-          "preferred_rope_grading_system_id",
-          "preferred_boulder_grading_system_id",
-        ])
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
 
-  const [
+  const reqParams = new URLSearchParams({ period, discipline });
+  const {
+    isAuthed: currentUser,
     routeCount,
     cragCount,
     ascentCount,
-    recentRoutes,
+    recentRoutes: resolvedRecentRoutes,
     topClimbers,
-    gradingSystems,
-    gradeEquivalencies,
-  ] = await Promise.all([
-    db
-      .selectFrom("routes")
-      .select((eb) => eb.fn.countAll<number>().as("count"))
-      .where("deleted", "=", false)
-      .executeTakeFirstOrThrow()
-      .then((r) => r.count),
-    db
-      .selectFrom("crags")
-      .select((eb) => eb.fn.countAll<number>().as("count"))
-      .where("deleted", "=", false)
-      .executeTakeFirstOrThrow()
-      .then((r) => r.count),
-    db
-      .selectFrom("ascents")
-      .select((eb) => eb.fn.countAll<number>().as("count"))
-      .executeTakeFirstOrThrow()
-      .then((r) => r.count),
-    db
-      .selectFrom("routes")
-      .innerJoin("crags", "crags.id", "routes.crag_id")
-      .select([
-        "routes.id",
-        "routes.name",
-        "routes.grade",
-        "routes.grading_system_id",
-        "routes.style",
-        "routes.crag_id",
-        "crags.name as crag_name",
-      ])
-      .where("routes.deleted", "=", false)
-      .orderBy("routes.created_at", "desc")
-      .limit(6)
-      .execute(),
-    loadLeaderboard({ start: leaderboardStart, discipline }).then((r) =>
-      r.slice(0, 5),
-    ),
-    db
-      .selectFrom("grading_systems")
-      .select(["id", "name", "slug"])
-      .orderBy("id")
-      .execute(),
-    loadGradeEquivalencies(),
-  ]);
-
-  const resolvedRecentRoutes = recentRoutes.map((r) => ({
-    ...r,
-    ...resolveGrade(
-      r.grade,
-      r.grading_system_id,
-      gradingSystems,
-      {
-        rope: currentUser?.preferred_rope_grading_system_id,
-        boulder: currentUser?.preferred_boulder_grading_system_id,
-      },
-      gradeEquivalencies,
-    ),
-  }));
+  } = await serverFetch<HomeData>(`/api/home?${reqParams.toString()}`);
 
   return (
     <main className="flex-1">
@@ -279,7 +207,7 @@ export default async function LandingPage({
             All crags →
           </Link>
         </div>
-        {recentRoutes.length === 0 ? (
+        {resolvedRecentRoutes.length === 0 ? (
           <div className="mt-8 border border-dashed border-zinc-300 py-12 text-center text-sm text-zinc-500 dark:border-zinc-700">
             No routes yet.{" "}
             <Link href="/crags" className="underline underline-offset-2">

@@ -3,8 +3,9 @@
 import { useRef, type ReactNode } from "react";
 
 /**
- * A submit button guarded by a confirmation dialog. Must be rendered inside
- * the <form> it should submit — the confirm button is a regular submit.
+ * A trigger button guarded by a confirmation dialog. The confirm button runs
+ * the `onConfirm` callback (typically an API call); it no longer submits a
+ * native form.
  */
 export default function ConfirmSubmit({
   title,
@@ -12,6 +13,7 @@ export default function ConfirmSubmit({
   confirmLabel,
   triggerAriaLabel,
   triggerClassName,
+  onConfirm,
   children,
 }: {
   title: string;
@@ -19,6 +21,7 @@ export default function ConfirmSubmit({
   confirmLabel: string;
   triggerAriaLabel: string;
   triggerClassName: string;
+  onConfirm: () => void;
   children: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -56,8 +59,11 @@ export default function ConfirmSubmit({
               Cancel
             </button>
             <button
-              type="submit"
-              onClick={() => dialogRef.current?.close()}
+              type="button"
+              onClick={() => {
+                dialogRef.current?.close();
+                onConfirm();
+              }}
               className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500"
             >
               {confirmLabel}
