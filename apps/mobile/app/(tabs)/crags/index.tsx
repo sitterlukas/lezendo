@@ -1,14 +1,9 @@
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, Pressable, Text } from "react-native";
 import { Link } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { cragsListQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
+import { Loading, ErrorState } from "../../../components/states";
 
 // Minimal local shape of GET /api/crags — the web handler returns more (viewer,
 // country tabs, pagination); we only read what this screen renders. Refine as
@@ -28,29 +23,16 @@ export default function CragsList() {
     cragsListQuery<CragsResponse>(api),
   );
 
-  if (isPending) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-zinc-950">
-        <ActivityIndicator />
-      </View>
-    );
-  }
+  if (isPending) return <Loading />;
 
   if (error) {
     return (
-      <View className="flex-1 items-center justify-center gap-3 bg-white px-6 dark:bg-zinc-950">
-        <Text className="text-center text-red-600">
-          {error instanceof ApiError ? error.message : "Could not load crags."}
-        </Text>
-        <Pressable
-          className="rounded-lg bg-zinc-900 px-4 py-2 dark:bg-zinc-100"
-          onPress={() => refetch()}
-        >
-          <Text className="font-semibold text-white dark:text-zinc-900">
-            Retry
-          </Text>
-        </Pressable>
-      </View>
+      <ErrorState
+        message={
+          error instanceof ApiError ? error.message : "Could not load crags."
+        }
+        onRetry={refetch}
+      />
     );
   }
 
