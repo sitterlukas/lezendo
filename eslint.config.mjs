@@ -14,13 +14,20 @@ const eslintConfig = defineConfig([
   },
   // Turn off ESLint rules that conflict with Prettier. Keep last.
   prettier,
-  // Override default ignores of eslint-config-next.
+  // Override default ignores of eslint-config-next, plus build outputs for
+  // future monorepo workspaces (apps/*, packages/*).
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Monorepo build outputs (workspaces under apps/ and packages/):
+    "**/.next/**",
+    "**/dist/**",
+    "**/.turbo/**",
+    "**/.expo/**",
+    "node_modules/**",
   ]),
 ]);
 
