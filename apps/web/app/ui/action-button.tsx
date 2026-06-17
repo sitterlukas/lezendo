@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { browserApi } from "@/lib/api/client";
+import { ApiError } from "@/lib/api-client";
 
 // A button that fires a single mutating request (no form fields) and then
-// refreshes the server components — for things like "Recover" or toggling gear
-// retirement. Follows a `{ redirect }` in the response if present. A failed
-// request surfaces its message inline instead of failing silently.
+// refreshes the server components AND invalidates the TanStack Query cache
+// (hybrid invalidation during the incremental migration) — for things like
+// "Recover" or toggling gear retirement. Follows a `{ redirect }` in the
+// response if present. A failed request surfaces its message inline instead of
+// failing silently.
 export default function ActionButton({
   endpoint,
   method = "POST",
@@ -22,28 +26,28 @@ export default function ActionButton({
   children: ReactNode;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      browserApi.send<{ redirect?: string } | null>(endpoint, method, body),
+    onSuccess: (res) => {
+      if (res && typeof res === "object" && res.redirect) {
+        router.push(res.redirect);
+      } else {
+        router.refresh();
+        queryClient.invalidateQueries();
+      }
+    },
+    onError: (err) => {
+      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+    },
+  });
 
   function run() {
     setError(null);
-    startTransition(async () => {
-      try {
-        const res = await apiFetch<{ redirect?: string } | null>(endpoint, {
-          method,
-          body,
-        });
-        if (res && typeof res === "object" && res.redirect) {
-          router.push(res.redirect);
-        } else {
-          router.refresh();
-        }
-      } catch (err) {
-        setError(
-          err instanceof ApiError ? err.message : "Something went wrong.",
-        );
-      }
-    });
+    mutation.mutate();
   }
 
   return (
@@ -51,7 +55,7 @@ export default function ActionButton({
       <button
         type="button"
         onClick={run}
-        disabled={pending}
+        disabled={mutation.isPending}
         className={className}
       >
         {children}

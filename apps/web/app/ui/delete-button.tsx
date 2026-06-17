@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch, ApiError } from "@/lib/api-client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { browserApi } from "@/lib/api/client";
+import { ApiError } from "@/lib/api-client";
 import ConfirmSubmit from "./confirm-submit";
 import TrashIcon from "./trash-icon";
 
 // Single source of truth for delete affordances across the app. Self-contained:
 // confirming sends the delete request to `endpoint` and then either follows a
-// `{ redirect }` from the response or re-fetches the current page. A failed
-// request surfaces its message inline instead of failing silently.
+// `{ redirect }` from the response or re-fetches the current page AND
+// invalidates the TanStack Query cache (hybrid invalidation during the
+// incremental migration). A failed request surfaces its message inline instead
+// of failing silently.
 //   - "pill": bordered red button with an icon + label (toolbars / headers)
 //   - "icon": compact icon-only button (card corners, list rows)
 const triggerClass = {
@@ -39,28 +43,28 @@ export default function DeleteButton({
   variant?: "pill" | "icon";
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      browserApi.send<{ redirect?: string } | null>(endpoint, method, body),
+    onSuccess: (res) => {
+      if (res && typeof res === "object" && res.redirect) {
+        router.push(res.redirect);
+      } else {
+        router.refresh();
+        queryClient.invalidateQueries();
+      }
+    },
+    onError: (err) => {
+      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+    },
+  });
 
   function handleConfirm() {
     setError(null);
-    startTransition(async () => {
-      try {
-        const res = await apiFetch<{ redirect?: string } | null>(endpoint, {
-          method,
-          body,
-        });
-        if (res && typeof res === "object" && res.redirect) {
-          router.push(res.redirect);
-        } else {
-          router.refresh();
-        }
-      } catch (err) {
-        setError(
-          err instanceof ApiError ? err.message : "Something went wrong.",
-        );
-      }
-    });
+    mutation.mutate();
   }
 
   return (
