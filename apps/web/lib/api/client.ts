@@ -1,5 +1,4 @@
 import { createApiClient } from "@whipperbook/api-client";
-import { headers } from "next/headers";
 
 const base = () => process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "";
 
@@ -18,6 +17,9 @@ export const browserApi = createApiClient((path, init) =>
 
 // Server (RSC): absolute URL + forwarded cookie so the route's auth() resolves the session.
 export async function serverApi() {
+  // Imported lazily so this module stays safe to include in client bundles
+  // (it also exports browserApi); next/headers is server-only.
+  const { headers } = await import("next/headers");
   const h = await headers();
   return createApiClient((path, init) =>
     fetch(`${base()}${path}`, {
