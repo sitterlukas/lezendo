@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import { route, ok, fail } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import { deleteTargetInteractions } from "@/lib/feed-interactions";
@@ -41,8 +40,5 @@ export const DELETE = route<Ctx>(async (request, { params }) => {
     }
   }
 
-  revalidatePath("/profile");
-  revalidatePath("/crags");
-  revalidatePath("/feed");
   return ok({ ok: true });
 });

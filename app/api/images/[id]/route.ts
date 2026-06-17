@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import { route, ok, fail } from "@/lib/api/respond";
 import { requireUser, canModify } from "@/lib/api/auth";
 import db from "@/lib/db";
@@ -25,6 +24,5 @@ export const DELETE = route<Ctx>(async (request, { params }) => {
 
   await db.deleteFrom("images").where("id", "=", imageId).execute();
 
-  revalidatePath("/crags", "layout");
   return ok({ ok: true });
 });

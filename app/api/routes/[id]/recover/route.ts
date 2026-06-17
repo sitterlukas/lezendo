@@ -1,8 +1,6 @@
-import { revalidatePath } from "next/cache";
 import { route, ok, fail } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { logDeletion } from "@/lib/deletion-log";
-import db from "@/lib/db";
+import { setEntityDeleted } from "@/lib/soft-delete";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -13,20 +11,6 @@ export const POST = route<Ctx>(async (request, { params }) => {
   const routeId = Number((await params).id);
   if (!Number.isInteger(routeId)) return fail("Invalid route.", 400);
 
-  const existing = await db
-    .selectFrom("routes")
-    .select(["id", "name"])
-    .where("id", "=", routeId)
-    .executeTakeFirst();
-  if (!existing) return fail("Route not found.", 404);
-
-  await db
-    .updateTable("routes")
-    .set({ deleted: false })
-    .where("id", "=", routeId)
-    .execute();
-  await logDeletion("route", routeId, existing.name, "recover", user.id);
-
-  revalidatePath("/crags", "layout");
+  await setEntityDeleted("routes", "route", routeId, false, user);
   return ok({ ok: true });
 });

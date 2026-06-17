@@ -1,7 +1,6 @@
-import { revalidatePath } from "next/cache";
-import { route, ok, fail } from "@/lib/api/respond";
+import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify, getUser } from "@/lib/api/auth";
-import { readForm } from "@/lib/forms";
+import { forumTitleSchema } from "@/lib/forms";
 import { getForumTopic } from "@/lib/queries/forum";
 import db from "@/lib/db";
 
@@ -26,9 +25,7 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
   const topicId = Number((await params).id);
   if (!Number.isInteger(topicId)) return fail("Invalid topic.", 400);
 
-  const form = await readForm(request);
-  const title = String(form.get("title") ?? "").trim();
-  if (!title) return fail("Title can't be empty.", 400);
+  const data = await readJson(request, forumTitleSchema);
 
   const topic = await db
     .selectFrom("forum_topics")
@@ -40,12 +37,10 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
 
   await db
     .updateTable("forum_topics")
-    .set({ title })
+    .set({ title: data.title })
     .where("id", "=", topicId)
     .execute();
 
-  revalidatePath(`/forum/${topicId}`);
-  revalidatePath("/forum");
   return ok({ ok: true });
 });
 
@@ -66,6 +61,5 @@ export const DELETE = route<Ctx>(async (request, { params }) => {
 
   // forum_posts cascade-delete with the topic (FK on delete cascade).
   await db.deleteFrom("forum_topics").where("id", "=", topicId).execute();
-  revalidatePath("/forum");
   return ok({ redirect: "/forum" });
 });

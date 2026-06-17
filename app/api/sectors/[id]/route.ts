@@ -1,9 +1,8 @@
-import { revalidatePath } from "next/cache";
-import { route, ok, fail } from "@/lib/api/respond";
+import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify, getUser } from "@/lib/api/auth";
-import { readForm, parseSectorDetails } from "@/lib/forms";
+import { sectorWriteSchema } from "@/lib/forms";
 import { getSectorDetail } from "@/lib/queries/sectors";
-import { logDeletion } from "@/lib/deletion-log";
+import { setEntityDeleted } from "@/lib/soft-delete";
 import db from "@/lib/db";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -33,12 +32,7 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
   const sectorId = Number((await params).id);
   if (!Number.isInteger(sectorId)) return fail("Invalid sector.", 400);
 
-  const form = await readForm(request);
-  const name = String(form.get("name") ?? "").trim();
-  const description = String(form.get("description") ?? "").trim();
-  const details = parseSectorDetails(form);
-
-  if (!name) return fail("Name is required.", 400);
+  const data = await readJson(request, sectorWriteSchema);
 
   const sector = await db
     .selectFrom("sectors")
@@ -50,11 +44,15 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
 
   await db
     .updateTable("sectors")
-    .set({ name, description: description || null, ...details })
+    .set({
+      name: data.name,
+      description: data.description,
+      approach_minutes: data.approach_minutes,
+      aspect: data.aspect,
+    })
     .where("id", "=", sectorId)
     .execute();
 
-  revalidatePath("/crags", "layout");
   return ok({ ok: true });
 });
 
@@ -67,19 +65,11 @@ export const DELETE = route<Ctx>(async (request, { params }) => {
 
   const sector = await db
     .selectFrom("sectors")
-    .select(["id", "name", "crag_id", "created_by"])
+    .select("crag_id")
     .where("id", "=", sectorId)
     .executeTakeFirst();
   if (!sector) return fail("Sector not found.", 404);
-  if (!canModify(user, sector.created_by)) return fail("Not allowed.", 403);
 
-  await db
-    .updateTable("sectors")
-    .set({ deleted: true })
-    .where("id", "=", sectorId)
-    .execute();
-  await logDeletion("sector", sectorId, sector.name, "delete", user.id);
-
-  revalidatePath("/crags", "layout");
+  await setEntityDeleted("sectors", "sector", sectorId, true, user);
   return ok({ redirect: `/crags/${sector.crag_id}` });
 });

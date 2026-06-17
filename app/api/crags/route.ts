@@ -1,7 +1,6 @@
-import { revalidatePath } from "next/cache";
-import { route, ok, fail } from "@/lib/api/respond";
+import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
-import { readForm, parseCragDetails } from "@/lib/forms";
+import { cragWriteSchema } from "@/lib/forms";
 import { getCragsList } from "@/lib/queries/crags";
 import db from "@/lib/db";
 
@@ -27,24 +26,19 @@ export const GET = route(async (request) => {
 // POST /api/crags — create a crag. Returns { id } (replaces addCrag).
 export const POST = route(async (request) => {
   const user = await requireUser(request);
-  const form = await readForm(request);
-
-  const name = String(form.get("name") ?? "").trim();
-  const area = String(form.get("area") ?? "").trim();
-  const country = String(form.get("country") ?? "").trim();
-  const description = String(form.get("description") ?? "").trim();
-  const details = parseCragDetails(form);
-
-  if (!name) return fail("Name is required.", 400);
+  const data = await readJson(request, cragWriteSchema);
 
   const row = await db
     .insertInto("crags")
     .values({
-      name,
-      area: area || null,
-      country: country || null,
-      description: description || null,
-      ...details,
+      name: data.name,
+      area: data.area,
+      country: data.country,
+      description: data.description,
+      rock_type: data.rock_type,
+      aspect: data.aspect,
+      best_season: data.best_season,
+      access_notes: data.access_notes,
       created_by: user.id,
     })
     .onConflict((oc) => oc.column("name").doNothing())
@@ -53,7 +47,5 @@ export const POST = route(async (request) => {
 
   if (!row) return fail("A crag with that name already exists.", 409);
 
-  revalidatePath("/crags");
-  revalidatePath("/");
   return ok({ id: row.id }, 201);
 });

@@ -11,16 +11,27 @@ export class ServerFetchError extends Error {
   }
 }
 
-// Fetch one of our own GET endpoints from a Server Component. Builds an absolute
-// URL from the incoming request headers and forwards the cookie so the route's
-// `auth()` resolves the same session. Parsed JSON has its ISO datetime strings
-// revived to Date (see reviveDates) so page code keeps using Date methods.
-// Throws ServerFetchError on non-2xx (pages can map 404 → notFound()).
+// Fetch one of our own GET endpoints from a Server Component, forwarding the
+// cookie so the route's `auth()` resolves the same session. Parsed JSON has its
+// ISO datetime strings revived to Date (see reviveDates) so page code keeps
+// using Date methods. Throws ServerFetchError on non-2xx (pages can map
+// 404 → notFound()).
+//
+// The base URL is taken from the configured AUTH_URL when set rather than the
+// client-controlled Host header, so a forged Host can't redirect this
+// server-side request (which carries the user's cookie) to an attacker host.
+// Only when AUTH_URL is unset (e.g. some local setups) do we fall back to the
+// request's own host.
+function baseUrl(h: Headers): string {
+  const configured = process.env.AUTH_URL ?? process.env.NEXTAUTH_URL;
+  if (configured) return configured.replace(/\/+$/, "");
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  return `${proto}://${h.get("host")}`;
+}
+
 export async function serverFetch<T>(path: string): Promise<T> {
   const h = await headers();
-  const host = h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const base = `${proto}://${host}`;
+  const base = baseUrl(h);
 
   const res = await fetch(`${base}${path}`, {
     headers: { cookie: h.get("cookie") ?? "" },

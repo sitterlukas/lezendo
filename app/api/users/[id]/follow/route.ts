@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import { route, ok, fail } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import db from "@/lib/db";
@@ -20,9 +19,6 @@ export const POST = route<Ctx>(async (request, { params }) => {
     .onConflict((oc) => oc.columns(["follower_id", "followee_id"]).doNothing())
     .execute();
 
-  revalidatePath(`/users/${followeeId}`);
-  revalidatePath("/feed");
-  revalidatePath("/profile", "layout");
   return ok({ following: true });
 });
 
@@ -38,8 +34,5 @@ export const DELETE = route<Ctx>(async (request, { params }) => {
     .where("followee_id", "=", followeeId)
     .execute();
 
-  revalidatePath(`/users/${followeeId}`);
-  revalidatePath("/feed");
-  revalidatePath("/profile", "layout");
   return ok({ following: false });
 });
