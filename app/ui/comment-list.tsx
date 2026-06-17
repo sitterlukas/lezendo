@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { addComment, deleteComment } from "@/app/actions";
+import { apiFetch, ApiError } from "@/lib/api-client";
 import type { FeedTargetType } from "@/lib/db";
 import { inputClass } from "@/app/ui/style";
 import Avatar from "@/app/ui/avatar";
@@ -34,6 +35,7 @@ export default function CommentList({
   viewerId: number | null;
   isAdmin: boolean;
 }) {
+  const router = useRouter();
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -45,15 +47,16 @@ export default function CommentList({
     setText("");
     setError(null);
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("target_type", targetType);
-      fd.set("target_id", String(targetId));
-      fd.set("body", body);
-      const res = await addComment(fd);
-      // On failure, put the text back so it isn't lost and show why.
-      if (res && !res.ok) {
+      try {
+        await apiFetch("/api/comments", {
+          method: "POST",
+          body: { target_type: targetType, target_id: targetId, body },
+        });
+        router.refresh();
+      } catch (err) {
+        // On failure, put the text back so it isn't lost and show why.
         setText(body);
-        setError(res.error);
+        setError(err instanceof ApiError ? err.message : "Failed to comment.");
       }
     });
   }
@@ -82,16 +85,14 @@ export default function CommentList({
             disabled={!canComment}
           />
           {(isAdmin || viewerId === c.authorId) && (
-            <form action={deleteComment}>
-              <input type="hidden" name="comment_id" value={c.id} />
-              <DeleteButton
-                variant="icon"
-                title="Delete comment?"
-                message="This permanently removes your comment. This can't be undone."
-                confirmLabel="Delete"
-                ariaLabel="Delete comment"
-              />
-            </form>
+            <DeleteButton
+              endpoint={`/api/comments/${c.id}`}
+              variant="icon"
+              title="Delete comment?"
+              message="This permanently removes your comment. This can't be undone."
+              confirmLabel="Delete"
+              ariaLabel="Delete comment"
+            />
           )}
         </div>
       ))}

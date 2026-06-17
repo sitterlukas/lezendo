@@ -234,6 +234,14 @@ export interface CommentsTable {
   created_at: Generated<Date>;
 }
 
+export interface ApiRefreshTokensTable {
+  id: Generated<number>;
+  user_id: number;
+  token_hash: string;
+  expires_at: Date;
+  created_at: Generated<Date>;
+}
+
 export interface Database {
   crags: CragsTable;
   sectors: SectorsTable;
@@ -255,6 +263,7 @@ export interface Database {
   follows: FollowsTable;
   likes: LikesTable;
   comments: CommentsTable;
+  api_refresh_tokens: ApiRefreshTokensTable;
 }
 
 declare global {

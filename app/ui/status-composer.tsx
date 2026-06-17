@@ -4,7 +4,6 @@ import { useState } from "react";
 import CreateModal from "@/app/ui/create-modal";
 import ImageUpload from "@/app/ui/image-upload";
 import SectorSelect, { type SectorOption } from "@/app/ui/sector-select";
-import { createStatus } from "@/app/actions";
 import { STATUS_MAX_LEN } from "@/lib/constants";
 import { inputClass } from "@/app/ui/style";
 
@@ -21,7 +20,7 @@ export default function StatusComposer({
       triggerLabel="Post status"
       title="Post a status"
       subtitle="Share what's on your mind. Tag a sector, add photos (optional)."
-      action={createStatus}
+      endpoint="/api/statuses"
       canSubmit={text.trim().length > 0 && remaining >= 0}
       submitLabel="Post"
       doneHref={() => "/feed"}

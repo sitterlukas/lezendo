@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { deleteImage } from "@/app/actions";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api-client";
 import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageUpload from "@/app/ui/image-upload";
 import LoginToAdd from "@/app/ui/login-to-add";
@@ -34,10 +35,18 @@ export default function ImageGallery({
   promptLogin?: boolean;
 }) {
   // Index of the photo shown in the lightbox, or null when closed.
+  const router = useRouter();
   const [index, setIndex] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [, startTransition] = useTransition();
   const touchStartX = useRef<number | null>(null);
+
+  function removeImage(id: number) {
+    startTransition(async () => {
+      await apiFetch(`/api/images/${id}`, { method: "DELETE" });
+      router.refresh();
+    });
+  }
 
   const open = index !== null;
   const close = useCallback(() => setIndex(null), []);
@@ -107,20 +116,14 @@ export default function ImageGallery({
               />
             </button>
             {canDelete(img.uploaded_by) && (
-              <form
-                className="absolute right-1 top-1 opacity-0 transition group-hover:opacity-100"
-                action={() => {
-                  startTransition(async () => {
-                    await deleteImage(img.id);
-                  });
-                }}
-              >
+              <div className="absolute right-1 top-1 opacity-0 transition group-hover:opacity-100">
                 <ConfirmSubmit
                   title="Delete photo?"
                   message="This photo will be permanently removed. This cannot be undone."
                   confirmLabel="Delete"
                   triggerAriaLabel="Delete photo"
                   triggerClassName="flex h-6 w-6 items-center justify-center rounded bg-black/60 text-white transition hover:bg-red-600"
+                  onConfirm={() => removeImage(img.id)}
                 >
                   <svg
                     width="10"
@@ -137,7 +140,7 @@ export default function ImageGallery({
                     />
                   </svg>
                 </ConfirmSubmit>
-              </form>
+              </div>
             )}
           </li>
         ))}

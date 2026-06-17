@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { auth } from "@/auth";
-import db from "@/lib/db";
+import { serverFetch } from "@/lib/api/server-fetch";
+import { type LeaderboardData } from "@/lib/queries/leaderboards";
 import {
   periods,
   periodLabel,
-  periodStart,
   parsePeriod,
   parseDiscipline,
 } from "@/lib/leaderboard";
-import { loadLeaderboard, POINTS_EXPLAINER } from "@/lib/points";
+import { POINTS_EXPLAINER } from "@/lib/points";
 import DisciplineSelect from "@/app/ui/discipline-select";
 import FilterPill from "@/app/ui/filter-pill";
 import RankCrown from "@/app/ui/rank-crown";
@@ -33,26 +32,10 @@ export default async function LeaderboardPage({
   const period = parsePeriod(params.period);
   const discipline = parseDiscipline(params.discipline);
 
-  const session = await auth();
-  const currentUser = session?.user?.email
-    ? ((await db
-        .selectFrom("users")
-        .select("id")
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
-
-  const start = periodStart(period);
-
-  const all = await loadLeaderboard({ start, discipline });
-  const rows = all.slice(0, 25);
-
-  // If the current user is outside the top 25, surface their rank separately.
-  let myRow: { rank: number; total: number } | null = null;
-  if (currentUser && !rows.some((r) => r.user_id === currentUser.id)) {
-    const idx = all.findIndex((r) => r.user_id === currentUser.id);
-    if (idx >= 0) myRow = { rank: idx + 1, total: all[idx].points };
-  }
+  const reqParams = new URLSearchParams({ period, discipline });
+  const { viewerId, rows, myRow } = await serverFetch<LeaderboardData>(
+    `/api/leaderboards?${reqParams.toString()}`,
+  );
 
   // Preserve the discipline when switching period.
   const periodHref = (p: string) =>
@@ -113,7 +96,7 @@ export default async function LeaderboardPage({
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {rows.map((row, index) => {
-                  const isMe = currentUser && row.user_id === currentUser.id;
+                  const isMe = viewerId === row.user_id;
                   const isFirst = index === 0;
                   return (
                     <tr

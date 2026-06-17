@@ -1,9 +1,14 @@
+"use client";
+
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api-client";
 import ConfirmSubmit from "./confirm-submit";
 import TrashIcon from "./trash-icon";
 
-// Single source of truth for delete affordances across the app. Renders a
-// confirmation-guarded submit (must live inside the <form> it deletes) with a
-// consistent trash icon and red styling.
+// Single source of truth for delete affordances across the app. Self-contained:
+// confirming sends the delete request to `endpoint` and then either follows a
+// `{ redirect }` from the response or re-fetches the current page.
 //   - "pill": bordered red button with an icon + label (toolbars / headers)
 //   - "icon": compact icon-only button (card corners, list rows)
 const triggerClass = {
@@ -12,6 +17,9 @@ const triggerClass = {
 };
 
 export default function DeleteButton({
+  endpoint,
+  method = "DELETE",
+  body,
   title,
   message,
   confirmLabel,
@@ -19,6 +27,9 @@ export default function DeleteButton({
   label = "Delete",
   variant = "pill",
 }: {
+  endpoint: string;
+  method?: string;
+  body?: unknown;
   title: string;
   message: string;
   confirmLabel: string;
@@ -26,6 +37,23 @@ export default function DeleteButton({
   label?: string;
   variant?: "pill" | "icon";
 }) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+
+  function handleConfirm() {
+    startTransition(async () => {
+      const res = await apiFetch<{ redirect?: string } | null>(endpoint, {
+        method,
+        body,
+      });
+      if (res && typeof res === "object" && res.redirect) {
+        router.push(res.redirect);
+      } else {
+        router.refresh();
+      }
+    });
+  }
+
   return (
     <ConfirmSubmit
       title={title}
@@ -33,6 +61,7 @@ export default function DeleteButton({
       confirmLabel={confirmLabel}
       triggerAriaLabel={ariaLabel}
       triggerClassName={triggerClass[variant]}
+      onConfirm={handleConfirm}
     >
       <TrashIcon size={variant === "icon" ? 16 : 14} />
       {variant === "pill" && <span>{label}</span>}

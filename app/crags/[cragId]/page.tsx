@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
 import db, { type ClimbStyle } from "@/lib/db";
-import {
-  updateCrag,
-  deleteCrag,
-  recoverSector,
-  recoverRoute,
-} from "@/app/actions";
+import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
+import { type CragDetailData } from "@/lib/queries/crags";
 import Modal from "@/app/ui/modal";
+import ApiForm from "@/app/ui/api-form";
+import ActionButton from "@/app/ui/action-button";
 import DeleteButton from "@/app/ui/delete-button";
 import ImageGallery from "@/app/ui/image-gallery";
 import EntityReviews from "@/app/ui/entity-reviews";
@@ -18,8 +15,6 @@ import CragFields from "@/app/ui/crag-fields";
 import { CreateSectorModal, CreateRouteModal } from "@/app/ui/create-modals";
 import LoginToAdd from "@/app/ui/login-to-add";
 import FactList from "@/app/ui/fact-list";
-import { resolveGrade } from "@/lib/grade-conversion";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
 import { gradeRange, stylesPresent } from "@/lib/route-stats";
 import { inputClass, typeLabel, typeBadge } from "@/app/ui/style";
 
@@ -56,167 +51,30 @@ export default async function CragPage({
 }: {
   params: Promise<{ cragId: string }>;
 }) {
-  const session = await auth();
-  const currentUser = session?.user?.email
-    ? ((await db
-        .selectFrom("users")
-        .select([
-          "id",
-          "role",
-          "preferred_rope_grading_system_id",
-          "preferred_boulder_grading_system_id",
-        ])
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
-
   const { cragId } = await params;
   const id = Number(cragId);
   if (!Number.isInteger(id)) notFound();
 
-  const crag = await db
-    .selectFrom("crags")
-    .selectAll()
-    .where("id", "=", id)
-    .where("deleted", "=", false)
-    .executeTakeFirst();
-  if (!crag) notFound();
-
-  const images = await db
-    .selectFrom("images")
-    .select(["id", "url", "uploaded_by"])
-    .where("entity_type", "=", "crag")
-    .where("entity_id", "=", id)
-    .orderBy("created_at")
-    .execute();
-
-  const [gradingSystems, gradeEquivalencies] = await Promise.all([
-    db
-      .selectFrom("grading_systems")
-      .select(["id", "name", "slug"])
-      .orderBy("id")
-      .execute(),
-    loadGradeEquivalencies(),
-  ]);
-
-  const [sectors, routes, tickedRows] = await Promise.all([
-    db
-      .selectFrom("sectors")
-      .select(["id", "name", "description", "created_by"])
-      .where("crag_id", "=", id)
-      .where("deleted", "=", false)
-      .orderBy("name")
-      .execute(),
-
-    db
-      .selectFrom("routes")
-      .select([
-        "id",
-        "name",
-        "grade",
-        "grading_system_id",
-        "style",
-        "height_m",
-        "description",
-        "sector_id",
-      ])
-      .where("crag_id", "=", id)
-      .where("deleted", "=", false)
-      .orderBy("name")
-      .execute(),
-
-    (async () => {
-      const email = session?.user?.email;
-      const user = email
-        ? await db
-            .selectFrom("users")
-            .select("id")
-            .where("email", "=", email.toLowerCase())
-            .executeTakeFirst()
-        : undefined;
-      return user
-        ? db
-            .selectFrom("ascents")
-            .select("route_id")
-            .distinct()
-            .where("user_id", "=", user.id)
-            .execute()
-        : [];
-    })(),
-  ]);
-
-  const tickedRouteIds = new Set(tickedRows.map((r) => r.route_id));
-
-  const resolvedRoutes = routes.map((r) => ({
-    ...r,
-    ...resolveGrade(
-      r.grade,
-      r.grading_system_id,
-      gradingSystems,
-      {
-        rope: currentUser?.preferred_rope_grading_system_id,
-        boulder: currentUser?.preferred_boulder_grading_system_id,
-      },
-      gradeEquivalencies,
-    ),
-  }));
-
-  // Deleted sectors and routes — only fetched when user is admin
-  const [deletedSectors, deletedRoutes] =
-    currentUser?.role === "admin"
-      ? await Promise.all([
-          db
-            .selectFrom("sectors")
-            .select(["id", "name"])
-            .where("crag_id", "=", id)
-            .where("deleted", "=", true)
-            .orderBy("name")
-            .execute(),
-          db
-            .selectFrom("routes")
-            .select(["id", "name", "grade"])
-            .where("crag_id", "=", id)
-            .where("deleted", "=", true)
-            .orderBy("name")
-            .execute(),
-        ])
-      : [[], []];
-
-  type LogEntry = { at: Date; by: string };
-
-  async function buildLogMap(entityType: "sector" | "route", ids: number[]) {
-    if (ids.length === 0) return new Map<number, LogEntry>();
-    const entries = await db
-      .selectFrom("deletion_log")
-      .innerJoin("users", "users.id", "deletion_log.user_id")
-      .select([
-        "deletion_log.entity_id",
-        "deletion_log.created_at",
-        "users.name as by",
-      ])
-      .where("deletion_log.entity_type", "=", entityType)
-      .where("deletion_log.action", "=", "delete")
-      .where("deletion_log.entity_id", "in", ids)
-      .orderBy("deletion_log.created_at", "desc")
-      .execute();
-    const map = new Map<number, LogEntry>();
-    for (const e of entries) {
-      if (!map.has(e.entity_id))
-        map.set(e.entity_id, { at: e.created_at as Date, by: e.by as string });
-    }
-    return map;
+  let data: CragDetailData;
+  try {
+    data = await serverFetch<CragDetailData>(`/api/crags/${id}`);
+  } catch (err) {
+    if (err instanceof ServerFetchError && err.status === 404) notFound();
+    throw err;
   }
 
-  const [deletedSectorLog, deletedRouteLog] = await Promise.all([
-    buildLogMap(
-      "sector",
-      deletedSectors.map((s) => s.id),
-    ),
-    buildLogMap(
-      "route",
-      deletedRoutes.map((r) => r.id),
-    ),
-  ]);
+  const {
+    crag,
+    viewer: currentUser,
+    images,
+    gradingSystems,
+    gradeEquivalencies,
+    sectors,
+    routes: resolvedRoutes,
+    deletedSectors,
+    deletedRoutes,
+  } = data;
+  const tickedRouteIds = new Set(data.tickedRouteIds);
 
   // Group routes by sector
   const routesBySector = new Map<number | null, typeof resolvedRoutes>();
@@ -268,8 +126,11 @@ export default async function CragPage({
               variant="ghost"
               title={`Edit ${crag.name}`}
             >
-              <form action={updateCrag} className="grid gap-4">
-                <input type="hidden" name="crag_id" value={crag.id} />
+              <ApiForm
+                endpoint={`/api/crags/${crag.id}`}
+                method="PATCH"
+                className="grid gap-4"
+              >
                 <label>
                   <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                     Name
@@ -328,7 +189,7 @@ export default async function CragPage({
                 >
                   Save changes
                 </button>
-              </form>
+              </ApiForm>
             </Modal>
           )}
 
@@ -348,15 +209,13 @@ export default async function CragPage({
             </>
           )}
           {canEdit(crag.created_by) && (
-            <form action={deleteCrag}>
-              <input type="hidden" name="crag_id" value={crag.id} />
-              <DeleteButton
-                title={`Delete ${crag.name}?`}
-                message={`This will permanently delete ${crag.name}, all its sectors, and all its routes. This cannot be undone.`}
-                confirmLabel="Delete crag"
-                ariaLabel="Delete crag"
-              />
-            </form>
+            <DeleteButton
+              endpoint={`/api/crags/${crag.id}`}
+              title={`Delete ${crag.name}?`}
+              message={`This will permanently delete ${crag.name}, all its sectors, and all its routes. This cannot be undone.`}
+              confirmLabel="Delete crag"
+              ariaLabel="Delete crag"
+            />
           )}
         </div>
       </header>
@@ -370,7 +229,7 @@ export default async function CragPage({
             label: "Sectors",
             value: sectors.length || null,
           },
-          { label: "Routes", value: routes.length || null },
+          { label: "Routes", value: resolvedRoutes.length || null },
           {
             label: "Grades",
             value: cragRange
@@ -417,7 +276,7 @@ export default async function CragPage({
         canUpload={!!currentUser}
       />
 
-      {routes.length === 0 && sectors.length === 0 && (
+      {resolvedRoutes.length === 0 && sectors.length === 0 && (
         <div className="mt-12 border border-dashed border-zinc-300 py-16 text-center dark:border-zinc-700">
           <p className="font-medium">No routes here yet.</p>
           <p className="mt-1 text-sm text-zinc-500">
@@ -518,7 +377,6 @@ export default async function CragPage({
           </h2>
           <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
             {deletedSectors.map((sector) => {
-              const log = deletedSectorLog.get(sector.id);
               return (
                 <li
                   key={sector.id}
@@ -528,10 +386,10 @@ export default async function CragPage({
                     <span className="font-medium text-zinc-500">
                       {sector.name}
                     </span>
-                    {log && (
+                    {sector.deletedAt && (
                       <span className="ml-3 text-xs text-zinc-400">
-                        · Deleted by {log.by} on{" "}
-                        {log.at.toLocaleDateString("en-GB", {
+                        · Deleted by {sector.deletedBy} on{" "}
+                        {sector.deletedAt.toLocaleDateString("en-GB", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
@@ -539,15 +397,12 @@ export default async function CragPage({
                       </span>
                     )}
                   </div>
-                  <form action={recoverSector}>
-                    <input type="hidden" name="sector_id" value={sector.id} />
-                    <button
-                      type="submit"
-                      className="rounded border border-zinc-300 px-3 py-1 text-xs font-medium transition hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                    >
-                      Recover
-                    </button>
-                  </form>
+                  <ActionButton
+                    endpoint={`/api/sectors/${sector.id}/recover`}
+                    className="rounded border border-zinc-300 px-3 py-1 text-xs font-medium transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    Recover
+                  </ActionButton>
                 </li>
               );
             })}
@@ -563,7 +418,6 @@ export default async function CragPage({
           </h2>
           <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
             {deletedRoutes.map((route) => {
-              const log = deletedRouteLog.get(route.id);
               return (
                 <li
                   key={route.id}
@@ -576,10 +430,10 @@ export default async function CragPage({
                     <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-500 dark:bg-zinc-800">
                       {route.grade}
                     </span>
-                    {log && (
+                    {route.deletedAt && (
                       <span className="text-xs text-zinc-400">
-                        · Deleted by {log.by} on{" "}
-                        {log.at.toLocaleDateString("en-GB", {
+                        · Deleted by {route.deletedBy} on{" "}
+                        {route.deletedAt.toLocaleDateString("en-GB", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
@@ -587,15 +441,12 @@ export default async function CragPage({
                       </span>
                     )}
                   </div>
-                  <form action={recoverRoute}>
-                    <input type="hidden" name="route_id" value={route.id} />
-                    <button
-                      type="submit"
-                      className="rounded border border-zinc-300 px-3 py-1 text-xs font-medium transition hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                    >
-                      Recover
-                    </button>
-                  </form>
+                  <ActionButton
+                    endpoint={`/api/routes/${route.id}/recover`}
+                    className="rounded border border-zinc-300 px-3 py-1 text-xs font-medium transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    Recover
+                  </ActionButton>
                 </li>
               );
             })}

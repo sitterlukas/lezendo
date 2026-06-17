@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateGradingSystem } from "@/app/actions/auth";
+import { apiFetch } from "@/lib/api-client";
 import Select from "@/app/ui/select";
 import { disciplineOf, type GradeEquivalency } from "@/lib/grade-conversion";
 
@@ -37,11 +37,14 @@ export default function GradingSystemForm({
     // reset after an action briefly flips the controlled selects back to their
     // first option before our state re-applies, which reads as a flicker.
     e.preventDefault();
-    const data = new FormData();
-    data.set("preferred_rope_grading_system_id", rope);
-    data.set("preferred_boulder_grading_system_id", boulder);
     startTransition(async () => {
-      await updateGradingSystem(data);
+      await apiFetch("/api/me", {
+        method: "PATCH",
+        body: {
+          preferred_rope_grading_system_id: rope ? Number(rope) : null,
+          preferred_boulder_grading_system_id: boulder ? Number(boulder) : null,
+        },
+      });
       // Re-fetch server components so the new preference shows everywhere
       // without a manual page refresh.
       router.refresh();

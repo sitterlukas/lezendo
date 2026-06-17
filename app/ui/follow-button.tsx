@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { followUser, unfollowUser } from "@/app/actions";
+import { apiFetch } from "@/lib/api-client";
 
 // Optimistic Follow/Unfollow toggle. `initialFollowing` comes from the server.
 // Following is one click; unfollowing asks for confirmation first.
@@ -19,10 +19,9 @@ export default function FollowButton({
   function run(next: boolean) {
     setFollowing(next);
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("followee_id", String(followeeId));
-      if (next) await followUser(fd);
-      else await unfollowUser(fd);
+      await apiFetch(`/api/users/${followeeId}/follow`, {
+        method: next ? "POST" : "DELETE",
+      });
     });
   }
 

@@ -2,7 +2,8 @@
 
 import { upload } from "@vercel/blob/client";
 import { useRef, useState, useTransition } from "react";
-import { updateAvatar } from "@/app/actions/auth";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api-client";
 import Avatar from "@/app/ui/avatar";
 
 // Avatars are only shown small (≤96px), so a 256px square is plenty. Crop to a
@@ -41,10 +42,18 @@ export default function AvatarUpload({
   name: string;
   avatarUrl: string | null;
 }) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  function saveAvatar(url: string | null) {
+    startTransition(async () => {
+      await apiFetch("/api/me/avatar", { method: "PATCH", body: { url } });
+      router.refresh();
+    });
+  }
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -57,9 +66,7 @@ export default function AvatarUpload({
         access: "public",
         handleUploadUrl: "/api/images/upload",
       });
-      startTransition(async () => {
-        await updateAvatar(blob.url);
-      });
+      saveAvatar(blob.url);
     } catch {
       setError("Upload failed — try again.");
     } finally {
@@ -70,9 +77,7 @@ export default function AvatarUpload({
 
   function remove() {
     setError(null);
-    startTransition(async () => {
-      await updateAvatar(null);
-    });
+    saveAvatar(null);
   }
 
   return (

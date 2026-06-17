@@ -7,7 +7,6 @@ import ImageGallery from "@/app/ui/image-gallery";
 import DeleteButton from "@/app/ui/delete-button";
 import LikeButton from "@/app/ui/like-button";
 import Avatar from "@/app/ui/avatar";
-import { deleteStatus } from "@/app/actions";
 import CommentList from "@/app/ui/comment-list";
 import StatusEditModal from "@/app/ui/status-edit-modal";
 import { type SectorOption } from "@/app/ui/sector-select";
@@ -74,16 +73,14 @@ export default function FeedItemCard({
               viewerId={viewerId}
               isAdmin={isAdmin}
             />
-            <form action={deleteStatus}>
-              <input type="hidden" name="status_id" value={item.id} />
-              <DeleteButton
-                variant="icon"
-                title="Delete status?"
-                message="This permanently removes your post. This can't be undone."
-                confirmLabel="Delete"
-                ariaLabel="Delete status"
-              />
-            </form>
+            <DeleteButton
+              endpoint={`/api/statuses/${item.id}`}
+              variant="icon"
+              title="Delete status?"
+              message="This permanently removes your post. This can't be undone."
+              confirmLabel="Delete"
+              ariaLabel="Delete status"
+            />
           </span>
         )}
       </div>

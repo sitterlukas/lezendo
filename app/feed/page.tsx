@@ -1,6 +1,5 @@
-import { auth } from "@/auth";
-import db from "@/lib/db";
-import { buildFeed, suggestedUsers, loadSectorOptions } from "@/lib/feed";
+import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
+import { type FeedPageData } from "@/lib/queries/feed-page";
 import FeedList from "@/app/ui/feed-list";
 import StatusComposer from "@/app/ui/status-composer";
 import LoginToAdd from "@/app/ui/login-to-add";
@@ -10,16 +9,14 @@ import UserRow from "@/app/ui/user-row";
 export const dynamic = "force-dynamic";
 
 export default async function FeedPage() {
-  const session = await auth();
-  const viewer = session?.user?.email
-    ? ((await db
-        .selectFrom("users")
-        .select(["id", "role"])
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()) ?? null)
-    : null;
+  let data: FeedPageData | null = null;
+  try {
+    data = await serverFetch<FeedPageData>("/api/feed/page");
+  } catch (err) {
+    if (!(err instanceof ServerFetchError && err.status === 401)) throw err;
+  }
 
-  if (!viewer) {
+  if (!data) {
     return (
       <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
         <h1 className="text-4xl font-bold tracking-tight">Feed</h1>
@@ -33,18 +30,9 @@ export default async function FeedPage() {
     );
   }
 
+  const { viewer, items, nextCursor, sectors, followsNobody, suggestions } =
+    data;
   const isAdmin = viewer.role === "admin";
-  const [{ items, nextCursor }, sectors, followRow] = await Promise.all([
-    buildFeed(db, viewer.id),
-    loadSectorOptions(db),
-    db
-      .selectFrom("follows")
-      .select("followee_id")
-      .where("follower_id", "=", viewer.id)
-      .limit(1)
-      .executeTakeFirst(),
-  ]);
-  const followsNobody = !followRow;
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
@@ -60,7 +48,7 @@ export default async function FeedPage() {
 
       {/* Until you follow someone, keep the "who to follow" prompt above your
           feed — even after you've posted your own statuses. */}
-      {followsNobody && <SuggestedToFollow viewerId={viewer.id} />}
+      {followsNobody && <SuggestedToFollow suggestions={suggestions} />}
 
       {items.length > 0 ? (
         <FeedList
@@ -84,8 +72,11 @@ export default async function FeedPage() {
   );
 }
 
-async function SuggestedToFollow({ viewerId }: { viewerId: number }) {
-  const suggestions = await suggestedUsers(db, viewerId);
+function SuggestedToFollow({
+  suggestions,
+}: {
+  suggestions: { id: number; name: string; avatarUrl: string | null }[];
+}) {
   return (
     <div className="mt-8 rounded border border-zinc-200 p-5 dark:border-zinc-800">
       <p className="font-medium">Find climbers to follow</p>

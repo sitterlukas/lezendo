@@ -1,5 +1,5 @@
 import { oauthProviders } from "@/auth";
-import { oauthLogin } from "@/app/actions/auth";
+import OAuthButton from "@/app/ui/oauth-button";
 
 function GoogleIcon() {
   return (
@@ -40,16 +40,10 @@ export default function OAuthButtons() {
       </div>
       <div className="mt-4 space-y-3">
         {oauthProviders.map((provider) => (
-          <form key={provider.id} action={oauthLogin}>
-            <input type="hidden" name="provider" value={provider.id} />
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium transition hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-            >
-              {icons[provider.id]}
-              Continue with {provider.name}
-            </button>
-          </form>
+          <OAuthButton key={provider.id} provider={provider.id}>
+            {icons[provider.id]}
+            Continue with {provider.name}
+          </OAuthButton>
         ))}
       </div>
       <p className="mt-3 text-center text-xs text-zinc-400">
