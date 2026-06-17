@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import { route, ok, fail } from "@/lib/api/respond";
 import { requireUser, canModify } from "@/lib/api/auth";
 import db from "@/lib/db";
@@ -28,7 +27,5 @@ export const DELETE = route<Ctx>(async (request, { params }) => {
     .execute();
   await db.deleteFrom("comments").where("id", "=", commentId).execute();
 
-  revalidatePath("/feed");
-  revalidatePath("/users", "layout");
   return ok({ ok: true });
 });

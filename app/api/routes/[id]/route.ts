@@ -1,16 +1,9 @@
-import { revalidatePath } from "next/cache";
-import { route, ok, fail } from "@/lib/api/respond";
+import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify, getUser } from "@/lib/api/auth";
-import {
-  readForm,
-  styles,
-  gradeSystemError,
-  parseBolting,
-  parseRouteDetails,
-} from "@/lib/forms";
+import { routeWriteSchema, gradeSystemError } from "@/lib/forms";
 import { getRouteDetail } from "@/lib/queries/routes";
-import { logDeletion } from "@/lib/deletion-log";
-import db, { type ClimbStyle } from "@/lib/db";
+import { setEntityDeleted } from "@/lib/soft-delete";
+import db from "@/lib/db";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -38,27 +31,14 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
   const routeId = Number((await params).id);
   if (!Number.isInteger(routeId)) return fail("Invalid route.", 400);
 
-  const form = await readForm(request);
-  const cragId = Number(form.get("crag_id"));
-  const sectorIdRaw = String(form.get("sector_id") ?? "").trim();
-  const sectorId = sectorIdRaw ? Number(sectorIdRaw) : null;
-  const name = String(form.get("name") ?? "").trim();
-  const grade = String(form.get("grade") ?? "").trim();
-  const style = String(form.get("style") ?? "") as ClimbStyle;
-  const heightRaw = String(form.get("height_m") ?? "").trim();
-  const description = String(form.get("description") ?? "").trim();
-  const gradingSystemId = Number(
-    String(form.get("grading_system_id") ?? "").trim(),
-  );
+  const data = await readJson(request, routeWriteSchema);
 
-  if (!name) return fail("Name is required.", 400);
-  if (!grade) return fail("Grade is required.", 400);
-  if (!styles.includes(style)) return fail("Invalid type.", 400);
-  if (!Number.isInteger(gradingSystemId) || gradingSystemId <= 0) {
-    return fail("Pick a grading system.", 400);
-  }
-  const gradeError = await gradeSystemError(gradingSystemId, grade, style);
-  if (gradeError) return fail(gradeError, 400);
+  const err = await gradeSystemError(
+    data.grading_system_id,
+    data.grade,
+    data.style,
+  );
+  if (err) return fail(err, 400);
 
   const existing = await db
     .selectFrom("routes")
@@ -68,42 +48,36 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
   if (!existing) return fail("Route not found.", 404);
   if (!canModify(user, existing.created_by)) return fail("Not allowed.", 403);
 
-  if (sectorId) {
+  if (data.sector_id) {
     const sector = await db
       .selectFrom("sectors")
       .select("id")
-      .where("id", "=", sectorId)
-      .where("crag_id", "=", cragId)
+      .where("id", "=", data.sector_id)
+      .where("crag_id", "=", data.crag_id)
       .executeTakeFirst();
     if (!sector) return fail("Sector not found.", 404);
   }
 
-  const height = heightRaw ? Number.parseInt(heightRaw, 10) : null;
-  const { boltCount, protection } = parseBolting(form);
-  const { firstAscensionist, firstAscentYear, pitches, gearNotes } =
-    parseRouteDetails(form);
-
   await db
     .updateTable("routes")
     .set({
-      name,
-      grade,
-      grading_system_id: gradingSystemId,
-      style,
-      sector_id: sectorId,
-      height_m: height && !Number.isNaN(height) ? height : null,
-      bolt_count: boltCount,
-      protection,
-      first_ascensionist: firstAscensionist,
-      first_ascent_year: firstAscentYear,
-      pitches,
-      gear_notes: gearNotes,
-      description: description || null,
+      name: data.name,
+      grade: data.grade,
+      grading_system_id: data.grading_system_id,
+      style: data.style,
+      sector_id: data.sector_id,
+      height_m: data.height_m,
+      bolt_count: data.bolt_count,
+      protection: data.protection,
+      first_ascensionist: data.first_ascensionist,
+      first_ascent_year: data.first_ascent_year,
+      pitches: data.pitches,
+      gear_notes: data.gear_notes,
+      description: data.description,
     })
     .where("id", "=", routeId)
     .execute();
 
-  revalidatePath("/crags", "layout");
   return ok({ ok: true });
 });
 
@@ -116,19 +90,11 @@ export const DELETE = route<Ctx>(async (request, { params }) => {
 
   const existing = await db
     .selectFrom("routes")
-    .select(["id", "name", "crag_id", "created_by"])
+    .select("crag_id")
     .where("id", "=", routeId)
     .executeTakeFirst();
   if (!existing) return fail("Route not found.", 404);
-  if (!canModify(user, existing.created_by)) return fail("Not allowed.", 403);
 
-  await db
-    .updateTable("routes")
-    .set({ deleted: true })
-    .where("id", "=", routeId)
-    .execute();
-  await logDeletion("route", routeId, existing.name, "delete", user.id);
-
-  revalidatePath("/crags", "layout");
+  await setEntityDeleted("routes", "route", routeId, true, user);
   return ok({ redirect: `/crags/${existing.crag_id}` });
 });

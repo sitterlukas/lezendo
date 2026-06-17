@@ -1,7 +1,6 @@
-import { revalidatePath } from "next/cache";
-import { route, ok, fail } from "@/lib/api/respond";
+import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { readForm } from "@/lib/forms";
+import { forumPostBodySchema } from "@/lib/forms";
 import db from "@/lib/db";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -12,9 +11,7 @@ export const POST = route<Ctx>(async (request, { params }) => {
   const topicId = Number((await params).id);
   if (!Number.isInteger(topicId)) return fail("Invalid topic.", 400);
 
-  const form = await readForm(request);
-  const body = String(form.get("body") ?? "").trim();
-  if (!body) return fail("Write something first.", 400);
+  const data = await readJson(request, forumPostBodySchema);
 
   const topic = await db
     .selectFrom("forum_topics")
@@ -25,9 +22,8 @@ export const POST = route<Ctx>(async (request, { params }) => {
 
   await db
     .insertInto("forum_posts")
-    .values({ topic_id: topicId, user_id: user.id, body })
+    .values({ topic_id: topicId, user_id: user.id, body: data.body })
     .execute();
 
-  revalidatePath(`/forum/${topicId}`);
   return ok({ ok: true }, 201);
 });

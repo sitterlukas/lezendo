@@ -1,6 +1,7 @@
 import { hash } from "bcryptjs";
 import { z } from "zod";
 import { route, ok, fail, readJson } from "@/lib/api/respond";
+import { rateLimit, clientIp } from "@/lib/api/rate-limit";
 import db from "@/lib/db";
 import { issueVerificationToken } from "@/lib/email-verification";
 import { sendVerificationEmail } from "@/lib/email";
@@ -14,6 +15,9 @@ const schema = z.object({
 // POST /api/auth/register — create a credentials account and email a
 // verification link. Does not sign the user in (they must confirm first).
 export const POST = route(async (request) => {
+  // Throttle signups per IP to blunt account-spam / verification-email abuse.
+  rateLimit(`register:${clientIp(request)}`, 5, 60 * 60 * 1000);
+
   const parsed = await readJson(request, schema);
   const name = parsed.name.trim();
   const email = parsed.email.trim().toLowerCase();
@@ -24,6 +28,9 @@ export const POST = route(async (request) => {
       "Please fill in all fields — password must be at least 8 characters.",
       400,
     );
+  }
+  if (name.length > 100) {
+    return fail("Name must be at most 100 characters.", 400);
   }
 
   const existing = await db

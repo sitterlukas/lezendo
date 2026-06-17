@@ -1,7 +1,6 @@
-import { revalidatePath } from "next/cache";
-import { route, ok, fail } from "@/lib/api/respond";
+import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
-import { readForm } from "@/lib/forms";
+import { forumTopicCreateSchema } from "@/lib/forms";
 import { getForumTopics } from "@/lib/queries/forum";
 import db from "@/lib/db";
 
@@ -19,24 +18,18 @@ export const GET = route(async (request) => {
 // createTopic). Returns { redirect } to the new topic.
 export const POST = route(async (request) => {
   const user = await requireUser(request);
-  const form = await readForm(request);
-
-  const title = String(form.get("title") ?? "").trim();
-  const body = String(form.get("body") ?? "").trim();
-  if (!title) return fail("Title is required.", 400);
-  if (!body) return fail("Write something first.", 400);
+  const data = await readJson(request, forumTopicCreateSchema);
 
   const topic = await db
     .insertInto("forum_topics")
-    .values({ title, user_id: user.id })
+    .values({ title: data.title, user_id: user.id })
     .returning("id")
     .executeTakeFirstOrThrow();
 
   await db
     .insertInto("forum_posts")
-    .values({ topic_id: topic.id, user_id: user.id, body })
+    .values({ topic_id: topic.id, user_id: user.id, body: data.body })
     .execute();
 
-  revalidatePath("/forum");
   return ok({ id: topic.id, redirect: `/forum/${topic.id}` }, 201);
 });

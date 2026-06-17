@@ -1,7 +1,6 @@
-import { revalidatePath } from "next/cache";
-import { route, ok, fail } from "@/lib/api/respond";
+import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify } from "@/lib/api/auth";
-import { readForm } from "@/lib/forms";
+import { forumPostBodySchema } from "@/lib/forms";
 import db from "@/lib/db";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -12,9 +11,7 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
   const postId = Number((await params).id);
   if (!Number.isInteger(postId)) return fail("Invalid post.", 400);
 
-  const form = await readForm(request);
-  const body = String(form.get("body") ?? "").trim();
-  if (!body) return fail("Write something first.", 400);
+  const data = await readJson(request, forumPostBodySchema);
 
   const post = await db
     .selectFrom("forum_posts")
@@ -26,11 +23,10 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
 
   await db
     .updateTable("forum_posts")
-    .set({ body })
+    .set({ body: data.body })
     .where("id", "=", postId)
     .execute();
 
-  revalidatePath(`/forum/${post.topic_id}`);
   return ok({ ok: true });
 });
 
@@ -49,6 +45,5 @@ export const DELETE = route<Ctx>(async (request, { params }) => {
   if (!canModify(user, post.user_id)) return fail("Not allowed.", 403);
 
   await db.deleteFrom("forum_posts").where("id", "=", postId).execute();
-  revalidatePath(`/forum/${post.topic_id}`);
   return ok({ ok: true });
 });

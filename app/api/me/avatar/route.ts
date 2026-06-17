@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import db from "@/lib/db";
@@ -18,7 +17,5 @@ export const PATCH = route(async (request) => {
     .where("id", "=", user.id)
     .execute();
 
-  // Avatars appear all over (feed, reviews, profile, forum, leaderboard).
-  revalidatePath("/", "layout");
   return ok({ ok: true });
 });

@@ -1,9 +1,11 @@
-import { revalidatePath } from "next/cache";
-import { route, ok, fail } from "@/lib/api/respond";
+import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify } from "@/lib/api/auth";
-import { readForm, resolveSectorTag, INVALID_SECTOR } from "@/lib/forms";
+import {
+  statusWriteSchema,
+  resolveSectorTag,
+  INVALID_SECTOR,
+} from "@/lib/forms";
 import { deleteTargetInteractions } from "@/lib/feed-interactions";
-import { STATUS_MAX_LEN } from "@/lib/constants";
 import db from "@/lib/db";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -22,26 +24,19 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
   if (!status) return fail("Status not found.", 404);
   if (!canModify(user, status.user_id)) return fail("Not allowed.", 403);
 
-  const form = await readForm(request);
-  const body = String(form.get("body") ?? "").trim();
-  if (!body) return fail("Write something first.", 400);
-  if (body.length > STATUS_MAX_LEN) {
-    return fail(`Keep it under ${STATUS_MAX_LEN} characters.`, 400);
-  }
+  const data = await readJson(request, statusWriteSchema);
 
-  const sectorId = await resolveSectorTag(form);
+  const sectorId = await resolveSectorTag(data.sector_id);
   if (sectorId === INVALID_SECTOR) {
     return fail("That sector no longer exists.", 400);
   }
 
   await db
     .updateTable("statuses")
-    .set({ body, sector_id: sectorId })
+    .set({ body: data.body, sector_id: sectorId })
     .where("id", "=", statusId)
     .execute();
 
-  revalidatePath("/feed");
-  revalidatePath("/users", "layout");
   return ok({ ok: true });
 });
 
@@ -78,7 +73,5 @@ export const DELETE = route<Ctx>(async (request, { params }) => {
   await deleteTargetInteractions("status", statusId);
   await db.deleteFrom("statuses").where("id", "=", statusId).execute();
 
-  revalidatePath("/feed");
-  revalidatePath(`/users/${status.user_id}`);
   return ok({ ok: true });
 });

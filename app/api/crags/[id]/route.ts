@@ -1,9 +1,8 @@
-import { revalidatePath } from "next/cache";
-import { route, ok, fail } from "@/lib/api/respond";
+import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify, getUser } from "@/lib/api/auth";
-import { readForm, parseCragDetails } from "@/lib/forms";
+import { cragWriteSchema } from "@/lib/forms";
 import { getCragDetail } from "@/lib/queries/crags";
-import { logDeletion } from "@/lib/deletion-log";
+import { setEntityDeleted } from "@/lib/soft-delete";
 import db from "@/lib/db";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -28,14 +27,7 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
   const cragId = Number((await params).id);
   if (!Number.isInteger(cragId)) return fail("Invalid crag.", 400);
 
-  const form = await readForm(request);
-  const name = String(form.get("name") ?? "").trim();
-  const area = String(form.get("area") ?? "").trim();
-  const country = String(form.get("country") ?? "").trim();
-  const description = String(form.get("description") ?? "").trim();
-  const details = parseCragDetails(form);
-
-  if (!name) return fail("Name is required.", 400);
+  const data = await readJson(request, cragWriteSchema);
 
   const crag = await db
     .selectFrom("crags")
@@ -48,16 +40,18 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
   await db
     .updateTable("crags")
     .set({
-      name,
-      area: area || null,
-      country: country || null,
-      description: description || null,
-      ...details,
+      name: data.name,
+      area: data.area,
+      country: data.country,
+      description: data.description,
+      rock_type: data.rock_type,
+      aspect: data.aspect,
+      best_season: data.best_season,
+      access_notes: data.access_notes,
     })
     .where("id", "=", cragId)
     .execute();
 
-  revalidatePath("/crags", "layout");
   return ok({ ok: true });
 });
 
@@ -68,21 +62,6 @@ export const DELETE = route<Ctx>(async (request, { params }) => {
   const cragId = Number((await params).id);
   if (!Number.isInteger(cragId)) return fail("Invalid crag.", 400);
 
-  const crag = await db
-    .selectFrom("crags")
-    .select(["id", "name", "created_by"])
-    .where("id", "=", cragId)
-    .executeTakeFirst();
-  if (!crag) return fail("Crag not found.", 404);
-  if (!canModify(user, crag.created_by)) return fail("Not allowed.", 403);
-
-  await db
-    .updateTable("crags")
-    .set({ deleted: true })
-    .where("id", "=", cragId)
-    .execute();
-  await logDeletion("crag", cragId, crag.name, "delete", user.id);
-
-  revalidatePath("/crags", "layout");
+  await setEntityDeleted("crags", "crag", cragId, true, user);
   return ok({ redirect: "/crags" });
 });

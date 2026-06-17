@@ -33,7 +33,11 @@ export async function verifyAccessToken(
   token: string,
 ): Promise<{ userId: number; role: string } | null> {
   try {
-    const { payload } = await jwtVerify(token, secret());
+    // Pin the algorithm: we always sign with HS256, so reject anything else
+    // rather than trusting the token header's declared alg.
+    const { payload } = await jwtVerify(token, secret(), {
+      algorithms: ["HS256"],
+    });
     const userId = Number(payload.sub);
     if (!Number.isInteger(userId)) return null;
     return { userId, role: String(payload.role ?? "member") };
@@ -71,19 +75,20 @@ export async function issueTokenPair(user: {
   return { accessToken, refreshToken };
 }
 
-// Single-use consume: delete the row (so refresh rotates) and return the owning
-// user id, or null if the token is unknown or expired.
+// Single-use consume: atomically delete the row (so refresh rotates) and return
+// the owning user id, or null if the token is unknown or expired. Using DELETE
+// ... RETURNING means two concurrent refreshes with the same token can't both
+// succeed — exactly one wins the row, the other gets null.
 export async function consumeRefreshToken(
   token: string,
 ): Promise<number | null> {
   if (!token) return null;
   const row = await db
-    .selectFrom("api_refresh_tokens")
-    .select(["id", "user_id", "expires_at"])
+    .deleteFrom("api_refresh_tokens")
     .where("token_hash", "=", hashToken(token))
+    .returning(["user_id", "expires_at"])
     .executeTakeFirst();
   if (!row) return null;
-  await db.deleteFrom("api_refresh_tokens").where("id", "=", row.id).execute();
   if (row.expires_at < new Date()) return null;
   return row.user_id;
 }
