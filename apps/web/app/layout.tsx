@@ -7,6 +7,7 @@ import { serverFetch } from "@/lib/api/server-fetch";
 import { type MeCore } from "@whipperbook/db";
 import { siteUrl } from "@/lib/site";
 import Providers from "@/app/providers";
+import InlineScript from "@/app/ui/inline-script";
 import "./globals.css";
 
 // Runs before paint so the stored/system theme applies without a flash.
@@ -80,7 +81,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <InlineScript html={themeInitScript} />
       </head>
       <body className="min-h-full flex flex-col">
         <Providers>
