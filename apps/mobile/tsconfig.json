@@ -2,7 +2,13 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "paths": {}
+    "paths": {},
+    // Expo's base uses the legacy "node10" resolution, which ignores the
+    // `exports` field that the workspace `@whipperbook/*` packages (and
+    // `nativewind/types`) declare. Metro resolves bundler-style at runtime, so
+    // match that here for type-checking.
+    "module": "esnext",
+    "moduleResolution": "bundler"
   },
   "include": [
     "**/*.ts",

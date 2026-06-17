@@ -2,11 +2,7 @@
   "name": "whipperbook-monorepo",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "npm@10.8.2",
-  "workspaces": [
-    "apps/web",
-    "packages/*"
-  ],
+  "packageManager": "pnpm@10.34.3",
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",

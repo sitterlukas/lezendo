@@ -17,8 +17,8 @@
     "jose": "^6.2.3",
     "bcryptjs": "^3.0.3",
     "zod": "^4.4.3",
-    "@whipperbook/core": "*",
-    "@whipperbook/validation": "*"
+    "@whipperbook/core": "workspace:*",
+    "@whipperbook/validation": "workspace:*"
   },
   "devDependencies": {
     "vitest": "^3",

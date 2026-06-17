@@ -1,35 +1,30 @@
 # @whipperbook/mobile (Expo)
 
 Expo (React Native) client that reuses the shared `@whipperbook/*` packages and
-the REST API. **This is scaffolded but not yet bootstrapped/verified.**
+the REST API. Part of the pnpm workspace; lint + type-check run in CI.
 
-## ⚠️ Excluded from the npm workspaces (for now)
+- **Expo SDK 54** (React 19 / React Native 0.81). Matching the web app's React 19
+  is what lets both apps share one workspace cleanly — see the pnpm + React notes
+  in the repo root `pnpm-workspace.yaml`.
+- Styling via **NativeWind v4**; data via **TanStack Query** against the web REST
+  API; auth tokens in **expo-secure-store**.
 
-`apps/mobile` is intentionally **not** listed in the root `package.json`
-`workspaces` array yet. Its Expo/React-Native dependency versions are
-hand-written placeholders that don't resolve cleanly (peer conflicts), which
-would break `npm ci`, CI, and the Vercel web install if included. So it's parked
-until bootstrapped.
-
-## Bootstrap (run on a dev machine with the Expo toolchain)
+## Run it
 
 ```bash
-# 1. From apps/mobile, pin Expo-SDK-compatible native versions:
-cd apps/mobile
-npx expo install --fix
+# From the repo root, install the whole workspace:
+pnpm install
 
-# 2. Re-add the app to the root workspaces so it links the shared packages:
-#    package.json → "workspaces": ["apps/web", "apps/mobile", "packages/*"]
-#    then from the repo root:
-npm install
+# Point the app at a running web API (physical devices need the host's LAN IP,
+# not localhost — see apps/mobile/.env):
+#   apps/mobile/.env → EXPO_PUBLIC_API_URL=http://<your-LAN-ip>:3000
 
-# 3. Point it at the running web API and start:
-#    apps/mobile/.env → EXPO_PUBLIC_API_URL=http://<your-LAN-ip>:3000
-npx expo start
+# Start Metro + the dev client / Expo Go:
+pnpm --filter @whipperbook/mobile start
 ```
 
-Once re-added to the workspaces, restore real `lint`/`type-check` gating in CI
-(they're currently skipped because the package isn't installed).
+Then sign in and open the Crags tab to exercise the shared types + query layer +
+auth transport end to end.
 
 See `docs/superpowers/plans/2026-06-17-monorepo-mobile-app.md` (Phase 6) for the
 full design.

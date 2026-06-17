@@ -10,13 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # corepack activates the pnpm version pinned in package.json `packageManager`.
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       # lint + type-check + unit tests across all workspaces via Turborepo.
       # `build` is intentionally excluded: the web build runs `kysely migrate:latest`
       # (needs a database) and Vercel owns the web deploy. Add a build job with a
       # Postgres service container if you want it gated in CI later.
-      - run: npx turbo run lint type-check test
+      - run: pnpm exec turbo run lint type-check test

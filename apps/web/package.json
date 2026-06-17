@@ -13,10 +13,10 @@
     "migrate:latest": "kysely migrate:latest"
   },
   "dependencies": {
-    "@whipperbook/api-client": "*",
-    "@whipperbook/core": "*",
-    "@whipperbook/db": "*",
-    "@whipperbook/validation": "*",
+    "@whipperbook/api-client": "workspace:*",
+    "@whipperbook/core": "workspace:*",
+    "@whipperbook/db": "workspace:*",
+    "@whipperbook/validation": "workspace:*",
     "@tanstack/react-query": "^5",
     "@types/qrcode": "^1.5.6",
     "@vercel/analytics": "^2.0.1",

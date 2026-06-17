@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+
+# The shared root eslint.config.mjs imports eslint + eslint-config-next (the web
+# app's devDeps), and @whipperbook/db uses React 19's `cache()`. The hoisted linker
+# puts those at root node_modules so every workspace resolves them. (isolated mode
+# would require per-app eslint configs + each package declaring its own toolchain.)
+nodeLinker: hoisted
+
+# pnpm 10 blocks dependency build scripts by default. Allow the ones whose native
+# binaries we actually rely on: sharp (Next image optimization) and unrs-resolver
+# (eslint-import-resolver). esbuild ships prebuilt and needs no build step.
+onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver
