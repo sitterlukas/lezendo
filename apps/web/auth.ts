@@ -3,8 +3,8 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import type { Provider } from "next-auth/providers";
 import { sql } from "kysely";
-import db from "@/lib/db";
-import { verifyCredentials } from "@/lib/credentials";
+import db from "@whipperbook/db";
+import { verifyCredentials } from "@whipperbook/db";
 
 // Thrown from `authorize` so the login page can tell "wrong password" apart from
 // "correct password, but email not verified yet" (surfaced as `?error=<code>`).

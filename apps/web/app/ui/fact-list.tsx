@@ -17,16 +17,18 @@ export default function FactList({
   className?: string;
 }) {
   const facts = items.filter(
-    (f) => f.value !== null && f.value !== undefined && f.value !== false && f.value !== "",
+    (f) =>
+      f.value !== null &&
+      f.value !== undefined &&
+      f.value !== false &&
+      f.value !== "",
   );
   if (facts.length === 0) return null;
 
   return (
     <dl
       className={`${
-        variant === "inline"
-          ? "flex flex-wrap gap-x-8 gap-y-3"
-          : "space-y-3"
+        variant === "inline" ? "flex flex-wrap gap-x-8 gap-y-3" : "space-y-3"
       } ${className}`}
     >
       {facts.map((f) => (

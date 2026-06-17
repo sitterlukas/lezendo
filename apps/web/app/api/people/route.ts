@@ -1,6 +1,6 @@
 import { route, ok } from "@/lib/api/respond";
 import { getUser } from "@/lib/api/auth";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 // GET /api/people?q=<query> — find people by name or email (email is matched
 // but never returned). Excludes the viewer; flags who they already follow.

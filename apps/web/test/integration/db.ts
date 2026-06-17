@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach } from "vitest";
 import { sql } from "kysely";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 // Point the app's db client at the test database for the whole file. lib/db.ts
 // reads process.env.DATABASE_URL when the pool is created; set it before any

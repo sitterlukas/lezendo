@@ -7,7 +7,7 @@ import { apiFetch } from "@/lib/api-client";
 import ConfirmSubmit from "@/app/ui/confirm-submit";
 import ImageUpload from "@/app/ui/image-upload";
 import LoginToAdd from "@/app/ui/login-to-add";
-import type { ImageEntityType } from "@/lib/db";
+import type { ImageEntityType } from "@whipperbook/db";
 
 type GalleryImage = { id: number; url: string; uploaded_by: number | null };
 

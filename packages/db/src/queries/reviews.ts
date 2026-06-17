@@ -1,4 +1,4 @@
-import db, { type ReviewEntityType } from "@/lib/db";
+import db, { type ReviewEntityType } from "../client";
 
 export type EntityReviewDto = {
   id: number;

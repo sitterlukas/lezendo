@@ -25,7 +25,9 @@ const PHOTOS = [
   "photo-1470770841072-f978cf4d019e",
   "photo-1454496522488-7a8e488e8606",
   "photo-1506905925346-21bda4d32df4",
-].map((id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1400&q=70`);
+].map(
+  (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1400&q=70`,
+);
 
 const cragDescription =
   "Year-round sport climbing on grey and orange limestone above Lake Garda. " +
@@ -130,9 +132,14 @@ async function addImage(entityType, entityId, url) {
 }
 
 try {
-  const existing = await pool.query(`SELECT count(*)::int n FROM sectors WHERE crag_id=$1`, [CRAG_ID]);
+  const existing = await pool.query(
+    `SELECT count(*)::int n FROM sectors WHERE crag_id=$1`,
+    [CRAG_ID],
+  );
   if (existing.rows[0].n > 0) {
-    throw new Error(`Crag ${CRAG_ID} already has sectors — aborting to avoid duplicates.`);
+    throw new Error(
+      `Crag ${CRAG_ID} already has sectors — aborting to avoid duplicates.`,
+    );
   }
 
   let p = 0; // index into uploaded photo URLs
@@ -145,11 +152,10 @@ try {
   console.log(`Uploaded ${urls.length} photos.`);
 
   // Crag: refresh description + two cover photos.
-  await pool.query(`UPDATE crags SET description=$1, created_by=COALESCE(created_by,$2) WHERE id=$3`, [
-    cragDescription,
-    AUTHOR,
-    CRAG_ID,
-  ]);
+  await pool.query(
+    `UPDATE crags SET description=$1, created_by=COALESCE(created_by,$2) WHERE id=$3`,
+    [cragDescription, AUTHOR, CRAG_ID],
+  );
   await addImage("crag", CRAG_ID, urls[p++]);
   await addImage("crag", CRAG_ID, urls[p++]);
 
@@ -166,7 +172,16 @@ try {
       const ins = await pool.query(
         `INSERT INTO routes (name, crag_id, sector_id, grade, grading_system_id, style, height_m, description, created_by)
          VALUES ($1,$2,$3,$4,$5,'sport',$6,$7,$8) RETURNING id`,
-        [r.name, CRAG_ID, sectorId, r.grade, FRENCH, r.height_m, r.description, AUTHOR],
+        [
+          r.name,
+          CRAG_ID,
+          sectorId,
+          r.grade,
+          FRENCH,
+          r.height_m,
+          r.description,
+          AUTHOR,
+        ],
       );
       const routeId = ins.rows[0].id;
       await addImage("route", routeId, urls[p++]);

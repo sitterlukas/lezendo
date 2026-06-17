@@ -1,8 +1,8 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import { routeWriteSchema } from "@whipperbook/validation";
-import { gradeSystemError } from "@/lib/forms";
-import db from "@/lib/db";
+import { gradeSystemError } from "@whipperbook/db";
+import db from "@whipperbook/db";
 
 // POST /api/routes — create a route. Returns { id } (replaces addRoute).
 export const POST = route(async (request) => {

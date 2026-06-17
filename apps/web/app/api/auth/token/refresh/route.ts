@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { rateLimit, clientIp } from "@/lib/api/rate-limit";
-import db from "@/lib/db";
-import { consumeRefreshToken, issueTokenPair } from "@/lib/api/tokens";
+import db from "@whipperbook/db";
+import { consumeRefreshToken, issueTokenPair } from "@whipperbook/db";
 
 const schema = z.object({ refreshToken: z.string() });
 

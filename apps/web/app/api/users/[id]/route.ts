@@ -1,6 +1,6 @@
 import { route, ok, fail } from "@/lib/api/respond";
 import { getUser } from "@/lib/api/auth";
-import { getUserProfile } from "@/lib/queries/users";
+import { getUserProfile } from "@whipperbook/db";
 
 type Ctx = { params: Promise<{ id: string }> };
 

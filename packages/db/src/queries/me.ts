@@ -1,6 +1,6 @@
-import db from "@/lib/db";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
-import { loadUserPoints } from "@/lib/points";
+import db from "../client";
+import { loadGradeEquivalencies } from "../grade-data";
+import { loadUserPoints } from "../points";
 import { type GradeEquivalency } from "@whipperbook/core";
 
 export type MeCore = {

@@ -1,12 +1,5 @@
 import { periodStart, type Period, type Discipline } from "@whipperbook/core";
-import { loadLeaderboard } from "@/lib/points";
-
-export type LeaderboardRow = {
-  user_id: number;
-  name: string;
-  avatar_url: string | null;
-  points: number;
-};
+import { loadLeaderboard, type LeaderboardRow } from "../points";
 
 export type LeaderboardData = {
   viewerId: number | null;

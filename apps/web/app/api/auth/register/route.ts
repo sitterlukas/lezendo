@@ -2,7 +2,7 @@ import { hash } from "bcryptjs";
 import { z } from "zod";
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { rateLimit, clientIp } from "@/lib/api/rate-limit";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 import { issueVerificationToken } from "@/lib/email-verification";
 import { sendVerificationEmail } from "@/lib/email";
 

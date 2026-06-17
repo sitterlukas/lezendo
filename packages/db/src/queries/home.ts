@@ -1,9 +1,8 @@
-import db, { type ClimbStyle } from "@/lib/db";
+import db, { type ClimbStyle } from "../client";
 import { resolveGrade } from "@whipperbook/core";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
+import { loadGradeEquivalencies } from "../grade-data";
 import { periodStart, type Period, type Discipline } from "@whipperbook/core";
-import { loadLeaderboard } from "@/lib/points";
-import { type LeaderboardRow } from "@/lib/queries/leaderboards";
+import { loadLeaderboard, type LeaderboardRow } from "../points";
 
 export type HomeRoute = {
   id: number;

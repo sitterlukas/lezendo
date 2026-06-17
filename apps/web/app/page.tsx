@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { serverFetch } from "@/lib/api/server-fetch";
-import { type HomeData } from "@/lib/queries/home";
+import { type HomeData } from "@whipperbook/db";
 import { typeLabel, typeBadge } from "@/app/ui/style";
 import {
   periods,

@@ -1,7 +1,7 @@
 import { route, ok, fail } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import { auth } from "@/auth";
-import { getSettingsData } from "@/lib/queries/me";
+import { getSettingsData } from "@whipperbook/db";
 
 // GET /api/me/settings — the profile settings bundle (user, grading systems,
 // follow lists) plus the login provider (from the cookie session).

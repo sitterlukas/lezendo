@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { rateLimit, clientIp } from "@/lib/api/rate-limit";
-import { verifyCredentials } from "@/lib/credentials";
-import { issueTokenPair } from "@/lib/api/tokens";
+import { verifyCredentials } from "@whipperbook/db";
+import { issueTokenPair } from "@whipperbook/db";
 
 const schema = z.object({
   email: z.string(),

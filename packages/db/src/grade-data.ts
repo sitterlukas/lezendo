@@ -1,5 +1,5 @@
 import { cache } from "react";
-import db from "@/lib/db";
+import db from "./client";
 import type { GradeEquivalency } from "@whipperbook/core";
 
 /**

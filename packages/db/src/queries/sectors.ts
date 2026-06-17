@@ -2,14 +2,11 @@ import db, {
   type ClimbStyle,
   type CragsTable,
   type SectorsTable,
-} from "@/lib/db";
+} from "../client";
 import { type Selectable } from "kysely";
 import { resolveGrade, type GradeEquivalency } from "@whipperbook/core";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
-import {
-  type CragDetailViewer,
-  type CragDetailRoute,
-} from "@/lib/queries/crags";
+import { loadGradeEquivalencies } from "../grade-data";
+import { type CragDetailViewer, type CragDetailRoute } from "./crags";
 
 export type SectorDetailRoute = Omit<CragDetailRoute, "sector_id">;
 

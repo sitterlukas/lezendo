@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
-import { type AdminDeletedData } from "@/lib/queries/admin";
+import { type AdminDeletedData } from "@whipperbook/db";
 import ActionButton from "@/app/ui/action-button";
 
 export const dynamic = "force-dynamic";

@@ -1,7 +1,7 @@
 import { route, ok } from "@/lib/api/respond";
 import { getUser } from "@/lib/api/auth";
 import { parsePeriod, parseDiscipline } from "@whipperbook/core";
-import { getLeaderboard } from "@/lib/queries/leaderboards";
+import { getLeaderboard } from "@whipperbook/db";
 
 // GET /api/leaderboards?period=&discipline= — top climbers + viewer rank.
 export const GET = route(async (request) => {

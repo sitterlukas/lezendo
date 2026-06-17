@@ -2,7 +2,7 @@
 
 import { type SelectHTMLAttributes } from "react";
 import Select from "@/app/ui/select";
-import { type SectorTag } from "@/lib/feed";
+import { type SectorTag } from "@whipperbook/db";
 
 export type SectorOption = SectorTag;
 

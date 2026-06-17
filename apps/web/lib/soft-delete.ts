@@ -1,7 +1,6 @@
-import db, { type DeletionEntityType } from "@/lib/db";
+import db, { type DeletionEntityType, logDeletion } from "@whipperbook/db";
 import { HttpError } from "@/lib/api/respond";
 import { canModify } from "@/lib/api/auth";
-import { logDeletion } from "@/lib/deletion-log";
 
 // Crags, sectors, and routes all support soft-delete + recovery with the same
 // shape: load the row, check the caller may modify it, flip `deleted`, and write

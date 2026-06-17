@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { createHash, randomBytes } from "crypto";
-import db from "@/lib/db";
-import type { UserRole } from "@/lib/db";
+import db from "../client";
+import type { UserRole } from "../client";
 
 // Mobile clients authenticate with a short-lived access JWT (sent as a Bearer
 // header) and rotate it with a long-lived refresh token. The access token is

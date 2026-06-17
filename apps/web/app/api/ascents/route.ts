@@ -1,7 +1,7 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import { ascentCreateSchema } from "@whipperbook/validation";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 // POST /api/ascents — log an ascent of a route (replaces logAscent).
 export const POST = route(async (request) => {

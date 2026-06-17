@@ -1,4 +1,4 @@
-import db, { type DeletionEntityType, type DeletionAction } from "@/lib/db";
+import db, { type DeletionEntityType, type DeletionAction } from "../client";
 
 export type AdminDeletedData = {
   deletedCrags: {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 import { makeUser, resetDb } from "./db";
 
 describe("integration harness", () => {

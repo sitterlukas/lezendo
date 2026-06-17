@@ -1,9 +1,9 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify, getUser } from "@/lib/api/auth";
 import { cragWriteSchema } from "@whipperbook/validation";
-import { getCragDetail } from "@/lib/queries/crags";
+import { getCragDetail } from "@whipperbook/db";
 import { setEntityDeleted } from "@/lib/soft-delete";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 type Ctx = { params: Promise<{ id: string }> };
 

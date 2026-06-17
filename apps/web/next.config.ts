@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     "@whipperbook/core",
     "@whipperbook/validation",
     "@whipperbook/api-client",
+    "@whipperbook/db",
   ],
   images: {
     remotePatterns: [

@@ -1,8 +1,8 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import { statusWriteSchema } from "@whipperbook/validation";
-import { resolveSectorTag, INVALID_SECTOR } from "@/lib/forms";
-import db from "@/lib/db";
+import { resolveSectorTag, INVALID_SECTOR } from "@whipperbook/db";
+import db from "@whipperbook/db";
 
 // POST /api/statuses — post a status to the feed (replaces createStatus).
 // Returns { id }.

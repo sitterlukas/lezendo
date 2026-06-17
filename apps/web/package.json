@@ -7,7 +7,7 @@
     "start": "next start",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
-    "test": "vitest run --config vitest.config.ts",
+    "test": "vitest run --passWithNoTests --config vitest.config.ts",
     "test:integration": "sh -c 'DATABASE_URL=${TEST_DATABASE_URL:-$DATABASE_URL} vitest run --config vitest.integration.config.ts'",
     "migrate:make": "kysely migrate:make",
     "migrate:latest": "kysely migrate:latest"
@@ -15,6 +15,7 @@
   "dependencies": {
     "@whipperbook/api-client": "*",
     "@whipperbook/core": "*",
+    "@whipperbook/db": "*",
     "@whipperbook/validation": "*",
     "@tanstack/react-query": "^5",
     "@types/qrcode": "^1.5.6",

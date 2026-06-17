@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 import { siteUrl } from "@/lib/site";
 
 // Regenerated on each request so newly added crags/routes/sectors/topics show

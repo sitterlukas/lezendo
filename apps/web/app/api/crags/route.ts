@@ -1,8 +1,8 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
 import { cragWriteSchema } from "@whipperbook/validation";
-import { getCragsList } from "@/lib/queries/crags";
-import db from "@/lib/db";
+import { getCragsList } from "@whipperbook/db";
+import db from "@whipperbook/db";
 
 // GET /api/crags?q=&country=&page= — the crag list bundle (list, country tabs,
 // pagination, and admin-only deleted crags) plus the viewer.

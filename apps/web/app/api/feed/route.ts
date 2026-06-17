@@ -1,7 +1,7 @@
 import { route, ok } from "@/lib/api/respond";
 import { getUser } from "@/lib/api/auth";
-import { buildFeed } from "@/lib/feed";
-import db from "@/lib/db";
+import { buildFeed } from "@whipperbook/db";
+import db from "@whipperbook/db";
 
 // GET /api/feed?before=<iso> — a page of the home feed (replaces loadFeedPage).
 // `before` is the cursor (oldest createdAt shown). Dates serialize as ISO

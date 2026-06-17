@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
-import { type SectorDetailData } from "@/lib/queries/sectors";
+import { type SectorDetailData } from "@whipperbook/db";
 import Modal from "@/app/ui/modal";
 import ApiForm from "@/app/ui/api-form";
 import DeleteButton from "@/app/ui/delete-button";

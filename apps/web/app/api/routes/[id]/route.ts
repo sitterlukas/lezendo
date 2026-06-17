@@ -1,10 +1,10 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify, getUser } from "@/lib/api/auth";
 import { routeWriteSchema } from "@whipperbook/validation";
-import { gradeSystemError } from "@/lib/forms";
-import { getRouteDetail } from "@/lib/queries/routes";
+import { gradeSystemError } from "@whipperbook/db";
+import { getRouteDetail } from "@whipperbook/db";
 import { setEntityDeleted } from "@/lib/soft-delete";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 type Ctx = { params: Promise<{ id: string }> };
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { route, ok, readJson } from "@/lib/api/respond";
-import { revokeRefreshToken } from "@/lib/api/tokens";
+import { revokeRefreshToken } from "@whipperbook/db";
 
 const schema = z.object({ refreshToken: z.string() });
 

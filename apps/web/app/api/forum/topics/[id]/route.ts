@@ -1,8 +1,8 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser, canModify, getUser } from "@/lib/api/auth";
 import { forumTitleSchema } from "@whipperbook/validation";
-import { getForumTopic } from "@/lib/queries/forum";
-import db from "@/lib/db";
+import { getForumTopic } from "@whipperbook/db";
+import db from "@whipperbook/db";
 
 type Ctx = { params: Promise<{ id: string }> };
 

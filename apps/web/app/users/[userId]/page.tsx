@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
-import { type UserProfileData } from "@/lib/queries/users";
+import { type UserProfileData } from "@whipperbook/db";
 import FollowButton from "@/app/ui/follow-button";
 import FeedItemCard from "@/app/ui/feed-item";
 import Avatar from "@/app/ui/avatar";

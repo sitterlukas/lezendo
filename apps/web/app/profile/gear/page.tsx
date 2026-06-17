@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import ActionButton from "@/app/ui/action-button";
 import ProfileTabs from "@/app/profile/tabs";
 import { serverFetch } from "@/lib/api/server-fetch";
-import { type GearData, type GearItemDto } from "@/lib/queries/gear";
-import { type GearCategory } from "@/lib/db";
+import { type GearData, type GearItemDto } from "@whipperbook/db";
+import { type GearCategory } from "@whipperbook/db";
 
 const categoryMeta: Record<GearCategory, { label: string }> = {
   rope: { label: "Rope" },

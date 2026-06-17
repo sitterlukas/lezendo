@@ -1,8 +1,11 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { entityReviewCreateSchema, reviewQuerySchema } from "@whipperbook/validation";
-import { getEntityReviews } from "@/lib/queries/reviews";
-import db from "@/lib/db";
+import {
+  entityReviewCreateSchema,
+  reviewQuerySchema,
+} from "@whipperbook/validation";
+import { getEntityReviews } from "@whipperbook/db";
+import db from "@whipperbook/db";
 
 // GET /api/reviews?entityType=&entityId= — reviews for one entity.
 export const GET = route(async (request) => {

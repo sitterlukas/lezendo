@@ -1,9 +1,9 @@
 import type { Kysely, ExpressionBuilder } from "kysely";
 import { sql } from "kysely";
-import type { Database, TickType } from "@/lib/db";
-import { buildRoutePoints } from "@/lib/points";
+import type { Database, TickType } from "./client";
+import { buildRoutePoints } from "./points";
 import { resolveGrade } from "@whipperbook/core";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
+import { loadGradeEquivalencies } from "./grade-data";
 
 export type FeedAuthor = {
   id: number;

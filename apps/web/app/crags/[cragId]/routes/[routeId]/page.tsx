@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import db, { type TickType } from "@/lib/db";
+import db, { type TickType } from "@whipperbook/db";
 import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
-import { type RouteDetailData } from "@/lib/queries/routes";
+import { type RouteDetailData } from "@whipperbook/db";
 import Modal from "@/app/ui/modal";
 import ApiForm from "@/app/ui/api-form";
 import DeleteButton from "@/app/ui/delete-button";

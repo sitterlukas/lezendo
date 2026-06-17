@@ -1,8 +1,8 @@
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
 import { gearCreateSchema } from "@whipperbook/validation";
-import { getGearItems, getGearReviews } from "@/lib/queries/gear";
-import db from "@/lib/db";
+import { getGearItems, getGearReviews } from "@whipperbook/db";
+import db from "@whipperbook/db";
 
 // GET /api/gear — the caller's gear items (empty when signed out) plus the
 // community reviews. `viewerId` lets the client gate edit/delete affordances.

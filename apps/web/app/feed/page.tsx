@@ -1,5 +1,5 @@
 import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
-import { type FeedPageData } from "@/lib/queries/feed-page";
+import { type FeedPageData } from "@whipperbook/db";
 import FeedList from "@/app/ui/feed-list";
 import StatusComposer from "@/app/ui/status-composer";
 import LoginToAdd from "@/app/ui/login-to-add";

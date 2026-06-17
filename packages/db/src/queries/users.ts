@@ -1,10 +1,10 @@
-import db from "@/lib/db";
+import db from "../client";
 import {
   buildProfileTimeline,
   loadSectorOptions,
   type FeedItem,
-} from "@/lib/feed";
-import { type SectorOption } from "@/app/ui/sector-select";
+  type SectorTag as SectorOption,
+} from "../feed";
 
 export type UserProfileData = {
   profile: { id: number; name: string; avatar_url: string | null };

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { serverFetch } from "@/lib/api/server-fetch";
-import { type ForumTopicListItem } from "@/lib/queries/forum";
+import { type ForumTopicListItem } from "@whipperbook/db";
 import ApiForm from "@/app/ui/api-form";
 import Modal from "@/app/ui/modal";
 import LoginToAdd from "@/app/ui/login-to-add";

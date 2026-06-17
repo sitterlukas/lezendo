@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { type ReviewEntityType } from "@/lib/db";
+import { type ReviewEntityType } from "@whipperbook/db";
 import { serverFetch } from "@/lib/api/server-fetch";
-import { type EntityReviewDto } from "@/lib/queries/reviews";
+import { type EntityReviewDto } from "@whipperbook/db";
 import Stars from "@/app/ui/stars";
 import StarRatingInput from "@/app/ui/star-rating-input";
 import ApiForm from "@/app/ui/api-form";

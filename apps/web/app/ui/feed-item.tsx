@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { FeedItem } from "@/lib/feed";
+import type { FeedItem } from "@whipperbook/db";
 import TimeAgo from "@/app/ui/time-ago";
 import ImageGallery from "@/app/ui/image-gallery";
 import DeleteButton from "@/app/ui/delete-button";

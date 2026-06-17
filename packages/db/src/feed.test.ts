@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sortFeedNewestFirst, type FeedItem } from "@/lib/feed";
+import { sortFeedNewestFirst, type FeedItem } from "./feed";
 
 function status(id: number, iso: string): FeedItem {
   return {

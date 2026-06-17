@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { apiFetch } from "@/lib/api-client";
-import type { LikeTargetType } from "@/lib/db";
+import type { LikeTargetType } from "@whipperbook/db";
 
 export default function LikeButton({
   targetType,

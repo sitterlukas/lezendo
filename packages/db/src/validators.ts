@@ -1,6 +1,6 @@
-import db from "@/lib/db";
+import db from "./client";
 import { gradesForSystem, disciplineOf } from "@whipperbook/core";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
+import { loadGradeEquivalencies } from "./grade-data";
 
 // ── Cross-record validators (run after schema parsing) ───────────────────────
 

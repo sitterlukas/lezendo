@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { serverFetch } from "@/lib/api/server-fetch";
-import { type CragsListData } from "@/lib/queries/crags";
+import { type CragsListData } from "@whipperbook/db";
 import ActionButton from "@/app/ui/action-button";
 import FilterPill from "@/app/ui/filter-pill";
 import { CreateCragModal } from "@/app/ui/create-modals";

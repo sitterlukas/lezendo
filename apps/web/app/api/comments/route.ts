@@ -1,7 +1,7 @@
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import { commentCreateSchema } from "@whipperbook/validation";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 // POST /api/comments — comment on a status or activity (replaces addComment).
 export const POST = route(async (request) => {

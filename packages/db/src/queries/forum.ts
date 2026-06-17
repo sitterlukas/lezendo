@@ -1,4 +1,4 @@
-import db from "@/lib/db";
+import db from "../client";
 import { sql } from "kysely";
 
 export type ForumTopicListItem = {

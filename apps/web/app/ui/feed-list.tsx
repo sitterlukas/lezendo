@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { FeedItem } from "@/lib/feed";
+import type { FeedItem } from "@whipperbook/db";
 import FeedItemCard from "@/app/ui/feed-item";
 import { type SectorOption } from "@/app/ui/sector-select";
 import { apiFetch } from "@/lib/api-client";

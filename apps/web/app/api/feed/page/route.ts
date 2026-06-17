@@ -1,6 +1,6 @@
 import { route, ok } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { getFeedPage } from "@/lib/queries/feed-page";
+import { getFeedPage } from "@whipperbook/db";
 
 // GET /api/feed/page — the initial feed bundle (items, sectors, suggestions)
 // for a signed-in viewer. 401 when signed out.

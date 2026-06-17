@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import db, { type ClimbStyle } from "@/lib/db";
+import db, { type ClimbStyle } from "@whipperbook/db";
 import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
-import { type CragDetailData } from "@/lib/queries/crags";
+import { type CragDetailData } from "@whipperbook/db";
 import Modal from "@/app/ui/modal";
 import ApiForm from "@/app/ui/api-form";
 import ActionButton from "@/app/ui/action-button";

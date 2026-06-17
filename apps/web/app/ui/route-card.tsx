@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ClimbStyle } from "@/lib/db";
+import type { ClimbStyle } from "@whipperbook/db";
 import { typeLabel, typeBadge } from "@/app/ui/style";
 
 // Shared route card used in the routes grid on crag and sector pages. Renders an

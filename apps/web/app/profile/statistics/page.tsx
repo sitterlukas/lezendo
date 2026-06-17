@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
-import { type StatisticsData } from "@/lib/queries/me";
+import { type StatisticsData } from "@whipperbook/db";
 import ProfileTabs from "@/app/profile/tabs";
 import { POINTS_EXPLAINER } from "@whipperbook/core";
 

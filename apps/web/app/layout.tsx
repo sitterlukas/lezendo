@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import HeaderNav from "@/app/ui/header-nav";
 import { serverFetch } from "@/lib/api/server-fetch";
-import { type MeCore } from "@/lib/queries/me";
+import { type MeCore } from "@whipperbook/db";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
 

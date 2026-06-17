@@ -1,4 +1,4 @@
-import db from "@/lib/db";
+import db from "./client";
 
 // Remove a feed target's polymorphic interactions before the row itself: likes
 // on it, its comments, and the likes on those comments (none are tied by a DB

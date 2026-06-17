@@ -1,7 +1,7 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import { sectorLocationSchema } from "@whipperbook/validation";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 type Ctx = { params: Promise<{ id: string }> };
 

@@ -1,7 +1,7 @@
 import { route, ok } from "@/lib/api/respond";
 import { getUser } from "@/lib/api/auth";
 import { parsePeriod, parseDiscipline } from "@whipperbook/core";
-import { getHome } from "@/lib/queries/home";
+import { getHome } from "@whipperbook/db";
 
 // GET /api/home?period=&discipline= — landing page bundle.
 export const GET = route(async (request) => {

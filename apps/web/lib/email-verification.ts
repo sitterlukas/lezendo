@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "crypto";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 

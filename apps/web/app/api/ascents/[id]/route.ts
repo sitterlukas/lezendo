@@ -1,7 +1,7 @@
 import { route, ok, fail } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { deleteTargetInteractions } from "@/lib/feed-interactions";
-import db from "@/lib/db";
+import { deleteTargetInteractions } from "@whipperbook/db";
+import db from "@whipperbook/db";
 
 type Ctx = { params: Promise<{ id: string }> };
 

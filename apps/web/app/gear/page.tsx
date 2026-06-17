@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { serverFetch } from "@/lib/api/server-fetch";
-import { type GearData } from "@/lib/queries/gear";
-import { type GearCategory } from "@/lib/db";
+import { type GearData } from "@whipperbook/db";
+import { type GearCategory } from "@whipperbook/db";
 import Modal from "@/app/ui/modal";
 import Select from "@/app/ui/select";
 import ApiForm from "@/app/ui/api-form";

@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
-import { getMe } from "@/lib/queries/me";
-import db from "@/lib/db";
+import { getMe } from "@whipperbook/db";
+import db from "@whipperbook/db";
 
 // GET /api/me — the signed-in user's own record, or null when signed out (so
 // the header can render for anonymous visitors without a 401).

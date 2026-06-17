@@ -1,7 +1,7 @@
 import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import { sectorCreateSchema } from "@whipperbook/validation";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 // POST /api/sectors — create a sector within a crag. Returns { id } (replaces
 // addSector).

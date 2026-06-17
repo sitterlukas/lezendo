@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 const schema = z.object({ url: z.string().nullable() });
 

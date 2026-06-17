@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildRoutePoints } from "@/lib/points";
+import { buildRoutePoints } from "./points";
 import { gradePoints, type GradeEquivalency } from "@whipperbook/core";
 
 describe("buildRoutePoints", () => {

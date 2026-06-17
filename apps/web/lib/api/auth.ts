@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 import { HttpError } from "@/lib/api/respond";
-import { verifyAccessToken } from "@/lib/api/tokens";
+import { verifyAccessToken } from "@whipperbook/db";
 
 export type ApiUser = { id: number; role: string; email: string };
 

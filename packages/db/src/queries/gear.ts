@@ -1,4 +1,4 @@
-import db, { type GearCategory } from "@/lib/db";
+import db, { type GearCategory } from "../client";
 
 export type GearItemDto = {
   id: number;

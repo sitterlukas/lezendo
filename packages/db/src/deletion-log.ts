@@ -1,4 +1,4 @@
-import db, { type DeletionEntityType, type DeletionAction } from "@/lib/db";
+import db, { type DeletionEntityType, type DeletionAction } from "./client";
 
 // Records a soft-delete or recovery in the audit log. Shared by the crag,
 // sector, and route route handlers.

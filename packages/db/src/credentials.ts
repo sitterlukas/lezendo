@@ -1,6 +1,6 @@
 import { compare } from "bcryptjs";
-import db from "@/lib/db";
-import type { UserRole } from "@/lib/db";
+import db from "./client";
+import type { UserRole } from "./client";
 
 export type CredentialsResult =
   | {

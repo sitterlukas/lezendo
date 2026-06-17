@@ -1,11 +1,11 @@
-import db from "@/lib/db";
+import db from "../client";
 import {
   buildFeed,
   suggestedUsers,
   loadSectorOptions,
   type FeedItem,
-} from "@/lib/feed";
-import { type SectorOption } from "@/app/ui/sector-select";
+  type SectorTag as SectorOption,
+} from "../feed";
 
 export type FeedPageData = {
   viewer: { id: number; role: string };

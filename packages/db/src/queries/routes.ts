@@ -1,8 +1,12 @@
-import db, { type CragsTable, type RoutesTable, type TickType } from "@/lib/db";
+import db, {
+  type CragsTable,
+  type RoutesTable,
+  type TickType,
+} from "../client";
 import { type Selectable } from "kysely";
 import { resolveGrade, type GradeEquivalency } from "@whipperbook/core";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
-import { type CragDetailViewer } from "@/lib/queries/crags";
+import { loadGradeEquivalencies } from "../grade-data";
+import { type CragDetailViewer } from "./crags";
 
 export type RouteAscent = {
   id: number;

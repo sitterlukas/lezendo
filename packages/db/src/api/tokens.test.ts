@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { signAccessToken, verifyAccessToken } from "@/lib/api/tokens";
+import { signAccessToken, verifyAccessToken } from "./tokens";
 
 // signAccessToken/verifyAccessToken are pure (no DB) — they only need a secret.
 beforeAll(() => {

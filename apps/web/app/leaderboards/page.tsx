@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { serverFetch } from "@/lib/api/server-fetch";
-import { type LeaderboardData } from "@/lib/queries/leaderboards";
+import { type LeaderboardData } from "@whipperbook/db";
 import {
   periods,
   periodLabel,

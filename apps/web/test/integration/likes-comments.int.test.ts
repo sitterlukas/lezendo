@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import db from "@/lib/db";
-import { buildFeed } from "@/lib/feed";
+import db from "@whipperbook/db";
+import { buildFeed } from "@whipperbook/db";
 import { makeUser } from "./db";
 
 async function makeStatus(userId: number): Promise<number> {

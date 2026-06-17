@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
-import { type SettingsData } from "@/lib/queries/me";
+import { type SettingsData } from "@whipperbook/db";
 import ProfileTabs from "@/app/profile/tabs";
 import AvatarUpload from "@/app/ui/avatar-upload";
 import PeopleSearch from "@/app/ui/people-search";

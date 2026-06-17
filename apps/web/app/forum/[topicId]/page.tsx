@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 import { serverFetch, ServerFetchError } from "@/lib/api/server-fetch";
-import { type ForumTopicDetail } from "@/lib/queries/forum";
+import { type ForumTopicDetail } from "@whipperbook/db";
 import ApiForm from "@/app/ui/api-form";
 import ForumPost from "@/app/ui/forum-post";
 import ForumTopicActions from "@/app/ui/forum-topic-actions";

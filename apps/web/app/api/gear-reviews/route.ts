@@ -1,7 +1,7 @@
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import { gearReviewCreateSchema } from "@whipperbook/validation";
-import db from "@/lib/db";
+import db from "@whipperbook/db";
 
 // POST /api/gear-reviews — review a climbing gear product (replaces
 // addGearReview).

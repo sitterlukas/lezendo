@@ -1,4 +1,4 @@
-import type { ClimbStyle } from "@/lib/db";
+import type { ClimbStyle } from "@whipperbook/db";
 
 export const typeLabel: Record<ClimbStyle, string> = {
   sport: "Sport climb",

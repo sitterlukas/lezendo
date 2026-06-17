@@ -4,7 +4,7 @@ import { upload } from "@vercel/blob/client";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api-client";
-import type { ImageEntityType } from "@/lib/db";
+import type { ImageEntityType } from "@whipperbook/db";
 
 // Downscale + re-encode in the browser before upload so we don't store huge
 // originals. Photos are only ever shown up to ~1280px wide, so 1600px on the

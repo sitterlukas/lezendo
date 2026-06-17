@@ -12,19 +12,96 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // Per-crag guidebook facts, keyed by name.
 const CRAG_INFO = {
-  Arco: { rock: "Limestone", aspect: "South-facing", season: "Autumn–Spring", access: "Roadside and car-park access; some sectors have a 10–20 min walk-in." },
-  Kalymnos: { rock: "Limestone", aspect: "Mixed sun & shade", season: "Spring & Autumn", access: "Scooter to most sectors, then a short walk. Respect goat fences and private land." },
-  Fontainebleau: { rock: "Sandstone", aspect: "Mixed", season: "Autumn–Spring", access: "Forest parking; keep to paths and brush off tick marks. Avoid climbing on wet sandstone." },
-  "Finale Ligure": { rock: "Limestone", aspect: "South-facing", season: "Autumn–Spring", access: "Roadside parking; some approaches cross private olive groves — leave gates as found." },
-  Sperlonga: { rock: "Limestone", aspect: "South-facing", season: "Winter", access: "Park in the village; short walk to the crag. Busy in summer — go early." },
-  "San Vito Lo Capo": { rock: "Limestone", aspect: "South-facing", season: "Winter & Spring", access: "Roadside parking near the campsite; flat 5–10 min approaches." },
-  "Val di Mello": { rock: "Granite", aspect: "Mixed", season: "Late spring–Autumn", access: "Car-free valley: park in San Martino and walk in. Protected nature reserve — no fires." },
-  Leonidio: { rock: "Limestone", aspect: "South & West", season: "Autumn–Spring", access: "Drive to sector parking, then 5–25 min walk-ins. Respect the monastery and farmland." },
-  Meteora: { rock: "Conglomerate", aspect: "Mixed", season: "Spring & Autumn", access: "Park below the towers; observe monastery dress code and opening hours nearby." },
-  Kyparissi: { rock: "Limestone", aspect: "Sea-facing, mixed", season: "Autumn–Spring", access: "Park in the village; flat seaside approaches. Quiet area — keep noise down." },
-  "Céüse": { rock: "Limestone", aspect: "South-facing", season: "Late spring–Autumn", access: "45-minute uphill approach from the car park — bring water. No camping at the crag." },
-  "Gorges du Verdon": { rock: "Limestone", aspect: "Mixed", season: "Spring & Autumn", access: "Most routes are reached by abseil from the rim — know your descent. Falling-rock area." },
-  "Saint-Léger-du-Ventoux": { rock: "Limestone", aspect: "Afternoon shade", season: "Most of the year", access: "Roadside parking in the gorge; short walk-ins. Narrow road — park considerately." },
+  Arco: {
+    rock: "Limestone",
+    aspect: "South-facing",
+    season: "Autumn–Spring",
+    access:
+      "Roadside and car-park access; some sectors have a 10–20 min walk-in.",
+  },
+  Kalymnos: {
+    rock: "Limestone",
+    aspect: "Mixed sun & shade",
+    season: "Spring & Autumn",
+    access:
+      "Scooter to most sectors, then a short walk. Respect goat fences and private land.",
+  },
+  Fontainebleau: {
+    rock: "Sandstone",
+    aspect: "Mixed",
+    season: "Autumn–Spring",
+    access:
+      "Forest parking; keep to paths and brush off tick marks. Avoid climbing on wet sandstone.",
+  },
+  "Finale Ligure": {
+    rock: "Limestone",
+    aspect: "South-facing",
+    season: "Autumn–Spring",
+    access:
+      "Roadside parking; some approaches cross private olive groves — leave gates as found.",
+  },
+  Sperlonga: {
+    rock: "Limestone",
+    aspect: "South-facing",
+    season: "Winter",
+    access:
+      "Park in the village; short walk to the crag. Busy in summer — go early.",
+  },
+  "San Vito Lo Capo": {
+    rock: "Limestone",
+    aspect: "South-facing",
+    season: "Winter & Spring",
+    access: "Roadside parking near the campsite; flat 5–10 min approaches.",
+  },
+  "Val di Mello": {
+    rock: "Granite",
+    aspect: "Mixed",
+    season: "Late spring–Autumn",
+    access:
+      "Car-free valley: park in San Martino and walk in. Protected nature reserve — no fires.",
+  },
+  Leonidio: {
+    rock: "Limestone",
+    aspect: "South & West",
+    season: "Autumn–Spring",
+    access:
+      "Drive to sector parking, then 5–25 min walk-ins. Respect the monastery and farmland.",
+  },
+  Meteora: {
+    rock: "Conglomerate",
+    aspect: "Mixed",
+    season: "Spring & Autumn",
+    access:
+      "Park below the towers; observe monastery dress code and opening hours nearby.",
+  },
+  Kyparissi: {
+    rock: "Limestone",
+    aspect: "Sea-facing, mixed",
+    season: "Autumn–Spring",
+    access:
+      "Park in the village; flat seaside approaches. Quiet area — keep noise down.",
+  },
+  Céüse: {
+    rock: "Limestone",
+    aspect: "South-facing",
+    season: "Late spring–Autumn",
+    access:
+      "45-minute uphill approach from the car park — bring water. No camping at the crag.",
+  },
+  "Gorges du Verdon": {
+    rock: "Limestone",
+    aspect: "Mixed",
+    season: "Spring & Autumn",
+    access:
+      "Most routes are reached by abseil from the rim — know your descent. Falling-rock area.",
+  },
+  "Saint-Léger-du-Ventoux": {
+    rock: "Limestone",
+    aspect: "Afternoon shade",
+    season: "Most of the year",
+    access:
+      "Roadside parking in the gorge; short walk-ins. Narrow road — park considerately.",
+  },
 };
 
 const FA_NAMES = [

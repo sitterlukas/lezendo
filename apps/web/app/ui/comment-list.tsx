@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiFetch, ApiError } from "@/lib/api-client";
-import type { FeedTargetType } from "@/lib/db";
+import type { FeedTargetType } from "@whipperbook/db";
 import { inputClass } from "@/app/ui/style";
 import Avatar from "@/app/ui/avatar";
 import LikeButton from "@/app/ui/like-button";

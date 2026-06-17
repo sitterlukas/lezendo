@@ -1,8 +1,8 @@
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
 import { forumTopicCreateSchema } from "@whipperbook/validation";
-import { getForumTopics } from "@/lib/queries/forum";
-import db from "@/lib/db";
+import { getForumTopics } from "@whipperbook/db";
+import db from "@whipperbook/db";
 
 // GET /api/forum/topics — the topic list plus the viewer (to gate "New topic").
 export const GET = route(async (request) => {

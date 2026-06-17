@@ -4,8 +4,8 @@
 // @whipperbook/core; this module holds the database-backed aggregation that
 // builds on them.
 import { sql } from "kysely";
-import db from "@/lib/db";
-import { loadGradeEquivalencies } from "@/lib/grade-data";
+import db from "./client";
+import { loadGradeEquivalencies } from "./grade-data";
 import {
   gradePoints,
   type GradeEquivalency,
