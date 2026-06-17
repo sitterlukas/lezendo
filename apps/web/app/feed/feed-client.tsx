@@ -61,14 +61,14 @@ export default function FeedClient() {
           sectors={sectors}
         />
       ) : (
-        !followsNobody && (
-          <div className="mt-8 border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
-            <p className="font-medium">No activity yet.</p>
-            <p className="mt-1 text-sm text-zinc-500">
-              The climbers you follow haven&apos;t posted anything yet.
-            </p>
-          </div>
-        )
+        <div className="mt-8 border border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
+          <p className="font-medium">Your feed is empty</p>
+          <p className="mt-1 text-sm text-zinc-500">
+            Routes you log and statuses you post will show up here, along with
+            activity from the climbers you follow. Add a status or log a route
+            to get started.
+          </p>
+        </div>
       )}
     </main>
   );
