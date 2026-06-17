@@ -63,12 +63,10 @@ export default function Register() {
           Check your email
         </Text>
         <Text className="text-zinc-600 dark:text-zinc-400">
-          We sent a verification link to {email.trim()}. Confirm it, then log in.
+          We sent a verification link to {email.trim()}. Confirm it, then log
+          in.
         </Text>
-        <Link
-          href="/(auth)/login"
-          className="mt-2 font-semibold text-blue-600"
-        >
+        <Link href="/(auth)/login" className="mt-2 font-semibold text-blue-600">
           Back to login
         </Link>
       </View>

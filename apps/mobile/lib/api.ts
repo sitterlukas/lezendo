@@ -18,7 +18,9 @@ async function rawFetch(
     method: init.method ?? "GET",
     headers: {
       ...(access ? { Authorization: `Bearer ${access}` } : {}),
-      ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...(init.body !== undefined
+        ? { "Content-Type": "application/json" }
+        : {}),
     },
     body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
     signal: init.signal,

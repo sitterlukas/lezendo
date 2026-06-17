@@ -32,3 +32,133 @@ export function cragDetailQuery<T>(api: ApiClient, id: number) {
     queryFn: () => api.get<T>(`/api/crags/${id}`),
   });
 }
+
+export function homeQuery<T>(
+  api: ApiClient,
+  params: { period?: string; discipline?: string } = {},
+) {
+  const qs = new URLSearchParams();
+  if (params.period) qs.set("period", params.period);
+  if (params.discipline) qs.set("discipline", params.discipline);
+  return queryOptions({
+    queryKey: [
+      "home",
+      { period: params.period ?? null, discipline: params.discipline ?? null },
+    ] as const,
+    queryFn: () => api.get<T>(`/api/home${qs.toString() ? `?${qs}` : ""}`),
+  });
+}
+
+export function meQuery<T>(api: ApiClient) {
+  return queryOptions({
+    queryKey: ["me"] as const,
+    queryFn: () => api.get<T>(`/api/me`),
+  });
+}
+
+export function settingsQuery<T>(api: ApiClient) {
+  return queryOptions({
+    queryKey: ["me", "settings"] as const,
+    queryFn: () => api.get<T>(`/api/me/settings`),
+  });
+}
+
+export function statisticsQuery<T>(api: ApiClient) {
+  return queryOptions({
+    queryKey: ["me", "statistics"] as const,
+    queryFn: () => api.get<T>(`/api/me/statistics`),
+  });
+}
+
+export function adminDeletedQuery<T>(api: ApiClient) {
+  return queryOptions({
+    queryKey: ["admin", "deleted"] as const,
+    queryFn: () => api.get<T>(`/api/admin/deleted`),
+  });
+}
+
+export function gearQuery<T>(api: ApiClient) {
+  return queryOptions({
+    queryKey: ["gear"] as const,
+    queryFn: () => api.get<T>(`/api/gear`),
+  });
+}
+
+export function forumTopicsQuery<T>(api: ApiClient) {
+  return queryOptions({
+    queryKey: ["forum", "topics"] as const,
+    queryFn: () => api.get<T>(`/api/forum/topics`),
+  });
+}
+
+export function forumTopicQuery<T>(api: ApiClient, id: number) {
+  return queryOptions({
+    queryKey: ["forum", "topics", id] as const,
+    queryFn: () => api.get<T>(`/api/forum/topics/${id}`),
+  });
+}
+
+export function feedPageQuery<T>(api: ApiClient) {
+  return queryOptions({
+    queryKey: ["feed", "page"] as const,
+    queryFn: () => api.get<T>(`/api/feed/page`),
+  });
+}
+
+export function userProfileQuery<T>(api: ApiClient, id: number) {
+  return queryOptions({
+    queryKey: ["users", "detail", id] as const,
+    queryFn: () => api.get<T>(`/api/users/${id}`),
+  });
+}
+
+export function leaderboardQuery<T>(
+  api: ApiClient,
+  params: { period?: string; discipline?: string } = {},
+) {
+  const qs = new URLSearchParams();
+  if (params.period) qs.set("period", params.period);
+  if (params.discipline) qs.set("discipline", params.discipline);
+  return queryOptions({
+    queryKey: [
+      "leaderboards",
+      { period: params.period ?? null, discipline: params.discipline ?? null },
+    ] as const,
+    queryFn: () =>
+      api.get<T>(`/api/leaderboards${qs.toString() ? `?${qs}` : ""}`),
+  });
+}
+
+export function reviewsQuery<T>(
+  api: ApiClient,
+  entityType: string,
+  entityId: number,
+) {
+  return queryOptions({
+    queryKey: ["reviews", entityType, entityId] as const,
+    queryFn: () =>
+      api.get<T>(`/api/reviews?entityType=${entityType}&entityId=${entityId}`),
+  });
+}
+
+export function sectorDetailQuery<T>(
+  api: ApiClient,
+  cragId: number,
+  sectorId: number,
+) {
+  return queryOptions({
+    queryKey: ["sectors", "detail", sectorId, { cragId }] as const,
+    queryFn: () => api.get<T>(`/api/sectors/${sectorId}?cragId=${cragId}`),
+  });
+}
+
+export function routeDetailQuery<T>(
+  api: ApiClient,
+  cragId: number,
+  routeId: number,
+) {
+  return queryOptions({
+    queryKey: ["routes", "detail", routeId, { cragId }] as const,
+    queryFn: () => api.get<T>(`/api/routes/${routeId}?cragId=${cragId}`),
+  });
+}

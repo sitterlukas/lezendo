@@ -1,4 +1,10 @@
-import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 import { Link } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { cragsListQuery, ApiError } from "@whipperbook/api-client";
