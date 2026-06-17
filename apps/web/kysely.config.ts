@@ -1,11 +1,16 @@
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { defineConfig } from "kysely-ctl";
 import { PostgresDialect } from "kysely";
 import { Pool } from "pg";
 
-// kysely-ctl runs outside Next.js, so load env vars ourselves.
+// kysely-ctl runs outside Next.js, so load env vars ourselves. The env file
+// lives at the monorepo root, so resolve it relative to this config file
+// rather than the cwd (which is the apps/web workspace when run via npm/Turbo).
 // On Vercel the vars are already injected; skip if the file doesn't exist.
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 try {
-  process.loadEnvFile(".env.local");
+  process.loadEnvFile(resolve(repoRoot, ".env.local"));
 } catch {}
 
 export default defineConfig({

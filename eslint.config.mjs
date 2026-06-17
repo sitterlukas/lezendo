@@ -9,7 +9,7 @@ const eslintConfig = defineConfig([
   // Migrations are frozen in time and take Kysely<any> on purpose (they must
   // not depend on the live, evolving Database type), so allow `any` there.
   {
-    files: ["migrations/**/*.ts"],
+    files: ["**/migrations/**/*.ts"],
     rules: { "@typescript-eslint/no-explicit-any": "off" },
   },
   // Turn off ESLint rules that conflict with Prettier. Keep last.
