@@ -21,8 +21,17 @@ export async function serverApi() {
   // (it also exports browserApi); next/headers is server-only.
   const { headers } = await import("next/headers");
   const h = await headers();
+  // Prefer an explicit AUTH_URL (set off-localhost); otherwise derive the
+  // origin from the incoming request so local dev works with no extra config.
+  const origin =
+    base() ||
+    (() => {
+      const host = h.get("x-forwarded-host") ?? h.get("host");
+      const proto = h.get("x-forwarded-proto") ?? "http";
+      return host ? `${proto}://${host}` : "";
+    })();
   return createApiClient((path, init) =>
-    fetch(`${base()}${path}`, {
+    fetch(`${origin}${path}`, {
       method: init.method ?? "GET",
       headers: {
         cookie: h.get("cookie") ?? "",
