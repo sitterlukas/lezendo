@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { reviveDates } from "@/lib/api/json";
+import { reviveDates } from "@whipperbook/api-client";
 
 export class ServerFetchError extends Error {
   constructor(

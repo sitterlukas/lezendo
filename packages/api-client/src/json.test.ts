@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reviveDates } from "@/lib/api/json";
+import { reviveDates } from "./json";
 
 describe("reviveDates", () => {
   it("revives full ISO datetime strings to Date", () => {

@@ -3,17 +3,9 @@
 // typed ApiError carrying the server's `{ error }` message on any non-2xx so
 // components can show it inline. Successful responses have ISO datetime strings
 // revived to Date (see reviveDates).
-import { reviveDates } from "@/lib/api/json";
+import { ApiError, reviveDates } from "@whipperbook/api-client";
 
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
+export { ApiError } from "@whipperbook/api-client";
 
 export async function apiFetch<T = unknown>(
   path: string,

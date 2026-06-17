@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@whipperbook/core", "@whipperbook/validation"],
+  transpilePackages: [
+    "@whipperbook/core",
+    "@whipperbook/validation",
+    "@whipperbook/api-client",
+  ],
   images: {
     remotePatterns: [
       {
