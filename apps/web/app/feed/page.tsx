@@ -21,9 +21,9 @@ export default async function FeedPage() {
             <p className="font-medium">
               Follow climbers and see their activity.
             </p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-zinc-500">
+            <div className="mx-auto mt-2 max-w-md">
               <LoginToAdd to="to post statuses and follow people" />
-            </p>
+            </div>
           </div>
         </main>
       );
