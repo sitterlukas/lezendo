@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { auth } from "@/auth";
 import HeaderNav from "@/app/ui/header-nav";
-import db from "@/lib/db";
+import { serverFetch } from "@/lib/api/server-fetch";
+import { type MeCore } from "@/lib/queries/me";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -68,17 +68,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
-  // Read the name from the db — the JWT keeps a stale copy after a rename.
-  const dbUser = session?.user?.email
-    ? await db
-        .selectFrom("users")
-        .select(["name", "role"])
-        .where("email", "=", session.user.email.toLowerCase())
-        .executeTakeFirst()
-    : undefined;
-  const displayName = dbUser?.name ?? session?.user?.name;
-  const isAdmin = dbUser?.role === "admin";
+  const me = await serverFetch<MeCore | null>("/api/me");
+  const displayName = me?.name ?? null;
+  const isAdmin = me?.role === "admin";
 
   return (
     <html
@@ -96,8 +88,8 @@ export default async function RootLayout({
               Whipperbook
             </Link>
             <HeaderNav
-              isAuthed={!!session?.user}
-              displayName={displayName ?? null}
+              isAuthed={!!me}
+              displayName={displayName}
               isAdmin={isAdmin}
             />
           </nav>

@@ -2,7 +2,8 @@
 
 import { upload } from "@vercel/blob/client";
 import { useRef, useState, useTransition } from "react";
-import { saveImage } from "@/app/actions";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api-client";
 import type { ImageEntityType } from "@/lib/db";
 
 // Downscale + re-encode in the browser before upload so we don't store huge
@@ -60,6 +61,7 @@ export default function ImageUpload({
   // as the last cell of the photo grid.
   variant?: "button" | "tile";
 }) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +82,11 @@ export default function ImageUpload({
       });
 
       startTransition(async () => {
-        await saveImage(blob.url, entityType, entityId);
+        await apiFetch("/api/images", {
+          method: "POST",
+          body: { url: blob.url, entityType, entityId },
+        });
+        router.refresh();
       });
     } catch {
       setError("Upload failed — try again.");
@@ -111,7 +117,13 @@ export default function ImageUpload({
             : "hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-900/60 dark:hover:text-zinc-300"
         }`}
       >
-        <svg width="22" height="22" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 20 20"
+          fill="none"
+          aria-hidden="true"
+        >
           <path
             d="M10 3v10m0-10-3 3m3-3 3 3M3 14v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1"
             stroke="currentColor"
@@ -123,7 +135,9 @@ export default function ImageUpload({
         <span className="text-xs font-medium">
           {uploading ? "Uploading…" : "Add photos"}
         </span>
-        {error && <span className="px-2 text-center text-xs text-red-500">{error}</span>}
+        {error && (
+          <span className="px-2 text-center text-xs text-red-500">{error}</span>
+        )}
         {fileInput}
       </label>
     );

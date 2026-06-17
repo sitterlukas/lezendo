@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import ThemeToggle from "@/app/ui/theme-toggle";
-import { logout } from "@/app/actions/auth";
 
 const linkCls = "transition hover:text-zinc-900 dark:hover:text-zinc-100";
 const mobileLinkCls =
@@ -98,14 +98,13 @@ export default function HeaderNav({
                   </Link>
                 )}
                 <div className="my-2 border-t border-zinc-200 dark:border-zinc-800" />
-                <form action={logout}>
-                  <button
-                    type="submit"
-                    className="block w-full px-4 py-2 text-left transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-                  >
-                    Log out
-                  </button>
-                </form>
+                <button
+                  type="button"
+                  onClick={() => signOut({ redirectTo: "/" })}
+                  className="block w-full px-4 py-2 text-left transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                >
+                  Log out
+                </button>
               </div>
             </div>
           </div>
@@ -208,14 +207,13 @@ export default function HeaderNav({
                     Admin
                   </Link>
                 )}
-                <form action={logout}>
-                  <button
-                    type="submit"
-                    className="block w-full py-2.5 text-left transition hover:text-zinc-900 dark:hover:text-zinc-100"
-                  >
-                    Log out
-                  </button>
-                </form>
+                <button
+                  type="button"
+                  onClick={() => signOut({ redirectTo: "/" })}
+                  className="block w-full py-2.5 text-left transition hover:text-zinc-900 dark:hover:text-zinc-100"
+                >
+                  Log out
+                </button>
               </>
             ) : (
               <>

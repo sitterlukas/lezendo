@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 import Modal from "@/app/ui/modal";
 import MapPicker from "@/app/ui/map-picker";
-import { updateSectorLocation } from "@/app/actions";
+import ApiForm from "@/app/ui/api-form";
 
 type Point = {
   key: "sector" | "parking";
@@ -94,8 +94,11 @@ function LocationForm({
       title={`${verb} ${point.label.toLowerCase()} location`}
       subtitle={`Set the ${point.label.toLowerCase()} coordinates for ${name}.`}
     >
-      <form action={updateSectorLocation} className="grid gap-4">
-        <input type="hidden" name="sector_id" value={sectorId} />
+      <ApiForm
+        endpoint={`/api/sectors/${sectorId}/location`}
+        method="PATCH"
+        className="grid gap-4"
+      >
         <input type="hidden" name="kind" value={point.key} />
         <MapPicker
           defaultLat={point.latitude}
@@ -108,7 +111,7 @@ function LocationForm({
         >
           Save location
         </button>
-      </form>
+      </ApiForm>
     </Modal>
   );
 }

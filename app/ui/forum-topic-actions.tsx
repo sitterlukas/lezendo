@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { editTopic, deleteTopic } from "@/app/actions";
+import { apiFetch, ApiError } from "@/lib/api-client";
 import { inputClass } from "@/app/ui/style";
 import DeleteButton from "@/app/ui/delete-button";
 
@@ -32,14 +32,16 @@ export default function ForumTopicActions({
   function save() {
     setError(null);
     startTransition(async () => {
-      const fd = new FormData();
-      fd.set("topic_id", String(topicId));
-      fd.set("title", text.trim());
-      const res = await editTopic(fd);
-      if (res.ok) {
+      try {
+        await apiFetch(`/api/forum/topics/${topicId}`, {
+          method: "PATCH",
+          body: { title: text.trim() },
+        });
         close();
         router.refresh();
-      } else setError(res.error);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Failed to save.");
+      }
     });
   }
 
@@ -52,17 +54,15 @@ export default function ForumTopicActions({
       >
         Edit title
       </button>
-      <form action={deleteTopic}>
-        <input type="hidden" name="topic_id" value={topicId} />
-        <DeleteButton
-          variant="pill"
-          label="Delete topic"
-          title="Delete topic"
-          message="This permanently deletes the topic and all its replies."
-          confirmLabel="Delete topic"
-          ariaLabel="Delete topic"
-        />
-      </form>
+      <DeleteButton
+        endpoint={`/api/forum/topics/${topicId}`}
+        variant="pill"
+        label="Delete topic"
+        title="Delete topic"
+        message="This permanently deletes the topic and all its replies."
+        confirmLabel="Delete topic"
+        ariaLabel="Delete topic"
+      />
 
       <dialog
         ref={dialogRef}
