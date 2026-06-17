@@ -18,6 +18,7 @@ import LoginToAdd from "@/app/ui/login-to-add";
 import FactList from "@/app/ui/fact-list";
 import { gradeRange, stylesPresent } from "@whipperbook/core";
 import { inputClass, typeLabel, typeBadge } from "@/app/ui/style";
+import { Skeleton } from "@/app/ui/skeleton";
 
 export type CragDetailResponse = CragDetailData;
 
@@ -494,28 +495,22 @@ function SectorSummaryCard({
 export function CragDetailSkeleton() {
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
-      <div className="h-4 w-20 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+      <Skeleton className="h-4 w-20" />
       <header className="mt-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="h-10 w-64 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mt-2 h-4 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mt-3 h-4 w-80 max-w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="mt-2 h-4 w-40" />
+          <Skeleton className="mt-3 h-4 w-80 max-w-full" />
         </div>
       </header>
       <div className="mt-6 flex flex-wrap gap-6">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-10 w-20 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800"
-          />
+          <Skeleton key={i} className="h-10 w-20" />
         ))}
       </div>
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-32 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
-          />
+          <Skeleton key={i} variant="card" className="h-32" />
         ))}
       </div>
     </main>

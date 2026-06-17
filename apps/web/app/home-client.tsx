@@ -14,6 +14,7 @@ import DisciplineSelect from "@/app/ui/discipline-select";
 import FilterPill from "@/app/ui/filter-pill";
 import RankCrown from "@/app/ui/rank-crown";
 import Avatar from "@/app/ui/avatar";
+import { Skeleton } from "@/app/ui/skeleton";
 
 export type HomeResponse = HomeData;
 
@@ -388,29 +389,28 @@ export function HomeSkeleton() {
     <main className="flex-1">
       <section className="relative overflow-hidden bg-zinc-200 dark:bg-zinc-800">
         <div className="relative mx-auto max-w-5xl px-6 pb-44 pt-24 sm:pb-60 sm:pt-32">
-          <div className="h-4 w-40 animate-pulse rounded bg-zinc-300 dark:bg-zinc-700" />
-          <div className="mt-4 h-14 w-80 animate-pulse rounded bg-zinc-300 dark:bg-zinc-700" />
-          <div className="mt-6 h-4 w-96 max-w-full animate-pulse rounded bg-zinc-300 dark:bg-zinc-700" />
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="mt-4 h-14 w-80" />
+          <Skeleton className="mt-6 h-4 w-96 max-w-full" />
         </div>
       </section>
       <section className="bg-zinc-50 dark:bg-zinc-900/50">
         <div className="mx-auto grid max-w-5xl grid-cols-3 divide-x divide-zinc-200 px-6 py-8 text-center dark:divide-zinc-800">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i}>
-              <div className="mx-auto h-8 w-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-              <div className="mx-auto mt-2 h-3 w-12 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+              <Skeleton className="mx-auto h-8 w-16" />
+              <Skeleton className="mx-auto mt-2 h-3 w-12" />
             </div>
           ))}
         </div>
       </section>
       <section className="mx-auto max-w-5xl px-6 pb-20 pt-16">
-        <div className="h-7 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-7 w-40" />
         <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <li
-              key={i}
-              className="h-24 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
-            />
+            <li key={i}>
+              <Skeleton variant="card" className="h-24" />
+            </li>
           ))}
         </ul>
       </section>

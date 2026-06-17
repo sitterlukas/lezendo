@@ -15,6 +15,7 @@ import ImageGallery from "@/app/ui/image-gallery";
 import EntityReviews from "@/app/ui/entity-reviews";
 import Select from "@/app/ui/select";
 import FactList from "@/app/ui/fact-list";
+import { Skeleton } from "@/app/ui/skeleton";
 import { tickStats } from "@whipperbook/core";
 import GradeSelect from "@/app/ui/grade-select";
 import { typeLabel, typeBadge } from "@/app/ui/style";
@@ -573,24 +574,21 @@ export default function RouteDetailClient({
 export function RouteDetailSkeleton() {
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
-      <div className="h-4 w-64 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+      <Skeleton className="h-4 w-64" />
       <div className="mt-6 flex items-start justify-between gap-4">
         <div>
-          <div className="h-10 w-56 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mt-3 h-4 w-72 max-w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+          <Skeleton className="h-10 w-56" />
+          <Skeleton className="mt-3 h-4 w-72 max-w-full" />
         </div>
-        <div className="h-9 w-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-9 w-16" />
       </div>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="h-28 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50" />
-        <div className="h-28 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50" />
+        <Skeleton variant="card" className="h-28" />
+        <Skeleton variant="card" className="h-28" />
       </div>
       <div className="mt-10 space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-12 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
-          />
+          <Skeleton key={i} variant="card" className="h-12" />
         ))}
       </div>
     </main>

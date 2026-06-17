@@ -8,6 +8,7 @@ import FeedList from "@/app/ui/feed-list";
 import StatusComposer from "@/app/ui/status-composer";
 import PeopleSearch from "@/app/ui/people-search";
 import UserRow from "@/app/ui/user-row";
+import { Skeleton } from "@/app/ui/skeleton";
 
 export type FeedResponse = FeedPageData;
 
@@ -107,16 +108,15 @@ export function FeedSkeleton() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <div className="h-10 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-        <div className="h-9 w-28 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-10 w-32" />
+        <Skeleton className="h-9 w-28" />
       </header>
-      <div className="mt-6 h-24 animate-pulse rounded border border-zinc-200 dark:border-zinc-800" />
+      <Skeleton variant="card" className="mt-6 h-24" />
       <ul className="mt-8 space-y-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <li
-            key={i}
-            className="h-28 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
-          />
+          <li key={i}>
+            <Skeleton variant="card" className="h-28" />
+          </li>
         ))}
       </ul>
     </main>

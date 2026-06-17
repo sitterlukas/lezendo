@@ -12,6 +12,7 @@ import DisciplineSelect from "@/app/ui/discipline-select";
 import FilterPill from "@/app/ui/filter-pill";
 import RankCrown from "@/app/ui/rank-crown";
 import Avatar from "@/app/ui/avatar";
+import { Skeleton } from "@/app/ui/skeleton";
 
 export type LeaderboardResponse = LeaderboardData;
 
@@ -176,13 +177,13 @@ export default function LeaderboardsClient({
 export function LeaderboardsSkeleton() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
-      <div className="h-9 w-48 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-      <div className="mt-3 h-4 w-full max-w-2xl animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+      <Skeleton className="h-9 w-48" />
+      <Skeleton className="mt-3 h-4 w-full max-w-2xl" />
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="h-8 w-64 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-        <div className="h-8 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-8 w-32" />
       </div>
-      <div className="mt-8 h-80 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50" />
+      <Skeleton variant="card" className="mt-8 h-80" />
     </main>
   );
 }

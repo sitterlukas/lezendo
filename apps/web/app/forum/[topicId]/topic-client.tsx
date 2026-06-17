@@ -8,6 +8,7 @@ import { type ForumTopicDetail } from "@whipperbook/db";
 import ApiForm from "@/app/ui/api-form";
 import ForumPost from "@/app/ui/forum-post";
 import ForumTopicActions from "@/app/ui/forum-topic-actions";
+import { Skeleton } from "@/app/ui/skeleton";
 
 export type TopicResponse = ForumTopicDetail & {
   viewer: { id: number; role: string } | null;
@@ -157,15 +158,12 @@ export default function TopicClient({ topicId }: { topicId: number }) {
 export function TopicSkeleton() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
-      <div className="h-4 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-      <div className="mt-4 h-8 w-2/3 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-      <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+      <Skeleton className="h-4 w-32" />
+      <Skeleton className="mt-4 h-8 w-2/3" />
+      <Skeleton className="mt-2 h-4 w-1/2" />
       <div className="mt-8 space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-28 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
-          />
+          <Skeleton key={i} variant="card" className="h-28" />
         ))}
       </div>
     </main>

@@ -14,6 +14,7 @@ import EntityReviews from "@/app/ui/entity-reviews";
 import RouteCard from "@/app/ui/route-card";
 import GradeHistogram from "@/app/ui/grade-histogram";
 import SectorFields from "@/app/ui/sector-fields";
+import { Skeleton } from "@/app/ui/skeleton";
 import { CreateRouteModal } from "@/app/ui/create-modals";
 import LoginToAdd from "@/app/ui/login-to-add";
 import FactList from "@/app/ui/fact-list";
@@ -263,32 +264,26 @@ export default function SectorDetailClient({
 export function SectorDetailSkeleton() {
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
-      <div className="h-4 w-48 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+      <Skeleton className="h-4 w-48" />
       <header className="mt-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="h-10 w-56 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mt-2 h-4 w-36 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mt-3 h-4 w-72 max-w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+          <Skeleton className="h-10 w-56" />
+          <Skeleton className="mt-2 h-4 w-36" />
+          <Skeleton className="mt-3 h-4 w-72 max-w-full" />
         </div>
       </header>
       <div className="mt-6 flex flex-wrap gap-6">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-10 w-20 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800"
-          />
+          <Skeleton key={i} className="h-10 w-20" />
         ))}
       </div>
       <div className="mt-8 grid gap-6 md:grid-cols-2">
-        <div className="h-48 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50" />
-        <div className="h-48 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50" />
+        <Skeleton variant="card" className="h-48" />
+        <Skeleton variant="card" className="h-48" />
       </div>
       <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-32 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
-          />
+          <Skeleton key={i} variant="card" className="h-32" />
         ))}
       </div>
     </main>

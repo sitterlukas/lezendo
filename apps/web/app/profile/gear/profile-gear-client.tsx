@@ -9,6 +9,7 @@ import { type GearItemDto } from "@whipperbook/db";
 import { type GearCategory } from "@whipperbook/db";
 import ActionButton from "@/app/ui/action-button";
 import ProfileTabs from "@/app/profile/tabs";
+import { Skeleton } from "@/app/ui/skeleton";
 import { type GearResponse } from "@/app/gear/gear-client";
 
 const categoryMeta: Record<GearCategory, { label: string }> = {
@@ -203,12 +204,12 @@ export default function ProfileGearClient() {
 export function ProfileGearSkeleton() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
-      <div className="h-8 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-      <div className="mt-6 h-6 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+      <Skeleton className="h-8 w-32" />
+      <Skeleton className="mt-6 h-6 w-40" />
       <ul className="mt-4 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
         {Array.from({ length: 4 }).map((_, i) => (
           <li key={i} className="px-6 py-4">
-            <div className="h-5 w-full max-w-xs animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+            <Skeleton className="h-5 w-full max-w-xs" />
           </li>
         ))}
       </ul>

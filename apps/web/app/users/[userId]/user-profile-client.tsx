@@ -7,6 +7,7 @@ import { type UserProfileData } from "@whipperbook/db";
 import FollowButton from "@/app/ui/follow-button";
 import FeedItemCard from "@/app/ui/feed-item";
 import Avatar from "@/app/ui/avatar";
+import { Skeleton } from "@/app/ui/skeleton";
 
 export type UserProfileResponse = UserProfileData;
 
@@ -100,20 +101,17 @@ export function UserProfileSkeleton() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
       <header className="flex flex-wrap items-center gap-4">
-        <div className="h-16 w-16 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-16 w-16 rounded-full" />
         <div>
-          <div className="h-7 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mt-2 h-4 w-48 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="mt-2 h-4 w-48" />
         </div>
       </header>
       <section className="mt-10">
-        <div className="h-6 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-6 w-24" />
         <div className="mt-4 space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-28 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
-            />
+            <Skeleton key={i} variant="card" className="h-28" />
           ))}
         </div>
       </section>

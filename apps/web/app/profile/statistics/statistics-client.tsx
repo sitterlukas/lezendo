@@ -5,6 +5,7 @@ import { browserApi } from "@/lib/api/client";
 import { statisticsQuery } from "@whipperbook/api-client";
 import { type StatisticsData } from "@whipperbook/db";
 import ProfileTabs from "@/app/profile/tabs";
+import { Skeleton } from "@/app/ui/skeleton";
 import { POINTS_EXPLAINER } from "@whipperbook/core";
 
 export type StatisticsResponse = StatisticsData;
@@ -341,19 +342,16 @@ export default function StatisticsClient() {
 export function StatisticsSkeleton() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
-      <div className="h-8 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-      <div className="mt-4 h-10 w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+      <Skeleton className="h-8 w-32" />
+      <Skeleton className="mt-4 h-10 w-full" />
       <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-20 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
-          />
+          <Skeleton key={i} variant="card" className="h-20" />
         ))}
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <div className="h-28 animate-pulse rounded border border-zinc-200 dark:border-zinc-800" />
-        <div className="h-28 animate-pulse rounded border border-zinc-200 dark:border-zinc-800" />
+        <Skeleton variant="card" className="h-28" />
+        <Skeleton variant="card" className="h-28" />
       </div>
     </main>
   );

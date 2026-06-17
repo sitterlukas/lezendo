@@ -9,6 +9,7 @@ import ApiForm from "@/app/ui/api-form";
 import Modal from "@/app/ui/modal";
 import LoginToAdd from "@/app/ui/login-to-add";
 import Avatar from "@/app/ui/avatar";
+import { Skeleton } from "@/app/ui/skeleton";
 import { inputClass } from "@/app/ui/style";
 
 export type ForumResponse = {
@@ -162,18 +163,18 @@ export function ForumSkeleton() {
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="h-9 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mt-3 h-4 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+          <Skeleton className="h-9 w-32" />
+          <Skeleton className="mt-3 h-4 w-24" />
         </div>
-        <div className="h-9 w-28 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-9 w-28" />
       </header>
       <ul className="mt-8 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
         {Array.from({ length: 6 }).map((_, i) => (
           <li key={i} className="flex items-center gap-3 px-4 py-4">
-            <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-800" />
+            <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
             <div className="flex-1">
-              <div className="h-4 w-2/3 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-              <div className="mt-2 h-3 w-1/3 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="mt-2 h-3 w-1/3" />
             </div>
           </li>
         ))}

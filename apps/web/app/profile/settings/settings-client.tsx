@@ -8,6 +8,7 @@ import ProfileTabs from "@/app/profile/tabs";
 import AvatarUpload from "@/app/ui/avatar-upload";
 import PeopleSearch from "@/app/ui/people-search";
 import UserRow from "@/app/ui/user-row";
+import { Skeleton } from "@/app/ui/skeleton";
 import GradingSystemForm from "./grading-system-form";
 import NameForm from "./name-form";
 import LogoutButton from "./logout-button";
@@ -159,12 +160,12 @@ function FollowSection({
 export function SettingsSkeleton() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
-      <div className="h-8 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-      <div className="mt-4 h-10 w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-      <div className="mt-6 h-72 animate-pulse rounded border border-zinc-200 dark:border-zinc-800" />
+      <Skeleton className="h-8 w-32" />
+      <Skeleton className="mt-4 h-10 w-full" />
+      <Skeleton variant="card" className="mt-6 h-72" />
       <div className="mt-6 grid gap-6 sm:grid-cols-2">
-        <div className="h-40 animate-pulse rounded border border-zinc-200 dark:border-zinc-800" />
-        <div className="h-40 animate-pulse rounded border border-zinc-200 dark:border-zinc-800" />
+        <Skeleton variant="card" className="h-40" />
+        <Skeleton variant="card" className="h-40" />
       </div>
     </main>
   );

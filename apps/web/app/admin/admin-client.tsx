@@ -6,6 +6,7 @@ import { browserApi } from "@/lib/api/client";
 import { adminDeletedQuery } from "@whipperbook/api-client";
 import { type AdminDeletedData } from "@whipperbook/db";
 import ActionButton from "@/app/ui/action-button";
+import { Skeleton } from "@/app/ui/skeleton";
 
 export type AdminDeletedResponse = AdminDeletedData;
 
@@ -349,15 +350,15 @@ export function AdminSkeleton() {
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <header className="flex items-end justify-between gap-4">
         <div>
-          <div className="h-3 w-28 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mt-3 h-9 w-56 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="mt-3 h-4 w-72 max-w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="mt-3 h-9 w-56" />
+          <Skeleton className="mt-3 h-4 w-72 max-w-full" />
         </div>
       </header>
       <ul className="mt-12 divide-y divide-zinc-200 rounded border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
         {Array.from({ length: 6 }).map((_, i) => (
           <li key={i} className="px-4 py-4">
-            <div className="h-5 w-2/3 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+            <Skeleton className="h-5 w-2/3" />
           </li>
         ))}
       </ul>

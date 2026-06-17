@@ -9,6 +9,7 @@ import ActionButton from "@/app/ui/action-button";
 import FilterPill from "@/app/ui/filter-pill";
 import { CreateCragModal } from "@/app/ui/create-modals";
 import LoginToAdd from "@/app/ui/login-to-add";
+import { Skeleton } from "@/app/ui/skeleton";
 
 export type CragsResponse = CragsListData & {
   viewer: { id: number; role: string } | null;
@@ -306,19 +307,18 @@ export function CragsListSkeleton() {
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <header>
-        <div className="h-9 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-        <div className="mt-3 h-4 w-56 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="mt-3 h-4 w-56" />
       </header>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="h-9 w-56 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-        <div className="h-9 w-28 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-9 w-56" />
+        <Skeleton className="h-9 w-28" />
       </div>
       <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <li
-            key={i}
-            className="h-32 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
-          />
+          <li key={i}>
+            <Skeleton variant="card" className="h-32" />
+          </li>
         ))}
       </ul>
     </main>

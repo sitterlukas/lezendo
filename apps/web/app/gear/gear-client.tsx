@@ -13,6 +13,7 @@ import DeleteButton from "@/app/ui/delete-button";
 import LoginToAdd from "@/app/ui/login-to-add";
 import Stars from "@/app/ui/stars";
 import StarRatingInput from "@/app/ui/star-rating-input";
+import { Skeleton } from "@/app/ui/skeleton";
 import { inputClass } from "@/app/ui/style";
 
 export type GearResponse = GearData;
@@ -29,7 +30,9 @@ const categoryMeta: Record<GearCategory, { label: string }> = {
 };
 
 export default function GearClient() {
-  const { data, isPending, error } = useQuery(gearQuery<GearResponse>(browserApi));
+  const { data, isPending, error } = useQuery(
+    gearQuery<GearResponse>(browserApi),
+  );
 
   if (isPending) return <GearSkeleton />;
 
@@ -336,17 +339,16 @@ export function GearSkeleton() {
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <header>
-        <div className="h-9 w-32 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-        <div className="mt-3 h-4 w-80 max-w-full animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-9 w-32" />
+        <Skeleton className="mt-3 h-4 w-80 max-w-full" />
       </header>
       <section className="mt-10">
-        <div className="h-7 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-7 w-40" />
         <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <li
-              key={i}
-              className="h-32 animate-pulse rounded border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/50"
-            />
+            <li key={i}>
+              <Skeleton variant="card" className="h-32" />
+            </li>
           ))}
         </ul>
       </section>
