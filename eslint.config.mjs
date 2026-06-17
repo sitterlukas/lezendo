@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     files: ["**/migrations/**/*.ts"],
     rules: { "@typescript-eslint/no-explicit-any": "off" },
   },
+  // Node config files (metro/tailwind/babel/postcss, …) are CommonJS and
+  // legitimately use require().
+  {
+    files: ["**/*.config.js", "**/*.cjs"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
   // Turn off ESLint rules that conflict with Prettier. Keep last.
   prettier,
   // Override default ignores of eslint-config-next, plus build outputs for
