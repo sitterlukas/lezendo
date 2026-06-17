@@ -41,7 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-
-DATABASE_URL=postgresql://***REMOVED***@localhost:5432/lezendo
-AUTH_SECRET=***REMOVED***
-BLOB_READ_WRITE_TOKEN=
+# turbo
+.turbo
+# expo
+apps/mobile/.expo
+apps/mobile/ios
+apps/mobile/android
