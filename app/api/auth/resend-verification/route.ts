@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { route, ok, readJson } from "@/lib/api/respond";
+import { rateLimit, clientIp } from "@/lib/api/rate-limit";
 import db from "@/lib/db";
 import { issueVerificationToken } from "@/lib/email-verification";
 import { sendVerificationEmail } from "@/lib/email";
@@ -9,6 +10,8 @@ const schema = z.object({ email: z.string() });
 // POST /api/auth/resend-verification — re-send the verification email. Always
 // reports success so it can't be used to probe which emails exist.
 export const POST = route(async (request) => {
+  rateLimit(`resend:${clientIp(request)}`, 5, 60 * 60 * 1000);
+
   const { email: emailRaw } = await readJson(request, schema);
   const email = emailRaw.trim().toLowerCase();
 

@@ -1,7 +1,6 @@
-import { revalidatePath } from "next/cache";
-import { route, ok, fail } from "@/lib/api/respond";
+import { route, ok, fail, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import { readForm } from "@/lib/forms";
+import { sectorLocationSchema } from "@/lib/forms";
 import db from "@/lib/db";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -14,20 +13,7 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
   const sectorId = Number((await params).id);
   if (!Number.isInteger(sectorId)) return fail("Invalid sector.", 400);
 
-  const form = await readForm(request);
-  const kind = String(form.get("kind") ?? "");
-  const lat = Number(String(form.get("latitude") ?? "").trim());
-  const lng = Number(String(form.get("longitude") ?? "").trim());
-
-  if (kind !== "sector" && kind !== "parking") {
-    return fail("Invalid location kind.", 400);
-  }
-  if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
-    return fail("Invalid latitude.", 400);
-  }
-  if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
-    return fail("Invalid longitude.", 400);
-  }
+  const data = await readJson(request, sectorLocationSchema);
 
   const sector = await db
     .selectFrom("sectors")
@@ -39,13 +25,12 @@ export const PATCH = route<Ctx>(async (request, { params }) => {
   await db
     .updateTable("sectors")
     .set(
-      kind === "parking"
-        ? { parking_latitude: lat, parking_longitude: lng }
-        : { latitude: lat, longitude: lng },
+      data.kind === "parking"
+        ? { parking_latitude: data.latitude, parking_longitude: data.longitude }
+        : { latitude: data.latitude, longitude: data.longitude },
     )
     .where("id", "=", sectorId)
     .execute();
 
-  revalidatePath("/crags", "layout");
   return ok({ ok: true });
 });

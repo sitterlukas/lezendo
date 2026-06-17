@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
-import { route, ok, fail, readJson } from "@/lib/api/respond";
+import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser, getUser } from "@/lib/api/auth";
 import { getMe } from "@/lib/queries/me";
 import db from "@/lib/db";
@@ -13,7 +12,12 @@ export const GET = route(async (request) => {
 });
 
 const schema = z.object({
-  name: z.string().optional(),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name must be between 1 and 100 characters.")
+    .max(100, "Name must be between 1 and 100 characters.")
+    .optional(),
   preferred_rope_grading_system_id: z.number().int().nullable().optional(),
   preferred_boulder_grading_system_id: z.number().int().nullable().optional(),
 });
@@ -31,13 +35,7 @@ export const PATCH = route(async (request) => {
     preferred_boulder_grading_system_id?: number | null;
   } = {};
 
-  if (body.name !== undefined) {
-    const name = body.name.trim();
-    if (!name || name.length > 100) {
-      return fail("Name must be between 1 and 100 characters.", 400);
-    }
-    set.name = name;
-  }
+  if (body.name !== undefined) set.name = body.name;
   if (body.preferred_rope_grading_system_id !== undefined) {
     set.preferred_rope_grading_system_id =
       body.preferred_rope_grading_system_id;
@@ -51,8 +49,5 @@ export const PATCH = route(async (request) => {
     await db.updateTable("users").set(set).where("id", "=", user.id).execute();
   }
 
-  revalidatePath("/profile");
-  revalidatePath("/profile/settings");
-  revalidatePath("/", "layout");
   return ok({ ok: true });
 });

@@ -5,14 +5,15 @@ function status(id: number, iso: string): FeedItem {
   return {
     kind: "status",
     id,
-    author: { id: 1, name: "A" },
+    author: { id: 1, name: "A", avatarUrl: null },
     createdAt: new Date(iso),
     body: "x",
-    crag: null,
+    sector: null,
     photos: [],
     likeCount: 0,
     likedByMe: false,
     commentCount: 0,
+    comments: [],
   };
 }
 

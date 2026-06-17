@@ -23,13 +23,19 @@ export default function LikeButton({
 
   function toggle() {
     const next = !liked;
+    // Optimistic update, rolled back if the request fails.
     setLiked(next);
     setCount((c) => c + (next ? 1 : -1));
     startTransition(async () => {
-      await apiFetch("/api/likes", {
-        method: "POST",
-        body: { target_type: targetType, target_id: targetId },
-      });
+      try {
+        await apiFetch("/api/likes", {
+          method: "POST",
+          body: { target_type: targetType, target_id: targetId },
+        });
+      } catch {
+        setLiked(!next);
+        setCount((c) => c + (next ? -1 : 1));
+      }
     });
   }
 

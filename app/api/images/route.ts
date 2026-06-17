@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { sql } from "kysely";
-import { revalidatePath } from "next/cache";
 import { route, ok, readJson } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
 import db from "@/lib/db";
@@ -40,8 +39,6 @@ export const POST = route(async (request) => {
         })
         .execute();
     });
-    revalidatePath("/crags", "layout");
-    revalidatePath("/feed");
     return ok({ ok: true }, 201);
   }
 
@@ -55,6 +52,5 @@ export const POST = route(async (request) => {
     })
     .execute();
 
-  revalidatePath("/crags", "layout");
   return ok({ ok: true }, 201);
 });

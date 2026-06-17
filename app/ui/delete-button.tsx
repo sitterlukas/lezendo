@@ -1,14 +1,15 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, ApiError } from "@/lib/api-client";
 import ConfirmSubmit from "./confirm-submit";
 import TrashIcon from "./trash-icon";
 
 // Single source of truth for delete affordances across the app. Self-contained:
 // confirming sends the delete request to `endpoint` and then either follows a
-// `{ redirect }` from the response or re-fetches the current page.
+// `{ redirect }` from the response or re-fetches the current page. A failed
+// request surfaces its message inline instead of failing silently.
 //   - "pill": bordered red button with an icon + label (toolbars / headers)
 //   - "icon": compact icon-only button (card corners, list rows)
 const triggerClass = {
@@ -38,33 +39,51 @@ export default function DeleteButton({
   variant?: "pill" | "icon";
 }) {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   function handleConfirm() {
+    setError(null);
     startTransition(async () => {
-      const res = await apiFetch<{ redirect?: string } | null>(endpoint, {
-        method,
-        body,
-      });
-      if (res && typeof res === "object" && res.redirect) {
-        router.push(res.redirect);
-      } else {
-        router.refresh();
+      try {
+        const res = await apiFetch<{ redirect?: string } | null>(endpoint, {
+          method,
+          body,
+        });
+        if (res && typeof res === "object" && res.redirect) {
+          router.push(res.redirect);
+        } else {
+          router.refresh();
+        }
+      } catch (err) {
+        setError(
+          err instanceof ApiError ? err.message : "Something went wrong.",
+        );
       }
     });
   }
 
   return (
-    <ConfirmSubmit
-      title={title}
-      message={message}
-      confirmLabel={confirmLabel}
-      triggerAriaLabel={ariaLabel}
-      triggerClassName={triggerClass[variant]}
-      onConfirm={handleConfirm}
-    >
-      <TrashIcon size={variant === "icon" ? 16 : 14} />
-      {variant === "pill" && <span>{label}</span>}
-    </ConfirmSubmit>
+    <>
+      <ConfirmSubmit
+        title={title}
+        message={message}
+        confirmLabel={confirmLabel}
+        triggerAriaLabel={ariaLabel}
+        triggerClassName={triggerClass[variant]}
+        onConfirm={handleConfirm}
+      >
+        <TrashIcon size={variant === "icon" ? 16 : 14} />
+        {variant === "pill" && <span>{label}</span>}
+      </ConfirmSubmit>
+      {error && (
+        <p
+          role="alert"
+          className="mt-1 text-xs font-medium text-red-600 dark:text-red-400"
+        >
+          {error}
+        </p>
+      )}
+    </>
   );
 }
