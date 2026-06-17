@@ -2,8 +2,7 @@ import { notFound } from "next/navigation";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { makeQueryClient } from "@/lib/api/get-query-client";
 import { serverApi } from "@/lib/api/client";
-import { ServerFetchError } from "@/lib/api/server-fetch";
-import { userProfileQuery } from "@whipperbook/api-client";
+import { userProfileQuery, ApiError } from "@whipperbook/api-client";
 import UserProfileClient, {
   type UserProfileResponse,
 } from "./user-profile-client";
@@ -24,7 +23,7 @@ export default async function UserProfilePage({
   try {
     await qc.fetchQuery(userProfileQuery<UserProfileResponse>(api, profileId));
   } catch (err) {
-    if (err instanceof ServerFetchError && err.status === 404) notFound();
+    if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   }
 

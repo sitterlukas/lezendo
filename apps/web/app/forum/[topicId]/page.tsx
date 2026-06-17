@@ -4,8 +4,7 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import db from "@whipperbook/db";
 import { makeQueryClient } from "@/lib/api/get-query-client";
 import { serverApi } from "@/lib/api/client";
-import { ServerFetchError } from "@/lib/api/server-fetch";
-import { forumTopicQuery } from "@whipperbook/api-client";
+import { forumTopicQuery, ApiError } from "@whipperbook/api-client";
 import TopicClient, { type TopicResponse } from "./topic-client";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +46,7 @@ export default async function TopicPage({
   try {
     await qc.fetchQuery(forumTopicQuery<TopicResponse>(api, id));
   } catch (err) {
-    if (err instanceof ServerFetchError && err.status === 404) notFound();
+    if (err instanceof ApiError && err.status === 404) notFound();
     throw err;
   }
 
