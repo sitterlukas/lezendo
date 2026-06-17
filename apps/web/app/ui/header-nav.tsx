@@ -3,22 +3,27 @@
 import { useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { useQuery } from "@tanstack/react-query";
+import { meQuery } from "@whipperbook/api-client";
+import { browserApi } from "@/lib/api/client";
 import ThemeToggle from "@/app/ui/theme-toggle";
 
 const linkCls = "transition hover:text-zinc-900 dark:hover:text-zinc-100";
 const mobileLinkCls =
   "block py-2.5 transition hover:text-zinc-900 dark:hover:text-zinc-100";
 
-export default function HeaderNav({
-  isAuthed,
-  displayName,
-  isAdmin,
-}: {
-  isAuthed: boolean;
-  displayName: string | null;
-  isAdmin: boolean;
-}) {
+// Only the fields the nav needs (the /api/me response carries more).
+type Me = { name: string | null; role: string } | null;
+
+export default function HeaderNav() {
   const [open, setOpen] = useState(false);
+  // Fetch the viewer client-side so the root layout stays synchronous (a
+  // blocking await in the layout commits the response before a page's
+  // notFound()/redirect() can set its status).
+  const { data: me } = useQuery(meQuery<Me>(browserApi));
+  const isAuthed = !!me;
+  const displayName = me?.name ?? null;
+  const isAdmin = me?.role === "admin";
 
   return (
     <>
