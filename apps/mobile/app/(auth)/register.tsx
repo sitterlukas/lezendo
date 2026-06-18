@@ -9,9 +9,7 @@ import {
 import { Link } from "expo-router";
 import { ApiError } from "@whipperbook/api-client";
 import { api } from "../../lib/api";
-
-const input =
-  "rounded-lg border border-zinc-300 bg-white px-3 py-3 text-base text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+import { inputClass } from "../../lib/styles";
 
 // The validation package has no register schema, so mirror the server's checks
 // (name required, basic email shape, password >= 8) client-side; the server
@@ -80,7 +78,7 @@ export default function Register() {
       </Text>
 
       <TextInput
-        className={input}
+        className={inputClass}
         placeholder="Name"
         placeholderTextColor="#a1a1aa"
         autoCapitalize="words"
@@ -89,7 +87,7 @@ export default function Register() {
         editable={!busy}
       />
       <TextInput
-        className={input}
+        className={inputClass}
         placeholder="Email"
         placeholderTextColor="#a1a1aa"
         autoCapitalize="none"
@@ -100,7 +98,7 @@ export default function Register() {
         editable={!busy}
       />
       <TextInput
-        className={input}
+        className={inputClass}
         placeholder="Password (min 8 characters)"
         placeholderTextColor="#a1a1aa"
         secureTextEntry

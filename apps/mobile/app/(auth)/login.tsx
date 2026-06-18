@@ -10,15 +10,13 @@ import { Link, router } from "expo-router";
 import { ApiError } from "@whipperbook/api-client";
 import { api } from "../../lib/api";
 import { tokens } from "../../lib/auth";
+import { inputClass } from "../../lib/styles";
 
 type TokenResponse = {
   accessToken: string;
   refreshToken: string;
   user: { id: number; name: string; email: string };
 };
-
-const input =
-  "rounded-lg border border-zinc-300 bg-white px-3 py-3 text-base text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -59,7 +57,7 @@ export default function Login() {
       </Text>
 
       <TextInput
-        className={input}
+        className={inputClass}
         placeholder="Email"
         placeholderTextColor="#a1a1aa"
         autoCapitalize="none"
@@ -70,7 +68,7 @@ export default function Login() {
         editable={!busy}
       />
       <TextInput
-        className={input}
+        className={inputClass}
         placeholder="Password"
         placeholderTextColor="#a1a1aa"
         secureTextEntry
