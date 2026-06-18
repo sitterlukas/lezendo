@@ -202,6 +202,19 @@ On **Windows + WSL2** (local Postgres):
 psql "$DATABASE_URL" -c "UPDATE users SET email_verified_at = now() WHERE email_verified_at IS NULL"
 ```
 
+### A single verified test user
+
+To just get one ready-to-use, already-verified account (e.g. to sign in from the
+mobile app via Expo Go) without the full demo seed, run from `apps/web`:
+
+```bash
+node scripts/seed-test-user.mjs
+```
+
+This upserts **`test@whipperbook.dev` / `password123`** (name "Test Climber") with
+`email_verified_at` set, hashed the same way as registration. It's idempotent —
+re-run it any time to reset the password and re-verify the account.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font).
 
 ## Learn More
