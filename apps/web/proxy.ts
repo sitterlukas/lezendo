@@ -17,6 +17,15 @@ export function proxy(request: NextRequest) {
   const authz = request.headers.get("authorization");
   if (authz?.startsWith("Bearer ")) return NextResponse.next();
 
+  // CSRF can only abuse a request that rides on an ambient session cookie. With
+  // no session cookie there's nothing to forge — the route handler rejects it as
+  // unauthenticated anyway — so exempt it. This lets the cookieless mobile auth
+  // calls (login, token refresh) through; they send no Origin header.
+  const hasSession =
+    request.cookies.has("authjs.session-token") ||
+    request.cookies.has("__Secure-authjs.session-token");
+  if (!hasSession) return NextResponse.next();
+
   // Cookie-authenticated browser writes always carry an Origin, so a missing or
   // mismatched one means the request didn't come from our pages — block it.
   const origin = request.headers.get("origin");
