@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -5,6 +6,8 @@ import { meQuery, statisticsQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
 import { tokens } from "../../../lib/auth";
 import { Loading, ErrorState } from "../../../components/states";
+import { SegmentedPicker } from "../../../components/form";
+import { type ThemeMode, loadThemeMode, saveThemeMode, applyThemeMode } from "../../../lib/theme";
 
 // Minimal local shapes of GET /api/me and GET /api/me/statistics.
 type Me = { id: number; name: string; email: string } | null;
@@ -17,6 +20,16 @@ type Statistics = {
 export default function Profile() {
   const me = useQuery(meQuery<Me>(api));
   const stats = useQuery(statisticsQuery<Statistics>(api));
+
+  const [theme, setTheme] = useState<ThemeMode>("system");
+  useEffect(() => {
+    loadThemeMode().then(setTheme);
+  }, []);
+  function changeTheme(mode: ThemeMode) {
+    setTheme(mode);
+    applyThemeMode(mode);
+    void saveThemeMode(mode);
+  }
 
   async function logOut() {
     await tokens.clear();
@@ -58,6 +71,21 @@ export default function Profile() {
         <Stat label="Routes" value={stats.data.uniqueRoutes} />
         <Stat label="Crags" value={stats.data.uniqueCrags} />
         <Stat label="Points" value={stats.data.points.combined} />
+      </View>
+
+      <View className="gap-2">
+        <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+          Appearance
+        </Text>
+        <SegmentedPicker
+          value={theme}
+          onChange={changeTheme}
+          options={[
+            { label: "System", value: "system" },
+            { label: "Light", value: "light" },
+            { label: "Dark", value: "dark" },
+          ]}
+        />
       </View>
 
       <Pressable
