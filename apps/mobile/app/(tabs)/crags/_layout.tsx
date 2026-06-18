@@ -5,6 +5,7 @@ export default function CragsStack() {
     <Stack>
       <Stack.Screen name="index" options={{ title: "Crags" }} />
       <Stack.Screen name="[id]" options={{ title: "Crag" }} />
+      <Stack.Screen name="sector/[sectorId]" options={{ title: "Sector" }} />
     </Stack>
   );
 }
