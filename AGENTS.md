@@ -73,8 +73,8 @@ Leaflet (maps) · `qrcode`. Path alias: `@/` → repo root.
   client-side.
 - **Styling:** Tailwind v4, zinc palette, dark mode via `dark:`. Reuse `style.ts`
   tokens and mirror the surrounding class ordering/idiom.
-- **Migrations:** `npm run migrate:make <name>`, write `up`/`down` in
-  `migrations/`, then `npm run migrate:latest` (also runs during `npm run build`).
+- **Migrations:** from `apps/web`, `pnpm migrate:make <name>`, write `up`/`down`
+  in `migrations/`, then `pnpm migrate:latest` (also runs during `pnpm build`).
   Never edit an applied migration — add a new one — and update the matching table
   interface in `lib/db.ts`.
 - **Don't** commit or push unless asked.
@@ -84,10 +84,10 @@ Leaflet (maps) · `qrcode`. Path alias: `@/` → repo root.
 Run and keep clean:
 
 ```
-npm run lint          # ESLint (flat config + eslint-config-prettier)
-npm run format        # Prettier writes; or format:check to verify
-npm run build         # runs migrations, typechecks, and builds
+pnpm lint          # ESLint (flat config + eslint-config-prettier)
+pnpm format        # Prettier writes; or format:check to verify
+pnpm build         # runs migrations, typechecks, and builds
 ```
 
 Prettier owns formatting — don't hand-format. Verify real behavior when it
-matters (`npm run dev`), but reach for the simplest sufficient check first.
+matters (`pnpm dev`), but reach for the simplest sufficient check first.
