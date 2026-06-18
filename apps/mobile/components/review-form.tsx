@@ -5,6 +5,7 @@ import { entityReviewCreateSchema } from "@whipperbook/validation";
 import { ApiError, reviewsQuery } from "@whipperbook/api-client";
 import { api } from "../lib/api";
 import { Field, Button, SegmentedPicker } from "./form";
+import { Avatar } from "./avatar";
 
 type EntityReview = {
   id: number;
@@ -31,14 +32,17 @@ export function ReviewForm({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const reviews = useQuery(reviewsQuery<EntityReview[]>(api, entityType, entityId));
+  const reviews = useQuery(
+    reviewsQuery<EntityReview[]>(api, entityType, entityId),
+  );
 
   const mutation = useMutation({
-    mutationFn: (payload: unknown) =>
-      api.send("/api/reviews", "POST", payload),
+    mutationFn: (payload: unknown) => api.send("/api/reviews", "POST", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: invalidateKey });
-      queryClient.invalidateQueries({ queryKey: ["reviews", entityType, entityId] });
+      queryClient.invalidateQueries({
+        queryKey: ["reviews", entityType, entityId],
+      });
       setDone(true);
     },
     onError: (e) =>
@@ -69,18 +73,25 @@ export function ReviewForm({
         Reviews ({reviewList.length})
       </Text>
       {reviewList.length === 0 ? (
-        <Text className="text-zinc-500 dark:text-zinc-400">No reviews yet.</Text>
+        <Text className="text-zinc-500 dark:text-zinc-400">
+          No reviews yet.
+        </Text>
       ) : (
         reviewList.map((r) => (
           <View
             key={r.id}
             className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800"
           >
-            <Text className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-              {"★".repeat(r.rating) + "☆".repeat(5 - r.rating)} {r.author}
-            </Text>
+            <View className="flex-row items-center gap-2">
+              <Avatar name={r.author} src={r.author_avatar} size={24} />
+              <Text className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                {"★".repeat(r.rating) + "☆".repeat(5 - r.rating)} {r.author}
+              </Text>
+            </View>
             {r.body ? (
-              <Text className="mt-1 text-zinc-700 dark:text-zinc-300">{r.body}</Text>
+              <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
+                {r.body}
+              </Text>
             ) : null}
           </View>
         ))
@@ -93,14 +104,26 @@ export function ReviewForm({
         <SegmentedPicker<number>
           value={rating}
           onChange={setRating}
-          options={[1, 2, 3, 4, 5].map((n) => ({ label: "★".repeat(n), value: n }))}
+          options={[1, 2, 3, 4, 5].map((n) => ({
+            label: "★".repeat(n),
+            value: n,
+          }))}
         />
-        <Field label="Notes (optional)" value={body} onChangeText={setBody} multiline />
+        <Field
+          label="Notes (optional)"
+          value={body}
+          onChangeText={setBody}
+          multiline
+        />
         {error ? <Text className="text-sm text-red-600">{error}</Text> : null}
         {done ? (
           <Text className="text-sm text-green-600">Review saved.</Text>
         ) : null}
-        <Button label="Save review" onPress={submit} busy={mutation.isPending} />
+        <Button
+          label="Save review"
+          onPress={submit}
+          busy={mutation.isPending}
+        />
       </View>
     </View>
   );

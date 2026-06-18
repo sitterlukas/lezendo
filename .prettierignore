@@ -3,6 +3,7 @@ out
 build
 node_modules
 package-lock.json
+pnpm-lock.yaml
 public
 
 # Frozen / generated — not worth churning
