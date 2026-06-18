@@ -221,19 +221,36 @@ function FeedRow({
       ? { id: item.id, body: item.body, photos: item.photos }
       : null;
   const canEdit = statusData != null && myId != null && item.author.id === myId;
+  const isSend = item.kind === "ascent";
 
   return (
     <Link href={`/(tabs)/feed/${item.kind}/${item.id}`} asChild>
-      <Pressable className="rounded-xl border border-zinc-200 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900">
+      <Pressable
+        className={
+          isSend
+            ? "rounded-xl border border-l-4 border-zinc-200 border-l-emerald-500 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900"
+            : "rounded-xl border border-zinc-200 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900"
+        }
+      >
         <View className="mb-1 flex-row items-center gap-2">
           <Avatar
             name={item.author.name}
             src={item.author.avatarUrl}
             size={28}
           />
-          <Text className="flex-1 font-semibold text-zinc-900 dark:text-zinc-50">
-            {item.author.name}
-          </Text>
+          <View className="flex-1">
+            <Text className="font-semibold text-zinc-900 dark:text-zinc-50">
+              {item.author.name}
+            </Text>
+            {isSend ? (
+              <View className="mt-0.5 flex-row items-center gap-1">
+                <Ionicons name="trending-up" size={12} color="#10b981" />
+                <Text className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  Logged a climb
+                </Text>
+              </View>
+            ) : null}
+          </View>
           {canEdit && statusData ? (
             <Pressable
               accessibilityLabel="Edit status"
