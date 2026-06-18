@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Animated,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -11,21 +12,25 @@ import {
 } from "react-native";
 import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useColorScheme } from "nativewind";
 import { useQuery } from "@tanstack/react-query";
-import { feedPageQuery, ApiError } from "@whipperbook/api-client";
+import { feedPageQuery, meQuery, ApiError } from "@whipperbook/api-client";
 import { timeAgo } from "@whipperbook/core";
 import { api } from "../../../lib/api";
 import { Loading, ErrorState } from "../../../components/states";
 import { Avatar } from "../../../components/avatar";
 import { LikeButton } from "../../../components/like-button";
-import { StatusComposer } from "../../../components/status-composer";
+import {
+  StatusComposer,
+  type StatusEdit,
+} from "../../../components/status-composer";
 
-// Minimal local shape of GET /api/feed/page — we render statuses and the
-// batched ascent activities; the web payload also carries likes/comments/
-// suggestions we don't surface yet. `createdAt` arrives as a Date (revived by
+// Minimal local shape of GET /api/feed/page — we render statuses (with photos)
+// and the batched ascent activities. `createdAt` arrives as a Date (revived by
 // the api client) so timeAgo() can consume it directly.
 type FeedAuthor = { id: number; name: string; avatarUrl: string | null };
+type FeedPhoto = { id: number; url: string };
 type FeedComment = {
   id: number;
   body: string;
@@ -45,6 +50,7 @@ type FeedItem =
   | (FeedBase & {
       kind: "status";
       body: string;
+      photos: FeedPhoto[];
     })
   | (FeedBase & {
       kind: "ascent";
@@ -70,11 +76,16 @@ const tickVerb: Record<string, string> = {
 export default function Feed() {
   const { colorScheme } = useColorScheme();
   const fabIconColor = colorScheme === "dark" ? "#18181b" : "#ffffff";
-  const [composing, setComposing] = useState(false);
+  // The "+" lives in the feed screen (above the tab bar); the composer popover
+  // lives in a full-screen overlay (over the tab bar). Offset it by the tab bar
+  // height so it sits just above the "+".
+  const tabBarHeight = useBottomTabBarHeight();
+  // null = closed, "new" = compose, object = edit that status.
+  const [composer, setComposer] = useState<"new" | StatusEdit | null>(null);
   // Entrance for the compose popover: rises + pops up from the "+" button.
   const [pop] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    if (!composing) return;
+    if (composer === null) return;
     pop.setValue(0);
     Animated.spring(pop, {
       toValue: 1,
@@ -82,8 +93,10 @@ export default function Feed() {
       friction: 7,
       tension: 80,
     }).start();
-  }, [composing, pop]);
+  }, [composer, pop]);
 
+  const me = useQuery(meQuery<{ id: number } | null>(api));
+  const myId = me.data?.id ?? null;
   const { data, isPending, error, refetch, isRefetching } = useQuery(
     feedPageQuery<FeedPage>(api),
   );
@@ -100,6 +113,8 @@ export default function Feed() {
       />
     );
   }
+
+  const editing = composer && composer !== "new" ? composer : undefined;
 
   return (
     <View className="flex-1 bg-white dark:bg-zinc-950">
@@ -121,35 +136,38 @@ export default function Feed() {
             </Text>
           </View>
         }
-        renderItem={({ item }) => <FeedRow item={item} />}
+        renderItem={({ item }) => (
+          <FeedRow item={item} myId={myId} onEdit={setComposer} />
+        )}
       />
 
       {/* Floating compose button — opens the status popover above it. */}
       <Pressable
         accessibilityLabel="Post a status"
-        onPress={() => setComposing(true)}
+        onPress={() => setComposer("new")}
         className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-zinc-900 shadow-lg active:opacity-80 dark:bg-zinc-100"
       >
         <Ionicons name="add" size={30} color={fabIconColor} />
       </Pressable>
 
-      {/* Compose popover: a card anchored just above the "+", which morphs into
-          an "×" while open. Tap the dimmed backdrop to dismiss. */}
+      {/* Compose / edit popover: a card anchored just above the "+". Tap the
+          dimmed backdrop to dismiss. */}
       <Modal
-        visible={composing}
+        visible={composer !== null}
         transparent
         animationType="fade"
-        onRequestClose={() => setComposing(false)}
+        onRequestClose={() => setComposer(null)}
       >
         <View className="flex-1">
           <Pressable
             className="absolute inset-0 bg-black/40"
-            onPress={() => setComposing(false)}
+            onPress={() => setComposer(null)}
           />
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
             pointerEvents="box-none"
-            className="flex-1 justify-end px-4 pb-24"
+            className="flex-1 justify-end px-4"
+            style={{ paddingBottom: tabBarHeight + 32 }}
           >
             <Animated.View
               style={{
@@ -172,30 +190,38 @@ export default function Feed() {
             >
               <View className="rounded-2xl bg-white p-4 shadow-xl dark:bg-zinc-900">
                 <Text className="mb-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-                  New status
+                  {editing ? "Edit status" : "New status"}
                 </Text>
-                <StatusComposer onPosted={() => setComposing(false)} />
+                <StatusComposer
+                  status={editing}
+                  onPosted={() => setComposer(null)}
+                />
               </View>
               {/* Caret pointing down toward the "+". */}
               <View className="absolute -bottom-1.5 right-7 h-4 w-4 rotate-45 bg-white dark:bg-zinc-900" />
             </Animated.View>
           </KeyboardAvoidingView>
-
-          {/* The "+" morphs into a close button at the same spot. */}
-          <Pressable
-            accessibilityLabel="Close"
-            onPress={() => setComposing(false)}
-            className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-zinc-900 shadow-lg active:opacity-80 dark:bg-zinc-100"
-          >
-            <Ionicons name="close" size={28} color={fabIconColor} />
-          </Pressable>
         </View>
       </Modal>
     </View>
   );
 }
 
-function FeedRow({ item }: { item: FeedItem }) {
+function FeedRow({
+  item,
+  myId,
+  onEdit,
+}: {
+  item: FeedItem;
+  myId: number | null;
+  onEdit: (status: StatusEdit) => void;
+}) {
+  const statusData =
+    item.kind === "status"
+      ? { id: item.id, body: item.body, photos: item.photos }
+      : null;
+  const canEdit = statusData != null && myId != null && item.author.id === myId;
+
   return (
     <Link href={`/(tabs)/feed/${item.kind}/${item.id}`} asChild>
       <Pressable className="rounded-xl border border-zinc-200 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900">
@@ -208,12 +234,28 @@ function FeedRow({ item }: { item: FeedItem }) {
           <Text className="flex-1 font-semibold text-zinc-900 dark:text-zinc-50">
             {item.author.name}
           </Text>
+          {canEdit && statusData ? (
+            <Pressable
+              accessibilityLabel="Edit status"
+              hitSlop={8}
+              onPress={() => onEdit(statusData)}
+            >
+              <Ionicons name="create-outline" size={18} color="#a1a1aa" />
+            </Pressable>
+          ) : null}
           <Text className="text-xs text-zinc-400">
             {timeAgo(item.createdAt)}
           </Text>
         </View>
         {item.kind === "status" ? (
-          <Text className="text-zinc-700 dark:text-zinc-300">{item.body}</Text>
+          <>
+            {item.body ? (
+              <Text className="text-zinc-700 dark:text-zinc-300">
+                {item.body}
+              </Text>
+            ) : null}
+            <StatusPhotos photos={item.photos} />
+          </>
         ) : (
           <AscentBody climbs={item.climbs} />
         )}
@@ -230,6 +272,33 @@ function FeedRow({ item }: { item: FeedItem }) {
         </View>
       </Pressable>
     </Link>
+  );
+}
+
+// Status photos: one large image for a single photo, a wrapped grid otherwise.
+function StatusPhotos({ photos }: { photos: FeedPhoto[] }) {
+  if (photos.length === 0) return null;
+  if (photos.length === 1) {
+    return (
+      <Image
+        source={{ uri: photos[0].url }}
+        alt="Status photo"
+        resizeMode="cover"
+        className="mt-2 h-52 w-full rounded-lg"
+      />
+    );
+  }
+  return (
+    <View className="mt-2 flex-row flex-wrap gap-2">
+      {photos.map((p) => (
+        <Image
+          key={p.id}
+          source={{ uri: p.url }}
+          alt="Status photo"
+          style={{ width: 104, height: 104, borderRadius: 8 }}
+        />
+      ))}
+    </View>
   );
 }
 

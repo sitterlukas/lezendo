@@ -90,3 +90,39 @@ export async function uploadAvatar(uri: string): Promise<string> {
   const { url } = (await res.json()) as { url: string };
   return url;
 }
+
+// Upload a photo (expo-image-picker local URI) to Blob via the server and return
+// its public URL. Like uploadAvatar it streams multipart over the Bearer
+// transport (with refresh-on-401); the caller then attaches the URL to an entity
+// via POST /api/images.
+export async function uploadImage(uri: string): Promise<string> {
+  const lower = uri.toLowerCase();
+  const type = lower.endsWith(".png")
+    ? "image/png"
+    : lower.endsWith(".webp")
+      ? "image/webp"
+      : "image/jpeg";
+  const name = `photo.${type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg"}`;
+
+  async function send(access: string | null) {
+    const form = new FormData();
+    form.append("file", { uri, name, type } as unknown as Blob);
+    return fetch(`${base}/api/images/blob`, {
+      method: "POST",
+      headers: access ? { Authorization: `Bearer ${access}` } : {},
+      body: form,
+    });
+  }
+
+  let res = await send(await tokens.get());
+  if (res.status === 401) {
+    const refreshed = await refreshAccess();
+    if (refreshed) res = await send(refreshed);
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Upload failed.");
+  }
+  const { url } = (await res.json()) as { url: string };
+  return url;
+}

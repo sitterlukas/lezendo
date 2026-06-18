@@ -27,7 +27,7 @@ export default function TabsLayout() {
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? "map" : "map-outline"}
+              name={focused ? "compass" : "compass-outline"}
               color={color}
               size={size}
             />
@@ -41,7 +41,7 @@ export default function TabsLayout() {
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={focused ? "trophy" : "trophy-outline"}
+              name={focused ? "podium" : "podium-outline"}
               color={color}
               size={size}
             />

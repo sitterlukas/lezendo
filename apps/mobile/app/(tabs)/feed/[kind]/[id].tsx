@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { Image, RefreshControl, ScrollView, Text, View } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { feedPageQuery, ApiError } from "@whipperbook/api-client";
@@ -25,6 +25,7 @@ type FeedItem = {
   createdAt: Date;
   author: FeedAuthor;
   body?: string;
+  photos?: { id: number; url: string }[];
   likeCount: number;
   likedByMe: boolean;
   comments: FeedComment[];
@@ -108,6 +109,18 @@ export default function FeedItemDetail() {
           <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
             {item.body}
           </Text>
+        ) : null}
+        {item.photos && item.photos.length > 0 ? (
+          <View className="mt-2 flex-row flex-wrap gap-2">
+            {item.photos.map((p) => (
+              <Image
+                key={p.id}
+                source={{ uri: p.url }}
+                alt="Status photo"
+                style={{ width: 104, height: 104, borderRadius: 8 }}
+              />
+            ))}
+          </View>
         ) : null}
         <View className="mt-2 flex-row items-center gap-4">
           <LikeButton
