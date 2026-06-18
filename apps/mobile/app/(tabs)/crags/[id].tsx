@@ -93,6 +93,13 @@ export default function CragDetailScreen() {
           </Text>
         </Pressable>
       </Link>
+      <Link href={`/(tabs)/crags/route/new?cragId=${cragId}`} asChild>
+        <Pressable className="self-start rounded-lg border border-zinc-300 px-3 py-2 active:opacity-80 dark:border-zinc-700">
+          <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            + Add route
+          </Text>
+        </Pressable>
+      </Link>
 
       {sectors.length === 0 && routes.length === 0 ? (
         <Text className="mt-4 text-center text-zinc-500">No routes yet.</Text>

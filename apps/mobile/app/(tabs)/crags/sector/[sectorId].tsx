@@ -1,5 +1,5 @@
-import { RefreshControl, ScrollView, Text, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Link, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { sectorDetailQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../../lib/api";
@@ -76,6 +76,17 @@ export default function SectorDetailScreen() {
           </Text>
         ) : null}
       </View>
+
+      <Link
+        href={`/(tabs)/crags/route/new?cragId=${crag}&sectorId=${sector.id}`}
+        asChild
+      >
+        <Pressable className="self-start rounded-lg border border-zinc-300 px-3 py-2 active:opacity-80 dark:border-zinc-700">
+          <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            + Add route
+          </Text>
+        </Pressable>
+      </Link>
 
       <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
         Routes ({routes.length})
