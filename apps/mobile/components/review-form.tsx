@@ -34,6 +34,7 @@ export function ReviewForm({
 
   function submit() {
     setError(null);
+    setDone(false);
     const parsed = entityReviewCreateSchema.safeParse({
       entity_type: entityType,
       entity_id: entityId,
