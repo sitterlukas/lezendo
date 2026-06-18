@@ -19,22 +19,9 @@ export default function FeedStack() {
       <Stack.Screen
         name="index"
         options={{
-          headerTitle: "Whipperbook",
-          // Strava-style home bar: your avatar on the left (to the profile),
-          // search-for-people and a (mock) notifications bell on the right.
-          headerLeft: () => (
-            <Pressable
-              accessibilityLabel="Your profile"
-              onPress={() => router.push("/(tabs)/profile")}
-              hitSlop={8}
-            >
-              <Avatar
-                name={me.data?.name ?? ""}
-                src={me.data?.avatar_url}
-                size={30}
-              />
-            </Pressable>
-          ),
+          headerTitle: "Feed",
+          // Strava-style home bar: search-for-people, a (mock) notifications
+          // bell, and your avatar (to the profile) on the right.
           headerRight: () => (
             <View className="flex-row items-center gap-5">
               <Pressable
@@ -53,6 +40,17 @@ export default function FeedStack() {
                   name="notifications-outline"
                   size={24}
                   color={iconColor}
+                />
+              </Pressable>
+              <Pressable
+                accessibilityLabel="Your profile"
+                onPress={() => router.push("/(tabs)/profile")}
+                hitSlop={8}
+              >
+                <Avatar
+                  name={me.data?.name ?? ""}
+                  src={me.data?.avatar_url}
+                  size={30}
                 />
               </Pressable>
             </View>

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  Animated,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -68,7 +69,21 @@ const tickVerb: Record<string, string> = {
 
 export default function Feed() {
   const { colorScheme } = useColorScheme();
+  const fabIconColor = colorScheme === "dark" ? "#18181b" : "#ffffff";
   const [composing, setComposing] = useState(false);
+  // Entrance for the compose popover: rises + pops up from the "+" button.
+  const [pop] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    if (!composing) return;
+    pop.setValue(0);
+    Animated.spring(pop, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 7,
+      tension: 80,
+    }).start();
+  }, [composing, pop]);
+
   const { data, isPending, error, refetch, isRefetching } = useQuery(
     feedPageQuery<FeedPage>(api),
   );
@@ -109,59 +124,72 @@ export default function Feed() {
         renderItem={({ item }) => <FeedRow item={item} />}
       />
 
-      {/* Floating compose button — opens the status modal in place. */}
+      {/* Floating compose button — opens the status popover above it. */}
       <Pressable
         accessibilityLabel="Post a status"
         onPress={() => setComposing(true)}
         className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-zinc-900 shadow-lg active:opacity-80 dark:bg-zinc-100"
       >
-        <Ionicons
-          name="add"
-          size={30}
-          color={colorScheme === "dark" ? "#18181b" : "#ffffff"}
-        />
+        <Ionicons name="add" size={30} color={fabIconColor} />
       </Pressable>
 
-      {/* Status composer as an in-place overlay (tap the backdrop to dismiss). */}
+      {/* Compose popover: a card anchored just above the "+", which morphs into
+          an "×" while open. Tap the dimmed backdrop to dismiss. */}
       <Modal
         visible={composing}
         transparent
         animationType="fade"
         onRequestClose={() => setComposing(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1"
-        >
+        <View className="flex-1">
           <Pressable
-            className="flex-1 justify-end bg-black/40"
+            className="absolute inset-0 bg-black/40"
             onPress={() => setComposing(false)}
+          />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            pointerEvents="box-none"
+            className="flex-1 justify-end px-4 pb-24"
           >
-            {/* Stop taps on the sheet from bubbling to the dismiss backdrop. */}
-            <Pressable
-              onPress={() => {}}
-              className="rounded-t-2xl bg-white p-4 dark:bg-zinc-900"
+            <Animated.View
+              style={{
+                opacity: pop,
+                transform: [
+                  {
+                    translateY: pop.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [24, 0],
+                    }),
+                  },
+                  {
+                    scale: pop.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.96, 1],
+                    }),
+                  },
+                ],
+              }}
             >
-              <View className="mb-3 flex-row items-center justify-between">
-                <Text className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+              <View className="rounded-2xl bg-white p-4 shadow-xl dark:bg-zinc-900">
+                <Text className="mb-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
                   New status
                 </Text>
-                <Pressable
-                  accessibilityLabel="Close"
-                  onPress={() => setComposing(false)}
-                  hitSlop={8}
-                >
-                  <Ionicons
-                    name="close"
-                    size={24}
-                    color={colorScheme === "dark" ? "#a1a1aa" : "#71717a"}
-                  />
-                </Pressable>
+                <StatusComposer onPosted={() => setComposing(false)} />
               </View>
-              <StatusComposer onPosted={() => setComposing(false)} />
-            </Pressable>
+              {/* Caret pointing down toward the "+". */}
+              <View className="absolute -bottom-1.5 right-7 h-4 w-4 rotate-45 bg-white dark:bg-zinc-900" />
+            </Animated.View>
+          </KeyboardAvoidingView>
+
+          {/* The "+" morphs into a close button at the same spot. */}
+          <Pressable
+            accessibilityLabel="Close"
+            onPress={() => setComposing(false)}
+            className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-zinc-900 shadow-lg active:opacity-80 dark:bg-zinc-100"
+          >
+            <Ionicons name="close" size={28} color={fabIconColor} />
           </Pressable>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );
