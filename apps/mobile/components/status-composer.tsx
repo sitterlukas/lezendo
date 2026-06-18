@@ -7,9 +7,10 @@ import { api } from "../lib/api";
 import { inputClass } from "../lib/styles";
 import { Button } from "./form";
 
-// Post a plain-text status to the feed (mirrors the web composer). Lives at the
-// top of the feed so logging your thoughts is one tap away.
-export function StatusComposer() {
+// Post a plain-text status to the feed (mirrors the web composer). Used from the
+// feed's "+" modal; `onPosted` lets that modal dismiss itself once the status is
+// saved.
+export function StatusComposer({ onPosted }: { onPosted?: () => void }) {
   const queryClient = useQueryClient();
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +21,7 @@ export function StatusComposer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed", "page"] });
       setBody("");
+      onPosted?.();
     },
     onError: (e) =>
       setError(e instanceof ApiError ? e.message : "Could not post status."),

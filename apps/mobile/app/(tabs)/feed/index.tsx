@@ -1,5 +1,16 @@
-import { FlatList, Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 import { Link } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 import { useQuery } from "@tanstack/react-query";
 import { feedPageQuery, ApiError } from "@whipperbook/api-client";
 import { timeAgo } from "@whipperbook/core";
@@ -56,6 +67,8 @@ const tickVerb: Record<string, string> = {
 };
 
 export default function Feed() {
+  const { colorScheme } = useColorScheme();
+  const [composing, setComposing] = useState(false);
   const { data, isPending, error, refetch, isRefetching } = useQuery(
     feedPageQuery<FeedPage>(api),
   );
@@ -74,27 +87,83 @@ export default function Feed() {
   }
 
   return (
-    <FlatList
-      className="flex-1 bg-white dark:bg-zinc-950"
-      contentContainerClassName="p-4 gap-3"
-      data={data.items}
-      keyExtractor={(item) => `${item.kind}-${item.id}`}
-      refreshing={isRefetching}
-      onRefresh={refetch}
-      ListHeaderComponent={<StatusComposer />}
-      ListEmptyComponent={
-        <View className="mt-8 px-2">
-          <Text className="text-center font-medium text-zinc-900 dark:text-zinc-50">
-            Your feed is empty
-          </Text>
-          <Text className="mt-1 text-center text-sm text-zinc-500">
-            Routes you log and statuses you post will show up here, along with
-            activity from the climbers you follow.
-          </Text>
-        </View>
-      }
-      renderItem={({ item }) => <FeedRow item={item} />}
-    />
+    <View className="flex-1 bg-white dark:bg-zinc-950">
+      <FlatList
+        className="flex-1"
+        contentContainerClassName="p-4 gap-3 pb-24"
+        data={data.items}
+        keyExtractor={(item) => `${item.kind}-${item.id}`}
+        refreshing={isRefetching}
+        onRefresh={refetch}
+        ListEmptyComponent={
+          <View className="mt-8 px-2">
+            <Text className="text-center font-medium text-zinc-900 dark:text-zinc-50">
+              Your feed is empty
+            </Text>
+            <Text className="mt-1 text-center text-sm text-zinc-500">
+              Routes you log and statuses you post will show up here, along with
+              activity from the climbers you follow.
+            </Text>
+          </View>
+        }
+        renderItem={({ item }) => <FeedRow item={item} />}
+      />
+
+      {/* Floating compose button — opens the status modal in place. */}
+      <Pressable
+        accessibilityLabel="Post a status"
+        onPress={() => setComposing(true)}
+        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-zinc-900 shadow-lg active:opacity-80 dark:bg-zinc-100"
+      >
+        <Ionicons
+          name="add"
+          size={30}
+          color={colorScheme === "dark" ? "#18181b" : "#ffffff"}
+        />
+      </Pressable>
+
+      {/* Status composer as an in-place overlay (tap the backdrop to dismiss). */}
+      <Modal
+        visible={composing}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setComposing(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          className="flex-1"
+        >
+          <Pressable
+            className="flex-1 justify-end bg-black/40"
+            onPress={() => setComposing(false)}
+          >
+            {/* Stop taps on the sheet from bubbling to the dismiss backdrop. */}
+            <Pressable
+              onPress={() => {}}
+              className="rounded-t-2xl bg-white p-4 dark:bg-zinc-900"
+            >
+              <View className="mb-3 flex-row items-center justify-between">
+                <Text className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+                  New status
+                </Text>
+                <Pressable
+                  accessibilityLabel="Close"
+                  onPress={() => setComposing(false)}
+                  hitSlop={8}
+                >
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={colorScheme === "dark" ? "#a1a1aa" : "#71717a"}
+                  />
+                </Pressable>
+              </View>
+              <StatusComposer onPosted={() => setComposing(false)} />
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
   );
 }
 
