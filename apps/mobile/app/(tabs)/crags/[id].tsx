@@ -11,6 +11,7 @@ import { cragDetailQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
 import { Loading, ErrorState } from "../../../components/states";
 import { RouteRow } from "../../../components/route-row";
+import { ReviewForm } from "../../../components/review-form";
 
 // Minimal local shape of GET /api/crags/:id — the handler returns more (images,
 // grading systems, viewer, deleted entities); we only read what this renders.
@@ -150,6 +151,12 @@ export default function CragDetailScreen() {
           ))}
         </View>
       ) : null}
+
+      <ReviewForm
+        entityType="crag"
+        entityId={cragId}
+        invalidateKey={["crags", "detail", cragId]}
+      />
     </ScrollView>
   );
 }

@@ -5,6 +5,7 @@ import { sectorDetailQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../../lib/api";
 import { Loading, ErrorState } from "../../../../components/states";
 import { RouteRow } from "../../../../components/route-row";
+import { ReviewForm } from "../../../../components/review-form";
 
 // Minimal local shape of GET /api/sectors/:id?cragId= — the handler returns
 // more (crag, images, grading systems, viewer); we only read what this renders.
@@ -98,6 +99,12 @@ export default function SectorDetailScreen() {
           <RouteRow key={route.id} route={route} cragId={crag} />
         ))
       )}
+
+      <ReviewForm
+        entityType="sector"
+        entityId={Number(sectorId)}
+        invalidateKey={["sectors", "detail", Number(sectorId)]}
+      />
     </ScrollView>
   );
 }

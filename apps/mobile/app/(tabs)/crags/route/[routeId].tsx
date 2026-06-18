@@ -13,6 +13,7 @@ import { routeDetailQuery, ApiError } from "@whipperbook/api-client";
 import { ascentCreateSchema, tickTypeEnum } from "@whipperbook/validation";
 import { api } from "../../../../lib/api";
 import { Loading, ErrorState } from "../../../../components/states";
+import { ReviewForm } from "../../../../components/review-form";
 
 // Minimal local shape of GET /api/routes/:id?cragId= — we render the route, its
 // resolved display grade, and the ascent history.
@@ -83,6 +84,12 @@ export default function RouteDetailScreen() {
       </View>
 
       <LogAscent routeId={Number(routeId)} onLogged={refetch} />
+
+      <ReviewForm
+        entityType="route"
+        entityId={Number(routeId)}
+        invalidateKey={["routes", "detail", Number(routeId)]}
+      />
 
       <View className="gap-2">
         <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
