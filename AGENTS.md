@@ -48,9 +48,12 @@ Leaflet (maps) · `qrcode`. Path alias: `@/` → repo root.
     `header-nav.tsx`, `theme-toggle.tsx`.
   - `style.ts` — shared Tailwind class tokens (`inputClass`, `typeLabel`,
     `typeBadge`, …). Put reused class strings here, not inline duplicates.
-- **Server actions:** `app/actions/` — `index.ts` (general) and `auth.ts` (auth).
-  All are `"use server"`, take `FormData`, validate, mutate via Kysely, then
-  `revalidatePath`. Add new actions here and reuse existing ones.
+- **API routes (mutations & data):** `app/api/<segment>/route.ts` — REST handlers
+  built with the helpers in `lib/api/respond.ts` (`route`, `ok`, `fail`,
+  `readJson`), authenticated via `lib/api/auth.ts` (`requireUser`/`getUser`), and
+  validated with the Zod schemas from `@whipperbook/validation`. These replaced
+  the old server actions — there are none left; add/extend a route handler and
+  reuse existing ones. The web and mobile apps call the same endpoints.
 - **DB:** schema + row types in `lib/db.ts` (the Kysely `Database` interface).
   Import the `db` client and types from `@/lib/db`.
 - **Domain logic:** `lib/` (`grade-conversion`, `grade-data`, `leaderboard`,
@@ -63,8 +66,11 @@ Leaflet (maps) · `qrcode`. Path alias: `@/` → repo root.
 - **Server vs client:** default to Server Components. Add `"use client"` only when
   you need state/effects/handlers. Fetch data in server components and pass it
   down. Import browser-only/heavy libs (Leaflet) lazily inside an effect.
-- **Forms:** server-action forms over `FormData`. Cross-field/UX validation can be
-  done client-side, but the server action stays the source of truth.
+- **Forms:** client forms POST to the API routes — use `ApiForm`
+  (`app/ui/api-form.tsx`, the drop-in for the old `<form action>`) or
+  `apiFetch` / `browserApi` (`lib/api-client.ts`, `lib/api/client.ts`). The API
+  handler stays the source of truth; cross-field/UX validation can also run
+  client-side.
 - **Styling:** Tailwind v4, zinc palette, dark mode via `dark:`. Reuse `style.ts`
   tokens and mirror the surrounding class ordering/idiom.
 - **Migrations:** `npm run migrate:make <name>`, write `up`/`down` in
