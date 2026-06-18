@@ -6,6 +6,8 @@ import { timeAgo } from "@whipperbook/core";
 import { api } from "../../../lib/api";
 import { Loading, ErrorState } from "../../../components/states";
 import { Avatar } from "../../../components/avatar";
+import { LikeButton } from "../../../components/like-button";
+import { StatusComposer } from "../../../components/status-composer";
 
 // Minimal local shape of GET /api/feed/page — we render statuses and the
 // batched ascent activities; the web payload also carries likes/comments/
@@ -18,21 +20,22 @@ type FeedComment = {
   author: FeedAuthor;
   createdAt: Date;
 };
+type FeedBase = {
+  id: number;
+  createdAt: Date;
+  author: FeedAuthor;
+  likeCount: number;
+  likedByMe: boolean;
+  commentCount: number;
+  comments: FeedComment[];
+};
 type FeedItem =
-  | {
-      id: number;
+  | (FeedBase & {
       kind: "status";
-      createdAt: Date;
-      author: FeedAuthor;
       body: string;
-      commentCount: number;
-      comments: FeedComment[];
-    }
-  | {
-      id: number;
+    })
+  | (FeedBase & {
       kind: "ascent";
-      createdAt: Date;
-      author: FeedAuthor;
       climbs: {
         id: number;
         tickType: string;
@@ -40,9 +43,7 @@ type FeedItem =
         crag: { id: number; name: string };
         points: number | null;
       }[];
-      commentCount: number;
-      comments: FeedComment[];
-    };
+    });
 type FeedPage = { items: FeedItem[] };
 
 // Past-tense verbs matching the web feed; attempts don't score points.
@@ -80,6 +81,7 @@ export default function Feed() {
       keyExtractor={(item) => `${item.kind}-${item.id}`}
       refreshing={isRefetching}
       onRefresh={refetch}
+      ListHeaderComponent={<StatusComposer />}
       ListEmptyComponent={
         <View className="mt-8 px-2">
           <Text className="text-center font-medium text-zinc-900 dark:text-zinc-50">
@@ -118,9 +120,17 @@ function FeedRow({ item }: { item: FeedItem }) {
         ) : (
           <AscentBody climbs={item.climbs} />
         )}
-        <Text className="mt-2 text-xs text-zinc-400">
-          {item.commentCount} comment{item.commentCount === 1 ? "" : "s"}
-        </Text>
+        <View className="mt-2 flex-row items-center gap-4">
+          <LikeButton
+            targetType={item.kind === "ascent" ? "activity" : "status"}
+            targetId={item.id}
+            likeCount={item.likeCount}
+            likedByMe={item.likedByMe}
+          />
+          <Text className="text-xs text-zinc-400">
+            {item.commentCount} comment{item.commentCount === 1 ? "" : "s"}
+          </Text>
+        </View>
       </Pressable>
     </Link>
   );

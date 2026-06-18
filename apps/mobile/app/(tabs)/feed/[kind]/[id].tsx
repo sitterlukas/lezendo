@@ -8,15 +8,25 @@ import { timeAgo } from "@whipperbook/core";
 import { api } from "../../../../lib/api";
 import { Field, Button } from "../../../../components/form";
 import { Loading, ErrorState } from "../../../../components/states";
+import { LikeButton } from "../../../../components/like-button";
 
 type FeedAuthor = { id: number; name: string };
-type FeedComment = { id: number; body: string; author: FeedAuthor; createdAt: Date };
+type FeedComment = {
+  id: number;
+  body: string;
+  author: FeedAuthor;
+  createdAt: Date;
+  likeCount: number;
+  likedByMe: boolean;
+};
 type FeedItem = {
   id: number;
   kind: "status" | "ascent";
   createdAt: Date;
   author: FeedAuthor;
   body?: string;
+  likeCount: number;
+  likedByMe: boolean;
   comments: FeedComment[];
 };
 type FeedPage = { items: FeedItem[] };
@@ -42,7 +52,9 @@ export default function FeedItemDetail() {
       setBody("");
     },
     onError: (e) =>
-      setFormError(e instanceof ApiError ? e.message : "Could not post comment."),
+      setFormError(
+        e instanceof ApiError ? e.message : "Could not post comment.",
+      ),
   });
 
   function submit() {
@@ -71,7 +83,12 @@ export default function FeedItemDetail() {
 
   const item = data.items.find((i) => i.kind === kind && i.id === itemId);
   if (!item) {
-    return <ErrorState message="This item is no longer in your feed." onRetry={refetch} />;
+    return (
+      <ErrorState
+        message="This item is no longer in your feed."
+        onRetry={refetch}
+      />
+    );
   }
 
   return (
@@ -88,9 +105,21 @@ export default function FeedItemDetail() {
           {item.author.name}
         </Text>
         {item.body ? (
-          <Text className="mt-1 text-zinc-700 dark:text-zinc-300">{item.body}</Text>
+          <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
+            {item.body}
+          </Text>
         ) : null}
-        <Text className="mt-1 text-xs text-zinc-400">{timeAgo(item.createdAt)}</Text>
+        <View className="mt-2 flex-row items-center gap-4">
+          <LikeButton
+            targetType={targetType}
+            targetId={item.id}
+            likeCount={item.likeCount}
+            likedByMe={item.likedByMe}
+          />
+          <Text className="text-xs text-zinc-400">
+            {timeAgo(item.createdAt)}
+          </Text>
+        </View>
       </View>
 
       <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
@@ -108,12 +137,27 @@ export default function FeedItemDetail() {
               {c.author.name}
             </Text>
             <Text className="text-zinc-700 dark:text-zinc-300">{c.body}</Text>
+            <View className="mt-2 flex-row">
+              <LikeButton
+                targetType="comment"
+                targetId={c.id}
+                likeCount={c.likeCount}
+                likedByMe={c.likedByMe}
+              />
+            </View>
           </View>
         ))
       )}
 
-      <Field label="Add a comment" value={body} onChangeText={setBody} multiline />
-      {formError ? <Text className="text-sm text-red-600">{formError}</Text> : null}
+      <Field
+        label="Add a comment"
+        value={body}
+        onChangeText={setBody}
+        multiline
+      />
+      {formError ? (
+        <Text className="text-sm text-red-600">{formError}</Text>
+      ) : null}
       <Button label="Post comment" onPress={submit} busy={mutation.isPending} />
     </ScrollView>
   );
