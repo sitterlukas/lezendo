@@ -20,8 +20,12 @@ function isMode(v: string | null): v is ThemeMode {
 }
 
 export async function loadThemeMode(): Promise<ThemeMode> {
-  const v = await store.getItemAsync(KEY);
-  return isMode(v) ? v : "system";
+  try {
+    const v = await store.getItemAsync(KEY);
+    return isMode(v) ? v : "system";
+  } catch {
+    return "system";
+  }
 }
 
 export async function saveThemeMode(mode: ThemeMode): Promise<void> {
