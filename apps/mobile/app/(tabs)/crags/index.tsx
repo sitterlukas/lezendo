@@ -1,5 +1,6 @@
 import { FlatList, Pressable, Text } from "react-native";
-import { Link } from "expo-router";
+import { Stack, Link } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { cragsListQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
@@ -37,7 +38,17 @@ export default function CragsList() {
   }
 
   return (
-    <FlatList
+    <>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Link href="/(tabs)/crags/new" asChild>
+              <Ionicons name="add" size={26} className="mr-2" />
+            </Link>
+          ),
+        }}
+      />
+      <FlatList
       className="flex-1 bg-white dark:bg-zinc-950"
       contentContainerClassName="p-4 gap-3"
       data={data.crags}
@@ -61,5 +72,6 @@ export default function CragsList() {
         </Link>
       )}
     />
+    </>
   );
 }
