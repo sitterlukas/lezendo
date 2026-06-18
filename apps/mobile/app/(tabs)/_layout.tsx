@@ -37,7 +37,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="leaderboard"
         options={{
-          title: "Leaderboard",
+          title: "Leaderboards",
           headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons

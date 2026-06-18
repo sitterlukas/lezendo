@@ -1,6 +1,7 @@
-import { SectionList, Pressable, Text } from "react-native";
-import { Stack, Link } from "expo-router";
+import { SectionList, Pressable, Text, View } from "react-native";
+import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 import { useQuery } from "@tanstack/react-query";
 import { cragsListQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
@@ -18,6 +19,7 @@ type Crag = {
 type CragsResponse = { crags: Crag[] };
 
 export default function CragsList() {
+  const { colorScheme } = useColorScheme();
   const { data, isPending, error, refetch, isRefetching } = useQuery(
     cragsListQuery<CragsResponse>(api),
   );
@@ -46,19 +48,10 @@ export default function CragsList() {
   }
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <Link href="/(tabs)/crags/new" asChild>
-              <Ionicons name="add" size={26} style={{ marginRight: 8 }} />
-            </Link>
-          ),
-        }}
-      />
+    <View className="flex-1 bg-white dark:bg-zinc-950">
       <SectionList
-        className="flex-1 bg-white dark:bg-zinc-950"
-        contentContainerClassName="p-4 gap-2"
+        className="flex-1"
+        contentContainerClassName="p-4 gap-2 pb-24"
         sections={sections}
         keyExtractor={(c) => String(c.id)}
         refreshing={isRefetching}
@@ -86,6 +79,20 @@ export default function CragsList() {
           </Link>
         )}
       />
-    </>
+
+      {/* Floating "add crag" button — mirrors the feed's compose FAB. */}
+      <Link href="/(tabs)/crags/new" asChild>
+        <Pressable
+          accessibilityLabel="Add crag"
+          className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-zinc-900 shadow-lg active:opacity-80 dark:bg-zinc-100"
+        >
+          <Ionicons
+            name="add"
+            size={30}
+            color={colorScheme === "dark" ? "#18181b" : "#ffffff"}
+          />
+        </Pressable>
+      </Link>
+    </View>
   );
 }

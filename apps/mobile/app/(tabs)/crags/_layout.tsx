@@ -1,9 +1,13 @@
 import { Stack } from "expo-router";
+import { HeaderActions } from "../../../components/header-actions";
 
 export default function CragsStack() {
   return (
     <Stack>
-      <Stack.Screen name="index" options={{ title: "Crags" }} />
+      <Stack.Screen
+        name="index"
+        options={{ title: "Crags", headerRight: () => <HeaderActions /> }}
+      />
       <Stack.Screen name="[id]" options={{ title: "Crag" }} />
       <Stack.Screen
         name="sector/new"

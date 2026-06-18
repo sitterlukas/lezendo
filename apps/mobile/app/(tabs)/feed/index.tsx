@@ -167,7 +167,7 @@ export default function Feed() {
             behavior={Platform.OS === "ios" ? "padding" : undefined}
             pointerEvents="box-none"
             className="flex-1 justify-end px-4"
-            style={{ paddingBottom: tabBarHeight + 32 }}
+            style={{ paddingBottom: tabBarHeight + 92 }}
           >
             <Animated.View
               style={{
