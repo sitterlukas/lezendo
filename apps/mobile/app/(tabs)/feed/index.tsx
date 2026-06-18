@@ -1,4 +1,5 @@
-import { FlatList, Text, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
+import { Link } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { feedPageQuery, ApiError } from "@whipperbook/api-client";
 import { timeAgo } from "@whipperbook/core";
@@ -10,6 +11,7 @@ import { Loading, ErrorState } from "../../../components/states";
 // suggestions we don't surface yet. `createdAt` arrives as a Date (revived by
 // the api client) so timeAgo() can consume it directly.
 type FeedAuthor = { id: number; name: string };
+type FeedComment = { id: number; body: string; author: FeedAuthor; createdAt: Date };
 type FeedItem =
   | {
       id: number;
@@ -17,6 +19,8 @@ type FeedItem =
       createdAt: Date;
       author: FeedAuthor;
       body: string;
+      commentCount: number;
+      comments: FeedComment[];
     }
   | {
       id: number;
@@ -29,6 +33,8 @@ type FeedItem =
         route: { id: number; name: string; grade: string };
         crag: { id: number; name: string };
       }[];
+      commentCount: number;
+      comments: FeedComment[];
     };
 type FeedPage = { items: FeedItem[] };
 
@@ -76,25 +82,30 @@ export default function Feed() {
 
 function FeedRow({ item }: { item: FeedItem }) {
   return (
-    <View className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-      <View className="mb-1 flex-row items-center justify-between">
-        <Text className="font-semibold text-zinc-900 dark:text-zinc-50">
-          {item.author.name}
-        </Text>
-        <Text className="text-xs text-zinc-400">{timeAgo(item.createdAt)}</Text>
-      </View>
-      {item.kind === "status" ? (
-        <Text className="text-zinc-700 dark:text-zinc-300">{item.body}</Text>
-      ) : (
-        <View className="gap-1">
-          {item.climbs.map((c) => (
-            <Text key={c.id} className="text-zinc-700 dark:text-zinc-300">
-              <Text className="font-medium">{c.tickType}</Text> {c.route.name} (
-              {c.route.grade}) · {c.crag.name}
-            </Text>
-          ))}
+    <Link href={`/(tabs)/feed/${item.kind}/${item.id}`} asChild>
+      <Pressable className="rounded-xl border border-zinc-200 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900">
+        <View className="mb-1 flex-row items-center justify-between">
+          <Text className="font-semibold text-zinc-900 dark:text-zinc-50">
+            {item.author.name}
+          </Text>
+          <Text className="text-xs text-zinc-400">{timeAgo(item.createdAt)}</Text>
         </View>
-      )}
-    </View>
+        {item.kind === "status" ? (
+          <Text className="text-zinc-700 dark:text-zinc-300">{item.body}</Text>
+        ) : (
+          <View className="gap-1">
+            {item.climbs.map((c) => (
+              <Text key={c.id} className="text-zinc-700 dark:text-zinc-300">
+                <Text className="font-medium">{c.tickType}</Text> {c.route.name} (
+                {c.route.grade}) · {c.crag.name}
+              </Text>
+            ))}
+          </View>
+        )}
+        <Text className="mt-2 text-xs text-zinc-400">
+          {item.commentCount} comment{item.commentCount === 1 ? "" : "s"}
+        </Text>
+      </Pressable>
+    </Link>
   );
 }
