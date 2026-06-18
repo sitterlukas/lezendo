@@ -43,7 +43,7 @@ export default function CragsList() {
         options={{
           headerRight: () => (
             <Link href="/(tabs)/crags/new" asChild>
-              <Ionicons name="add" size={26} className="mr-2" />
+              <Ionicons name="add" size={26} style={{ marginRight: 8 }} />
             </Link>
           ),
         }}
