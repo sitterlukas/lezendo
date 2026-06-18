@@ -85,7 +85,7 @@ Expo client differ between machines.
 
 - **Postgres (Docker on port 6666):** set
   `DATABASE_URL=postgresql://lukas:lezendo_dev@localhost:6666/lezendo` in
-  `.env.local`, then start the container via Docker Desktop:
+  `.env.local`, then start the container (Docker Desktop must be running):
 
   ```bash
   docker run -d --name lezendo-postgres \
