@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.public.blob.vercel-storage.com",
       },
+      {
+        // Demo feed seed uses pravatar placeholder avatars.
+        protocol: "https",
+        hostname: "i.pravatar.cc",
+      },
     ],
   },
 };
