@@ -1,4 +1,10 @@
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { inputClass } from "../lib/styles";
 
 export function Field({
@@ -12,7 +18,7 @@ export function Field({
   autoCapitalize = "sentences",
   secureTextEntry = false,
 }: {
-  label: string;
+  label?: string;
   value: string;
   onChangeText: (t: string) => void;
   placeholder?: string;
@@ -24,9 +30,11 @@ export function Field({
 }) {
   return (
     <View className="gap-1.5">
-      <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        {label}
-      </Text>
+      {label ? (
+        <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          {label}
+        </Text>
+      ) : null}
       <TextInput
         className={`${inputClass}${multiline ? " h-24" : ""}`}
         placeholder={placeholder}

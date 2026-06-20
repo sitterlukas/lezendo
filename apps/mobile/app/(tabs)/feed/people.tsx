@@ -7,11 +7,13 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
 import { inputClass } from "../../../lib/styles";
 import { Avatar } from "../../../components/avatar";
+import { FollowButton } from "../../../components/follow-button";
 import { ErrorState } from "../../../components/states";
 
 // GET /api/people?q= — name search, excludes the viewer, flags who they follow.
@@ -80,42 +82,18 @@ export default function People() {
 }
 
 function PersonRow({ person }: { person: Person }) {
-  const queryClient = useQueryClient();
-  const [following, setFollowing] = useState(person.following);
-  const mutation = useMutation({
-    mutationFn: (next: boolean) =>
-      api.send(`/api/users/${person.id}/follow`, next ? "POST" : "DELETE"),
-    onMutate: (next) => setFollowing(next),
-    onError: (_e, next) => setFollowing(!next),
-    // A new follow changes whose activity shows up in the feed.
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["feed", "page"] }),
-  });
-
   return (
     <View className="flex-row items-center gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
-      <Avatar name={person.name} src={person.avatarUrl} size={40} />
-      <Text className="flex-1 font-medium text-zinc-900 dark:text-zinc-50">
-        {person.name}
-      </Text>
       <Pressable
-        onPress={() => mutation.mutate(!following)}
-        className={
-          following
-            ? "rounded-full border border-zinc-300 px-4 py-1.5 active:opacity-80 dark:border-zinc-700"
-            : "rounded-full border border-zinc-900 bg-zinc-900 px-4 py-1.5 active:opacity-80 dark:border-zinc-100 dark:bg-zinc-100"
-        }
+        className="flex-1 flex-row items-center gap-3 active:opacity-70"
+        onPress={() => router.push(`/(tabs)/feed/users/${person.id}`)}
       >
-        <Text
-          className={
-            following
-              ? "text-sm font-medium text-zinc-700 dark:text-zinc-300"
-              : "text-sm font-medium text-white dark:text-zinc-900"
-          }
-        >
-          {following ? "Following" : "Follow"}
+        <Avatar name={person.name} src={person.avatarUrl} size={40} />
+        <Text className="flex-1 font-medium text-zinc-900 dark:text-zinc-50">
+          {person.name}
         </Text>
       </Pressable>
+      <FollowButton userId={person.id} initialFollowing={person.following} />
     </View>
   );
 }

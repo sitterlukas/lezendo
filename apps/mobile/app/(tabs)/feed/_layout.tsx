@@ -13,6 +13,7 @@ export default function FeedStack() {
       />
       <Stack.Screen name="[kind]/[id]" options={{ title: "Comments" }} />
       <Stack.Screen name="people" options={{ title: "Find climbers" }} />
+      <Stack.Screen name="users/[id]" options={{ title: "Profile" }} />
     </Stack>
   );
 }

@@ -48,6 +48,34 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="forum"
+        options={{
+          title: "Forum",
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "chatbubbles" : "chatbubbles-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="gear"
+        options={{
+          title: "Gear",
+          headerShown: false,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "briefcase" : "briefcase-outline"}
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
       {/* Profile stays routable (the feed header avatar opens it) but is hidden
           from the tab bar — `href: null` keeps the screen, drops the tab. */}
       <Tabs.Screen

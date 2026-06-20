@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { Image, RefreshControl, ScrollView, Text, View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import {
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { feedPageQuery, ApiError } from "@whipperbook/api-client";
 import { commentCreateSchema } from "@whipperbook/validation";
@@ -102,9 +109,14 @@ export default function FeedItemDetail() {
     >
       <Stack.Screen options={{ title: "Comments" }} />
       <View className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-        <Text className="font-semibold text-zinc-900 dark:text-zinc-50">
-          {item.author.name}
-        </Text>
+        <Pressable
+          onPress={() => router.push(`/(tabs)/feed/users/${item.author.id}`)}
+          className="self-start active:opacity-70"
+        >
+          <Text className="font-semibold text-zinc-900 dark:text-zinc-50">
+            {item.author.name}
+          </Text>
+        </Pressable>
         {item.body ? (
           <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
             {item.body}
@@ -146,9 +158,14 @@ export default function FeedItemDetail() {
             key={c.id}
             className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800"
           >
-            <Text className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-              {c.author.name}
-            </Text>
+            <Pressable
+              onPress={() => router.push(`/(tabs)/feed/users/${c.author.id}`)}
+              className="self-start active:opacity-70"
+            >
+              <Text className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                {c.author.name}
+              </Text>
+            </Pressable>
             <Text className="text-zinc-700 dark:text-zinc-300">{c.body}</Text>
             <View className="mt-2 flex-row">
               <LikeButton

@@ -11,6 +11,7 @@ export default function LeaderboardStack() {
           headerRight: () => <HeaderActions />,
         }}
       />
+      <Stack.Screen name="users/[id]" options={{ title: "Profile" }} />
     </Stack>
   );
 }

@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { ActivityIndicator, FlatList, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
+import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { leaderboardQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
@@ -122,11 +129,12 @@ function LeaderRow({
   isViewer: boolean;
 }) {
   return (
-    <View
+    <Pressable
+      onPress={() => router.push(`/(tabs)/leaderboard/users/${row.user_id}`)}
       className={
         isViewer
-          ? "flex-row items-center gap-3 rounded-xl border border-zinc-900 bg-zinc-50 px-3 py-3 dark:border-zinc-100 dark:bg-zinc-900"
-          : "flex-row items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3 dark:border-zinc-800"
+          ? "flex-row items-center gap-3 rounded-xl border border-zinc-900 bg-zinc-50 px-3 py-3 active:opacity-80 dark:border-zinc-100 dark:bg-zinc-900"
+          : "flex-row items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3 active:opacity-80 dark:border-zinc-800"
       }
     >
       <View className="w-8 items-center">
@@ -146,6 +154,6 @@ function LeaderRow({
       <Text className="font-semibold text-zinc-900 dark:text-zinc-50">
         {row.points} pts
       </Text>
-    </View>
+    </Pressable>
   );
 }
