@@ -149,7 +149,6 @@ function RouteFields({
   const [description, setDescription] = useState(initial.description);
   const [heightM, setHeightM] = useState(initial.heightM);
   const [boltCount, setBoltCount] = useState(initial.boltCount);
-  const [protection, setProtection] = useState(initial.protection);
   const [firstAscensionist, setFirstAscensionist] = useState(
     initial.firstAscensionist,
   );
@@ -212,7 +211,8 @@ function RouteFields({
       description,
       height_m: heightM,
       bolt_count: boltCount,
-      protection,
+      // Folded into "Gear / protection" (gear_notes); preserve old data on edit.
+      protection: initial.protection,
       first_ascensionist: firstAscensionist,
       first_ascent_year: firstAscentYear,
       pitches,
@@ -313,13 +313,6 @@ function RouteFields({
         keyboardType="numeric"
       />
       <Field
-        label="Protection"
-        hint
-        value={protection}
-        onChangeText={setProtection}
-        placeholder="e.g. Bolts, mixed, trad rack"
-      />
-      <Field
         label="First ascensionist"
         hint
         value={firstAscensionist}
@@ -333,10 +326,11 @@ function RouteFields({
         keyboardType="numeric"
       />
       <Field
-        label="Gear notes"
+        label="Gear / protection"
         hint
         value={gearNotes}
         onChangeText={setGearNotes}
+        placeholder="e.g. Sport-bolted with lower-off, or single rack to 3 inches"
         multiline
       />
       <Field

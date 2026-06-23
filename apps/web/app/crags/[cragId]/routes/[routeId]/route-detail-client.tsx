@@ -277,17 +277,13 @@ export default function RouteDetailClient({
                         className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
                       />
                     </label>
-                    <label className="sm:col-span-2">
-                      <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                        Bolting / protection
-                      </span>
-                      <input
-                        name="protection"
-                        defaultValue={route.protection ?? ""}
-                        placeholder="e.g. Sport-bolted, stainless steel, lower-off (optional)"
-                        className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
-                      />
-                    </label>
+                    {/* Protection is folded into "Gear / protection" below;
+                        preserve any existing value so editing doesn't wipe it. */}
+                    <input
+                      type="hidden"
+                      name="protection"
+                      defaultValue={route.protection ?? ""}
+                    />
                     <label>
                       <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
                         Pitches
@@ -327,12 +323,12 @@ export default function RouteDetailClient({
                     </label>
                     <label className="sm:col-span-2">
                       <span className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                        Gear / rack
+                        Gear / protection
                       </span>
                       <input
                         name="gear_notes"
                         defaultValue={route.gear_notes ?? ""}
-                        placeholder="e.g. Single rack to 3 inches, 12 draws (optional)"
+                        placeholder="e.g. Sport-bolted with lower-off, or single rack to 3 inches (optional)"
                         className="w-full rounded border border-zinc-300 bg-white px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900"
                       />
                     </label>
@@ -375,7 +371,7 @@ export default function RouteDetailClient({
                   items={[
                     { label: "First ascent", value: firstAscent },
                     { label: "Bolting", value: bolting },
-                    { label: "Gear / rack", value: route.gear_notes },
+                    { label: "Gear / protection", value: route.gear_notes },
                   ]}
                 />
               </div>

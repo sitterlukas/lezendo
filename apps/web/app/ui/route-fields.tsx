@@ -115,26 +115,16 @@ export default function RouteFields({
         />
       </label>
       {style !== "boulder" && (
-        <>
-          <label>
-            <FieldLabel hint>Bolts</FieldLabel>
-            <input
-              name="bolt_count"
-              type="number"
-              min="0"
-              placeholder="optional"
-              className={inputClass}
-            />
-          </label>
-          <label className="sm:col-span-2">
-            <FieldLabel hint>Bolting / protection</FieldLabel>
-            <input
-              name="protection"
-              placeholder="e.g. Sport-bolted, stainless steel, lower-off (optional)"
-              className={inputClass}
-            />
-          </label>
-        </>
+        <label>
+          <FieldLabel hint>Bolts</FieldLabel>
+          <input
+            name="bolt_count"
+            type="number"
+            min="0"
+            placeholder="optional"
+            className={inputClass}
+          />
+        </label>
       )}
       <label>
         <FieldLabel hint>Pitches</FieldLabel>
@@ -166,10 +156,10 @@ export default function RouteFields({
       </label>
       {style !== "boulder" && (
         <label className="sm:col-span-2">
-          <FieldLabel hint>Gear / rack</FieldLabel>
+          <FieldLabel hint>Gear / protection</FieldLabel>
           <input
             name="gear_notes"
-            placeholder="e.g. Single rack to 3 inches, 12 draws (optional)"
+            placeholder="e.g. Sport-bolted with lower-off, or single rack to 3 inches (optional)"
             className={inputClass}
           />
         </label>
