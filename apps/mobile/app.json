@@ -14,10 +14,12 @@
       "backgroundColor": "#09090b"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.whipperbook.app"
     },
     "android": {
       "edgeToEdgeEnabled": true,
+      "package": "com.whipperbook.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09090b"
