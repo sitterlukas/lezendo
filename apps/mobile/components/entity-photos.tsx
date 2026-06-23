@@ -91,8 +91,8 @@ export function EntityPhotos({
     ]);
   }
 
-  // Keep the gallery compact: show a few, then a "+N more" tile to expand.
-  const COLLAPSED = 5;
+  // Keep the gallery compact: show two, then a "+N more" tile to expand.
+  const COLLAPSED = 2;
   const shown = expanded ? photos : photos.slice(0, COLLAPSED);
   const hidden = photos.length - shown.length;
   const tile = { width: SIZE, height: SIZE } as const;
