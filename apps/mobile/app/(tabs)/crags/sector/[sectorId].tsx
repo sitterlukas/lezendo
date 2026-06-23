@@ -1,12 +1,5 @@
-import {
-  Alert,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
-import { Link, router, useLocalSearchParams } from "expo-router";
+import { Alert, RefreshControl, ScrollView, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { sectorDetailQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../../lib/api";
@@ -15,6 +8,7 @@ import { Loading, ErrorState } from "../../../../components/states";
 import { DeleteButton } from "../../../../components/delete-button";
 import { EditButton } from "../../../../components/edit-button";
 import { EntityPhotos } from "../../../../components/entity-photos";
+import { Fab } from "../../../../components/fab";
 import { RouteRow } from "../../../../components/route-row";
 import { ReviewForm } from "../../../../components/review-form";
 
@@ -84,85 +78,85 @@ export default function SectorDetailScreen() {
     .join(" · ");
 
   return (
-    <ScrollView
-      className="flex-1 bg-white dark:bg-zinc-950"
-      contentContainerClassName="p-4 gap-3"
-      refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-      }
-    >
-      <View className="mb-1 flex-row items-start justify-between gap-3">
-        <View className="flex-1 gap-1">
-          <Text className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            {sector.name}
-          </Text>
-          {meta ? (
-            <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-              {meta}
+    <View className="flex-1 bg-white dark:bg-zinc-950">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="p-4 gap-3 pb-24"
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+        }
+      >
+        <View className="mb-1 flex-row items-start justify-between gap-3">
+          <View className="flex-1 gap-1">
+            <Text className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+              {sector.name}
             </Text>
-          ) : null}
-          {sector.description ? (
-            <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
-              {sector.description}
-            </Text>
+            {meta ? (
+              <Text className="text-sm text-zinc-500 dark:text-zinc-400">
+                {meta}
+              </Text>
+            ) : null}
+            {sector.description ? (
+              <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
+                {sector.description}
+              </Text>
+            ) : null}
+          </View>
+          {canModify(viewer, sector.created_by) ? (
+            <View className="flex-row items-center gap-3">
+              <EditButton
+                accessibilityLabel="Edit sector"
+                onPress={() =>
+                  router.push(
+                    `/(tabs)/crags/sector/new?cragId=${crag}&editId=${sectorId}`,
+                  )
+                }
+              />
+              <DeleteButton
+                accessibilityLabel="Delete sector"
+                title="Delete sector?"
+                message={`This removes “${sector.name}” and its routes.`}
+                size={20}
+                onConfirm={() => remove.mutate()}
+              />
+            </View>
           ) : null}
         </View>
-        {canModify(viewer, sector.created_by) ? (
-          <View className="flex-row items-center gap-3">
-            <EditButton
-              accessibilityLabel="Edit sector"
-              onPress={() =>
-                router.push(
-                  `/(tabs)/crags/sector/new?cragId=${crag}&editId=${sectorId}`,
-                )
-              }
-            />
-            <DeleteButton
-              accessibilityLabel="Delete sector"
-              title="Delete sector?"
-              message={`This removes “${sector.name}” and its routes.`}
-              size={20}
-              onConfirm={() => remove.mutate()}
-            />
-          </View>
-        ) : null}
-      </View>
 
-      <EntityPhotos
-        entityType="sector"
-        entityId={Number(sectorId)}
-        photos={images}
-        viewer={viewer}
-        invalidateKey={["sectors", "detail", Number(sectorId)]}
+        <EntityPhotos
+          entityType="sector"
+          entityId={Number(sectorId)}
+          photos={images}
+          viewer={viewer}
+          invalidateKey={["sectors", "detail", Number(sectorId)]}
+        />
+
+        <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+          Routes ({routes.length})
+        </Text>
+        {routes.length === 0 ? (
+          <Text className="text-center text-zinc-500">No routes yet.</Text>
+        ) : (
+          routes.map((route) => (
+            <RouteRow key={route.id} route={route} cragId={crag} />
+          ))
+        )}
+
+        <ReviewForm
+          entityType="sector"
+          entityId={Number(sectorId)}
+          invalidateKey={["sectors", "detail", Number(sectorId)]}
+        />
+      </ScrollView>
+
+      <Fab
+        accessibilityLabel="Add route"
+        onPress={() =>
+          router.push(
+            `/(tabs)/crags/route/new?cragId=${crag}&sectorId=${sector.id}`,
+          )
+        }
       />
-
-      <Link
-        href={`/(tabs)/crags/route/new?cragId=${crag}&sectorId=${sector.id}`}
-        asChild
-      >
-        <Pressable className="self-start rounded-lg border border-zinc-300 px-3 py-2 active:opacity-80 dark:border-zinc-700">
-          <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            + Add route
-          </Text>
-        </Pressable>
-      </Link>
-
-      <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-        Routes ({routes.length})
-      </Text>
-      {routes.length === 0 ? (
-        <Text className="text-center text-zinc-500">No routes yet.</Text>
-      ) : (
-        routes.map((route) => (
-          <RouteRow key={route.id} route={route} cragId={crag} />
-        ))
-      )}
-
-      <ReviewForm
-        entityType="sector"
-        entityId={Number(sectorId)}
-        invalidateKey={["sectors", "detail", Number(sectorId)]}
-      />
-    </ScrollView>
+    </View>
   );
 }
