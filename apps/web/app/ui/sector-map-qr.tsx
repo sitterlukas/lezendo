@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import Modal from "@/app/ui/modal";
 import MapPicker from "@/app/ui/map-picker";
@@ -116,7 +119,7 @@ function LocationForm({
   );
 }
 
-async function LocationCard({
+function LocationCard({
   point,
   sectorId,
   name,
@@ -130,11 +133,22 @@ async function LocationCard({
   center?: [number, number];
 }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${point.latitude},${point.longitude}`;
-  const svg = await QRCode.toString(mapsUrl, {
-    type: "svg",
-    margin: 0,
-    errorCorrectionLevel: "M",
-  });
+  // QR is generated in the browser since the surrounding page fetches its data
+  // client-side; toString resolves a promise, so render the SVG once it's ready.
+  const [svg, setSvg] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    QRCode.toString(mapsUrl, {
+      type: "svg",
+      margin: 0,
+      errorCorrectionLevel: "M",
+    }).then((next) => {
+      if (!cancelled) setSvg(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [mapsUrl]);
   const coords = `${point.latitude!.toFixed(5)}, ${point.longitude!.toFixed(5)}`;
 
   return (
@@ -229,9 +243,9 @@ function AddLocationPlaceholder({
  * itself and for the recommended parking. Editors (author/admin) can add
  * coordinates that aren't set yet and edit ones that are. Renders nothing when
  * there's nothing to show (no coordinates and the viewer can't edit).
- * Server component — QR SVGs are generated at request time.
+ * Client component — QR SVGs are generated in the browser.
  */
-export default async function SectorMapQR({
+export default function SectorMapQR({
   sectorId,
   name,
   canEdit,

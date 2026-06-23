@@ -82,7 +82,7 @@ export function FeedCard({
       <Pressable
         className={
           isSend
-            ? "rounded-xl border border-l-4 border-zinc-200 border-l-emerald-500 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900"
+            ? "rounded-xl border border-l-4 border-zinc-200 border-l-blue-500 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900"
             : "rounded-xl border border-zinc-200 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900"
         }
       >
@@ -102,8 +102,8 @@ export function FeedCard({
               </Text>
               {isSend ? (
                 <View className="mt-0.5 flex-row items-center gap-1">
-                  <Ionicons name="trending-up" size={12} color="#10b981" />
-                  <Text className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  <Ionicons name="trending-up" size={12} color="#3b82f6" />
+                  <Text className="text-xs font-medium text-blue-600 dark:text-blue-400">
                     Logged a climb
                   </Text>
                 </View>

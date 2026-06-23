@@ -85,12 +85,6 @@ export default function RouteDetailScreen() {
 
       <LogAscent routeId={Number(routeId)} onLogged={refetch} />
 
-      <ReviewForm
-        entityType="route"
-        entityId={Number(routeId)}
-        invalidateKey={["routes", "detail", Number(routeId)]}
-      />
-
       <View className="gap-2">
         <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
           Ascents ({data.ascents.length})
@@ -120,6 +114,12 @@ export default function RouteDetailScreen() {
           ))
         )}
       </View>
+
+      <ReviewForm
+        entityType="route"
+        entityId={Number(routeId)}
+        invalidateKey={["routes", "detail", Number(routeId)]}
+      />
     </ScrollView>
   );
 }
