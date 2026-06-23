@@ -14,7 +14,12 @@ import {
   type GradeEquivalency,
 } from "@whipperbook/core";
 import { api } from "../../../../lib/api";
-import { Field, Button, SegmentedPicker } from "../../../../components/form";
+import {
+  Field,
+  Button,
+  SegmentedPicker,
+  FieldHint,
+} from "../../../../components/form";
 import { Loading, ErrorState } from "../../../../components/states";
 
 type GradingSystem = { id: number; name: string; slug: string };
@@ -25,17 +30,6 @@ type Settings = {
 
 type Style = "sport" | "trad" | "boulder";
 
-// Fields routeWriteSchema carries that this form doesn't expose — preserved
-// as-is on edit so a PATCH doesn't wipe them.
-type RouteExtras = {
-  height_m: number | null;
-  bolt_count: number | null;
-  protection: string | null;
-  first_ascensionist: string | null;
-  first_ascent_year: number | null;
-  pitches: number | null;
-  gear_notes: string | null;
-};
 type RouteEdit = {
   route: {
     name: string;
@@ -44,8 +38,33 @@ type RouteEdit = {
     grading_system_id: number;
     sector_id: number | null;
     description: string | null;
-  } & RouteExtras;
+    height_m: number | null;
+    bolt_count: number | null;
+    protection: string | null;
+    first_ascensionist: string | null;
+    first_ascent_year: number | null;
+    pitches: number | null;
+    gear_notes: string | null;
+  };
 };
+
+type Initial = {
+  name: string;
+  style: Style;
+  systemId: number | null;
+  grade: string;
+  description: string;
+  sectorId: number | null;
+  heightM: string;
+  boltCount: string;
+  protection: string;
+  firstAscensionist: string;
+  firstAscentYear: string;
+  pitches: string;
+  gearNotes: string;
+};
+
+const num = (n: number | null) => (n != null ? String(n) : "");
 
 // Add a route, or edit one when `editId` is present. The fields live in an
 // inner component so editing can seed their initial state directly from the
@@ -86,15 +105,6 @@ export default function RouteForm() {
       sectorId={sectorId}
       systems={me.data?.gradingSystems ?? []}
       eqs={me.data?.gradeEquivalencies ?? []}
-      extras={{
-        height_m: r?.height_m ?? null,
-        bolt_count: r?.bolt_count ?? null,
-        protection: r?.protection ?? null,
-        first_ascensionist: r?.first_ascensionist ?? null,
-        first_ascent_year: r?.first_ascent_year ?? null,
-        pitches: r?.pitches ?? null,
-        gear_notes: r?.gear_notes ?? null,
-      }}
       initial={{
         name: r?.name ?? "",
         style: r?.style ?? "sport",
@@ -102,6 +112,13 @@ export default function RouteForm() {
         grade: r?.grade ?? "",
         description: r?.description ?? "",
         sectorId: r?.sector_id ?? null,
+        heightM: num(r?.height_m ?? null),
+        boltCount: num(r?.bolt_count ?? null),
+        protection: r?.protection ?? "",
+        firstAscensionist: r?.first_ascensionist ?? "",
+        firstAscentYear: num(r?.first_ascent_year ?? null),
+        pitches: num(r?.pitches ?? null),
+        gearNotes: r?.gear_notes ?? "",
       }}
     />
   );
@@ -113,7 +130,6 @@ function RouteFields({
   sectorId,
   systems,
   eqs,
-  extras,
   initial,
 }: {
   crag: number;
@@ -121,15 +137,7 @@ function RouteFields({
   sectorId?: string;
   systems: GradingSystem[];
   eqs: GradeEquivalency[];
-  extras: RouteExtras;
-  initial: {
-    name: string;
-    style: Style;
-    systemId: number | null;
-    grade: string;
-    description: string;
-    sectorId: number | null;
-  };
+  initial: Initial;
 }) {
   const isEdit = !!editId;
   const queryClient = useQueryClient();
@@ -139,6 +147,17 @@ function RouteFields({
   const [systemId, setSystemId] = useState<number | null>(initial.systemId);
   const [grade, setGrade] = useState(initial.grade);
   const [description, setDescription] = useState(initial.description);
+  const [heightM, setHeightM] = useState(initial.heightM);
+  const [boltCount, setBoltCount] = useState(initial.boltCount);
+  const [protection, setProtection] = useState(initial.protection);
+  const [firstAscensionist, setFirstAscensionist] = useState(
+    initial.firstAscensionist,
+  );
+  const [firstAscentYear, setFirstAscentYear] = useState(
+    initial.firstAscentYear,
+  );
+  const [pitches, setPitches] = useState(initial.pitches);
+  const [gearNotes, setGearNotes] = useState(initial.gearNotes);
   const [error, setError] = useState<string | null>(null);
 
   const wantedDiscipline = style === "boulder" ? "boulder" : "rope";
@@ -155,11 +174,11 @@ function RouteFields({
   const gradeOptions = useMemo(() => gradesForSystem(slug, eqs), [slug, eqs]);
 
   const mutation = useMutation({
-    mutationFn: (body: unknown) =>
+    mutationFn: (body: unknown): Promise<{ id?: number }> =>
       isEdit
         ? api.send(`/api/routes/${editId}`, "PATCH", body)
         : api.send("/api/routes", "POST", body),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["crags", "detail", crag] });
       if (sectorId) {
         queryClient.invalidateQueries({
@@ -170,8 +189,11 @@ function RouteFields({
         queryClient.invalidateQueries({
           queryKey: ["routes", "detail", Number(editId)],
         });
+        router.back();
+      } else {
+        // Land on the new route detail (where photos can be added).
+        router.replace(`/(tabs)/crags/route/${res.id}?cragId=${crag}`);
       }
-      router.back();
     },
     onError: (e) =>
       setError(e instanceof ApiError ? e.message : "Could not save route."),
@@ -188,7 +210,13 @@ function RouteFields({
       // On edit keep the route's sector; on create use the sector we came from.
       sector_id: isEdit ? initial.sectorId : sectorId ? Number(sectorId) : null,
       description,
-      ...extras,
+      height_m: heightM,
+      bolt_count: boltCount,
+      protection,
+      first_ascensionist: firstAscensionist,
+      first_ascent_year: firstAscentYear,
+      pitches,
+      gear_notes: gearNotes,
     });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "Invalid route.");
@@ -210,6 +238,8 @@ function RouteFields({
       />
       <Field
         label="Name"
+        hint
+        required
         value={name}
         onChangeText={setName}
         placeholder="Route name"
@@ -218,6 +248,7 @@ function RouteFields({
       <View className="gap-1.5">
         <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Style
+          <FieldHint required />
         </Text>
         <SegmentedPicker<Style>
           value={style}
@@ -236,6 +267,7 @@ function RouteFields({
       <View className="gap-1.5">
         <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Grading system
+          <FieldHint required />
         </Text>
         <SegmentedPicker<number>
           value={effectiveSystemId ?? -1}
@@ -250,6 +282,7 @@ function RouteFields({
       <View className="gap-1.5">
         <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Grade
+          <FieldHint required />
         </Text>
         <SegmentedPicker<string>
           value={grade}
@@ -259,7 +292,56 @@ function RouteFields({
       </View>
 
       <Field
+        label="Height (m)"
+        hint
+        value={heightM}
+        onChangeText={setHeightM}
+        keyboardType="numeric"
+      />
+      <Field
+        label="Bolts"
+        hint
+        value={boltCount}
+        onChangeText={setBoltCount}
+        keyboardType="numeric"
+      />
+      <Field
+        label="Pitches"
+        hint
+        value={pitches}
+        onChangeText={setPitches}
+        keyboardType="numeric"
+      />
+      <Field
+        label="Protection"
+        hint
+        value={protection}
+        onChangeText={setProtection}
+        placeholder="e.g. Bolts, mixed, trad rack"
+      />
+      <Field
+        label="First ascensionist"
+        hint
+        value={firstAscensionist}
+        onChangeText={setFirstAscensionist}
+      />
+      <Field
+        label="First ascent year"
+        hint
+        value={firstAscentYear}
+        onChangeText={setFirstAscentYear}
+        keyboardType="numeric"
+      />
+      <Field
+        label="Gear notes"
+        hint
+        value={gearNotes}
+        onChangeText={setGearNotes}
+        multiline
+      />
+      <Field
         label="Description"
+        hint
         value={description}
         onChangeText={setDescription}
         multiline

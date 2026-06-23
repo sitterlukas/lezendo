@@ -14,6 +14,7 @@ import { canModify } from "../../../../lib/permissions";
 import { Loading, ErrorState } from "../../../../components/states";
 import { DeleteButton } from "../../../../components/delete-button";
 import { EditButton } from "../../../../components/edit-button";
+import { EntityPhotos } from "../../../../components/entity-photos";
 import { RouteRow } from "../../../../components/route-row";
 import { ReviewForm } from "../../../../components/review-form";
 
@@ -30,6 +31,7 @@ type SectorDetail = {
     created_by: number | null;
   };
   viewer: { id: number; role: string } | null;
+  images: { id: number; url: string; uploaded_by: number | null }[];
   routes: { id: number; name: string; grade: string; style: string }[];
 };
 
@@ -71,7 +73,7 @@ export default function SectorDetailScreen() {
     );
   }
 
-  const { sector, viewer, routes } = data;
+  const { sector, viewer, images, routes } = data;
   const meta = [
     sector.approach_minutes != null
       ? `${sector.approach_minutes} min approach`
@@ -125,6 +127,14 @@ export default function SectorDetailScreen() {
           </View>
         ) : null}
       </View>
+
+      <EntityPhotos
+        entityType="sector"
+        entityId={Number(sectorId)}
+        photos={images}
+        viewer={viewer}
+        invalidateKey={["sectors", "detail", Number(sectorId)]}
+      />
 
       <Link
         href={`/(tabs)/crags/route/new?cragId=${crag}&sectorId=${sector.id}`}

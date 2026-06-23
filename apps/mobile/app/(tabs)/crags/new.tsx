@@ -8,26 +8,33 @@ import { api } from "../../../lib/api";
 import { Field, Button } from "../../../components/form";
 import { Loading } from "../../../components/states";
 
-// Fields cragWriteSchema carries that this form doesn't expose — preserved
-// as-is on edit so a PATCH doesn't wipe them.
-type CragExtras = {
-  rock_type: string | null;
-  aspect: string | null;
-  best_season: string | null;
-  access_notes: string | null;
-};
 type CragEdit = {
   crag: {
     name: string;
     area: string | null;
     country: string | null;
     description: string | null;
-  } & CragExtras;
+    rock_type: string | null;
+    aspect: string | null;
+    best_season: string | null;
+    access_notes: string | null;
+  };
 };
 
-// Add a crag, or edit one when `editId` is present. The form fields live in an
-// inner component so editing can seed their initial state directly from the
-// loaded crag (no setState-in-effect).
+type Initial = {
+  name: string;
+  area: string;
+  country: string;
+  description: string;
+  rock_type: string;
+  aspect: string;
+  best_season: string;
+  access_notes: string;
+};
+
+// Add a crag, or edit one when `editId` is present. The fields live in an inner
+// component so editing can seed their initial state directly from the loaded
+// crag (no setState-in-effect).
 export default function CragForm() {
   const { editId } = useLocalSearchParams<{ editId?: string }>();
   const isEdit = !!editId;
@@ -43,17 +50,15 @@ export default function CragForm() {
   return (
     <CragFields
       editId={editId}
-      extras={{
-        rock_type: c?.rock_type ?? null,
-        aspect: c?.aspect ?? null,
-        best_season: c?.best_season ?? null,
-        access_notes: c?.access_notes ?? null,
-      }}
       initial={{
         name: c?.name ?? "",
         area: c?.area ?? "",
         country: c?.country ?? "",
         description: c?.description ?? "",
+        rock_type: c?.rock_type ?? "",
+        aspect: c?.aspect ?? "",
+        best_season: c?.best_season ?? "",
+        access_notes: c?.access_notes ?? "",
       }}
     />
   );
@@ -61,12 +66,10 @@ export default function CragForm() {
 
 function CragFields({
   editId,
-  extras,
   initial,
 }: {
   editId?: string;
-  extras: CragExtras;
-  initial: { name: string; area: string; country: string; description: string };
+  initial: Initial;
 }) {
   const isEdit = !!editId;
   const queryClient = useQueryClient();
@@ -74,6 +77,10 @@ function CragFields({
   const [area, setArea] = useState(initial.area);
   const [country, setCountry] = useState(initial.country);
   const [description, setDescription] = useState(initial.description);
+  const [rockType, setRockType] = useState(initial.rock_type);
+  const [aspect, setAspect] = useState(initial.aspect);
+  const [bestSeason, setBestSeason] = useState(initial.best_season);
+  const [accessNotes, setAccessNotes] = useState(initial.access_notes);
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useMutation({
@@ -83,6 +90,7 @@ function CragFields({
         : api.send("/api/crags", "POST", body),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["crags"] });
+      // Land on the crag detail (where photos can be added) after either op.
       if (isEdit) router.back();
       else router.replace(`/(tabs)/crags/${res.id}`);
     },
@@ -97,7 +105,10 @@ function CragFields({
       area,
       country,
       description,
-      ...extras,
+      rock_type: rockType,
+      aspect,
+      best_season: bestSeason,
+      access_notes: accessNotes,
     });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "Invalid crag.");
@@ -119,21 +130,54 @@ function CragFields({
       />
       <Field
         label="Name"
+        hint
+        required
         value={name}
         onChangeText={setName}
         placeholder="Crag name"
       />
       <Field
         label="Area"
+        hint
         value={area}
         onChangeText={setArea}
         placeholder="Region / area"
       />
-      <Field label="Country" value={country} onChangeText={setCountry} />
+      <Field label="Country" hint value={country} onChangeText={setCountry} />
+      <Field
+        label="Rock type"
+        hint
+        value={rockType}
+        onChangeText={setRockType}
+        placeholder="e.g. Limestone"
+      />
+      <Field
+        label="Aspect"
+        hint
+        value={aspect}
+        onChangeText={setAspect}
+        placeholder="e.g. South-facing"
+      />
+      <Field
+        label="Best season"
+        hint
+        value={bestSeason}
+        onChangeText={setBestSeason}
+        placeholder="e.g. Spring & Autumn"
+      />
       <Field
         label="Description"
+        hint
         value={description}
         onChangeText={setDescription}
+        multiline
+      />
+      <Field
+        label="Access notes"
+        hint
+        value={accessNotes}
+        onChangeText={setAccessNotes}
+        placeholder="Parking, restrictions, seasonal bans…"
         multiline
       />
       {error ? <Text className="text-sm text-red-600">{error}</Text> : null}

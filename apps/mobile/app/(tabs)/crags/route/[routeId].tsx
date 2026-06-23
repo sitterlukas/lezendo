@@ -17,6 +17,7 @@ import { canModify } from "../../../../lib/permissions";
 import { Loading, ErrorState } from "../../../../components/states";
 import { DeleteButton } from "../../../../components/delete-button";
 import { EditButton } from "../../../../components/edit-button";
+import { EntityPhotos } from "../../../../components/entity-photos";
 import { ReviewForm } from "../../../../components/review-form";
 
 // Minimal local shape of GET /api/routes/:id?cragId= — we render the route, its
@@ -30,6 +31,7 @@ type RouteDetail = {
     created_by: number | null;
   };
   viewer: { id: number; role: string } | null;
+  images: { id: number; url: string; uploaded_by: number | null }[];
   displayGrade: string;
   ascents: {
     id: number;
@@ -141,6 +143,14 @@ export default function RouteDetailScreen() {
           </View>
         ) : null}
       </View>
+
+      <EntityPhotos
+        entityType="route"
+        entityId={Number(routeId)}
+        photos={data.images}
+        viewer={data.viewer}
+        invalidateKey={["routes", "detail", Number(routeId)]}
+      />
 
       <LogAscent routeId={Number(routeId)} onLogged={refetch} />
 

@@ -15,6 +15,7 @@ import { Loading, ErrorState } from "../../../components/states";
 import { DeleteButton } from "../../../components/delete-button";
 import { EditButton } from "../../../components/edit-button";
 import { FabMenu } from "../../../components/fab-menu";
+import { EntityPhotos } from "../../../components/entity-photos";
 import { RouteRow } from "../../../components/route-row";
 import { ReviewForm } from "../../../components/review-form";
 
@@ -43,6 +44,7 @@ type CragDetail = {
     created_by: number | null;
   };
   viewer: { id: number; role: string } | null;
+  images: { id: number; url: string; uploaded_by: number | null }[];
   sectors: Sector[];
   routes: CragRoute[];
 };
@@ -81,7 +83,7 @@ export default function CragDetailScreen() {
     );
   }
 
-  const { crag, viewer, sectors, routes } = data;
+  const { crag, viewer, images, sectors, routes } = data;
   const unsectored = routes.filter((r) => r.sector_id === null);
   const sectorRouteCount = (sectorId: number) =>
     routes.filter((r) => r.sector_id === sectorId).length;
@@ -127,6 +129,14 @@ export default function CragDetailScreen() {
             </View>
           ) : null}
         </View>
+
+        <EntityPhotos
+          entityType="crag"
+          entityId={cragId}
+          photos={images}
+          viewer={viewer}
+          invalidateKey={["crags", "detail", cragId]}
+        />
 
         {sectors.length === 0 && routes.length === 0 ? (
           <Text className="mt-4 text-center text-zinc-500">No routes yet.</Text>

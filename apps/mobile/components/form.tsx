@@ -17,6 +17,8 @@ export function Field({
   editable = true,
   autoCapitalize = "sentences",
   secureTextEntry = false,
+  hint = false,
+  required = false,
 }: {
   label?: string;
   value: string;
@@ -27,12 +29,16 @@ export function Field({
   editable?: boolean;
   autoCapitalize?: "none" | "sentences";
   secureTextEntry?: boolean;
+  // When `hint`, show a required (*) / optional marker after the label.
+  hint?: boolean;
+  required?: boolean;
 }) {
   return (
     <View className="gap-1.5">
       {label ? (
         <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           {label}
+          {hint ? <FieldHint required={required} /> : null}
         </Text>
       ) : null}
       <TextInput
@@ -48,6 +54,16 @@ export function Field({
         secureTextEntry={secureTextEntry}
       />
     </View>
+  );
+}
+
+// Required (*) / optional marker shown after a field label. Exported so the
+// route form's non-Field labels (style/grade pickers) can mark themselves too.
+export function FieldHint({ required = false }: { required?: boolean }) {
+  return required ? (
+    <Text className="text-red-500"> *</Text>
+  ) : (
+    <Text className="font-normal text-zinc-400"> (optional)</Text>
   );
 }
 

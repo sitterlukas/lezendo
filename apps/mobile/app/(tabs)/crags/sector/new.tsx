@@ -72,18 +72,21 @@ function SectorFields({
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useMutation({
-    mutationFn: (body: unknown) =>
+    mutationFn: (body: unknown): Promise<{ id?: number }> =>
       isEdit
         ? api.send(`/api/sectors/${editId}`, "PATCH", body)
         : api.send("/api/sectors", "POST", body),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["crags", "detail", crag] });
       if (isEdit) {
         queryClient.invalidateQueries({
           queryKey: ["sectors", "detail", Number(editId)],
         });
+        router.back();
+      } else {
+        // Land on the new sector detail (where photos can be added).
+        router.replace(`/(tabs)/crags/sector/${res.id}?cragId=${crag}`);
       }
-      router.back();
     },
     onError: (e) =>
       setError(e instanceof ApiError ? e.message : "Could not save sector."),
@@ -115,24 +118,29 @@ function SectorFields({
       />
       <Field
         label="Name"
+        hint
+        required
         value={name}
         onChangeText={setName}
         placeholder="Sector name"
       />
       <Field
         label="Approach (minutes)"
+        hint
         value={approach}
         onChangeText={setApproach}
         keyboardType="numeric"
       />
       <Field
         label="Aspect"
+        hint
         value={aspect}
         onChangeText={setAspect}
         placeholder="e.g. South-facing"
       />
       <Field
         label="Description"
+        hint
         value={description}
         onChangeText={setDescription}
         multiline
