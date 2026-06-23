@@ -14,6 +14,7 @@ export default function CragsStack() {
         options={{ title: "Add sector", presentation: "modal" }}
       />
       <Stack.Screen name="sector/[sectorId]" options={{ title: "Sector" }} />
+      <Stack.Screen name="route/[routeId]" options={{ title: "Route" }} />
       <Stack.Screen
         name="route/new"
         options={{ title: "Add route", presentation: "modal" }}
