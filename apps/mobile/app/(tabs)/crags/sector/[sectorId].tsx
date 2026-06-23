@@ -13,6 +13,7 @@ import { api } from "../../../../lib/api";
 import { canModify } from "../../../../lib/permissions";
 import { Loading, ErrorState } from "../../../../components/states";
 import { DeleteButton } from "../../../../components/delete-button";
+import { EditButton } from "../../../../components/edit-button";
 import { RouteRow } from "../../../../components/route-row";
 import { ReviewForm } from "../../../../components/review-form";
 
@@ -105,13 +106,23 @@ export default function SectorDetailScreen() {
           ) : null}
         </View>
         {canModify(viewer, sector.created_by) ? (
-          <DeleteButton
-            accessibilityLabel="Delete sector"
-            title="Delete sector?"
-            message={`This removes “${sector.name}” and its routes.`}
-            size={20}
-            onConfirm={() => remove.mutate()}
-          />
+          <View className="flex-row items-center gap-3">
+            <EditButton
+              accessibilityLabel="Edit sector"
+              onPress={() =>
+                router.push(
+                  `/(tabs)/crags/sector/new?cragId=${crag}&editId=${sectorId}`,
+                )
+              }
+            />
+            <DeleteButton
+              accessibilityLabel="Delete sector"
+              title="Delete sector?"
+              message={`This removes “${sector.name}” and its routes.`}
+              size={20}
+              onConfirm={() => remove.mutate()}
+            />
+          </View>
         ) : null}
       </View>
 

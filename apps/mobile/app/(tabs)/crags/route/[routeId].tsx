@@ -16,6 +16,7 @@ import { api } from "../../../../lib/api";
 import { canModify } from "../../../../lib/permissions";
 import { Loading, ErrorState } from "../../../../components/states";
 import { DeleteButton } from "../../../../components/delete-button";
+import { EditButton } from "../../../../components/edit-button";
 import { ReviewForm } from "../../../../components/review-form";
 
 // Minimal local shape of GET /api/routes/:id?cragId= — we render the route, its
@@ -121,13 +122,23 @@ export default function RouteDetailScreen() {
           ) : null}
         </View>
         {canModify(data.viewer, data.route.created_by) ? (
-          <DeleteButton
-            accessibilityLabel="Delete route"
-            title="Delete route?"
-            message={`This removes “${data.route.name}” and its ascents.`}
-            size={20}
-            onConfirm={() => removeRoute.mutate()}
-          />
+          <View className="flex-row items-center gap-3">
+            <EditButton
+              accessibilityLabel="Edit route"
+              onPress={() =>
+                router.push(
+                  `/(tabs)/crags/route/new?cragId=${cragId}&editId=${routeId}`,
+                )
+              }
+            />
+            <DeleteButton
+              accessibilityLabel="Delete route"
+              title="Delete route?"
+              message={`This removes “${data.route.name}” and its ascents.`}
+              size={20}
+              onConfirm={() => removeRoute.mutate()}
+            />
+          </View>
         ) : null}
       </View>
 

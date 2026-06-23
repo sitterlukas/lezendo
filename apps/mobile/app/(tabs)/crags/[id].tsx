@@ -13,6 +13,7 @@ import { api } from "../../../lib/api";
 import { canModify } from "../../../lib/permissions";
 import { Loading, ErrorState } from "../../../components/states";
 import { DeleteButton } from "../../../components/delete-button";
+import { EditButton } from "../../../components/edit-button";
 import { RouteRow } from "../../../components/route-row";
 import { ReviewForm } from "../../../components/review-form";
 
@@ -107,13 +108,19 @@ export default function CragDetailScreen() {
           ) : null}
         </View>
         {canModify(viewer, crag.created_by) ? (
-          <DeleteButton
-            accessibilityLabel="Delete crag"
-            title="Delete crag?"
-            message={`This removes “${crag.name}” and its sectors and routes.`}
-            size={20}
-            onConfirm={() => remove.mutate()}
-          />
+          <View className="flex-row items-center gap-3">
+            <EditButton
+              accessibilityLabel="Edit crag"
+              onPress={() => router.push(`/(tabs)/crags/new?editId=${cragId}`)}
+            />
+            <DeleteButton
+              accessibilityLabel="Delete crag"
+              title="Delete crag?"
+              message={`This removes “${crag.name}” and its sectors and routes.`}
+              size={20}
+              onConfirm={() => remove.mutate()}
+            />
+          </View>
         ) : null}
       </View>
 
