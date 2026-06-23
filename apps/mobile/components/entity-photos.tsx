@@ -4,7 +4,6 @@ import {
   Alert,
   Image,
   Pressable,
-  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -16,6 +15,9 @@ import { api, uploadImage } from "../lib/api";
 import { canModify } from "../lib/permissions";
 
 type Photo = { id: number; url: string; uploaded_by: number | null };
+
+// Shared edge length for thumbnails and the add/“more” tiles so they line up.
+const SIZE = 112;
 
 // A photo gallery for a crag/sector/route: a horizontal strip of thumbnails
 // with an "add" tile. Adding picks from the library, uploads to Blob, and
@@ -36,6 +38,7 @@ export function EntityPhotos({
 }) {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: invalidateKey });
 
@@ -88,53 +91,72 @@ export function EntityPhotos({
     ]);
   }
 
+  // Keep the gallery compact: show a few, then a "+N more" tile to expand.
+  const COLLAPSED = 5;
+  const shown = expanded ? photos : photos.slice(0, COLLAPSED);
+  const hidden = photos.length - shown.length;
+  const tile = { width: SIZE, height: SIZE } as const;
+
   return (
     <View className="gap-2">
       <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
         Photos ({photos.length})
       </Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View className="flex-row gap-2">
-          {photos.map((p) => (
-            <View key={p.id}>
-              <Image
-                source={{ uri: p.url }}
-                alt="Photo"
-                style={{ width: 112, height: 112, borderRadius: 12 }}
-              />
-              {canModify(viewer, p.uploaded_by) ? (
-                <Pressable
-                  accessibilityLabel="Delete photo"
-                  hitSlop={6}
-                  onPress={() => confirmRemove(p.id)}
-                  className="absolute right-1 top-1 h-7 w-7 items-center justify-center rounded-full bg-black/60 active:opacity-80"
-                >
-                  <Ionicons name="trash-outline" size={15} color="#fff" />
-                </Pressable>
-              ) : null}
-            </View>
-          ))}
+      <View className="flex-row flex-wrap gap-2">
+        {shown.map((p) => (
+          <View key={p.id} style={tile}>
+            <Image
+              source={{ uri: p.url }}
+              alt="Photo"
+              style={{ ...tile, borderRadius: 12 }}
+            />
+            {canModify(viewer, p.uploaded_by) ? (
+              <Pressable
+                accessibilityLabel="Delete photo"
+                hitSlop={6}
+                onPress={() => confirmRemove(p.id)}
+                className="absolute right-1 top-1 h-7 w-7 items-center justify-center rounded-full bg-black/60 active:opacity-80"
+              >
+                <Ionicons name="trash-outline" size={15} color="#fff" />
+              </Pressable>
+            ) : null}
+          </View>
+        ))}
+        {hidden > 0 ? (
           <Pressable
-            accessibilityLabel="Add photo"
-            onPress={pick}
-            disabled={add.isPending}
-            className="h-28 w-28 items-center justify-center gap-1 rounded-xl border border-dashed border-zinc-300 active:opacity-80 dark:border-zinc-700"
+            accessibilityLabel="Show all photos"
+            onPress={() => setExpanded(true)}
+            style={tile}
+            className="items-center justify-center rounded-xl border border-zinc-200 active:opacity-80 dark:border-zinc-800"
           >
-            {add.isPending ? (
-              <ActivityIndicator color="#71717a" />
-            ) : (
-              <>
-                <Ionicons name="image-outline" size={22} color="#71717a" />
-                <Text className="text-xs text-zinc-500">Add photo</Text>
-              </>
-            )}
+            <Text className="text-lg font-semibold text-zinc-700 dark:text-zinc-300">
+              +{hidden}
+            </Text>
+            <Text className="text-xs text-zinc-500">Show more</Text>
           </Pressable>
-        </View>
-      </ScrollView>
+        ) : null}
+        <Pressable
+          accessibilityLabel="Add photo"
+          onPress={pick}
+          disabled={add.isPending}
+          style={tile}
+          className="items-center justify-center gap-1 rounded-xl border border-dashed border-zinc-300 active:opacity-80 dark:border-zinc-700"
+        >
+          {add.isPending ? (
+            <ActivityIndicator color="#71717a" />
+          ) : (
+            <>
+              <Ionicons name="image-outline" size={22} color="#71717a" />
+              <Text className="text-xs text-zinc-500">Add photo</Text>
+            </>
+          )}
+        </Pressable>
+      </View>
+      {expanded && photos.length > COLLAPSED ? (
+        <Pressable onPress={() => setExpanded(false)} className="self-start">
+          <Text className="text-sm font-medium text-zinc-500">Show less</Text>
+        </Pressable>
+      ) : null}
       {error ? <Text className="text-sm text-red-600">{error}</Text> : null}
     </View>
   );
