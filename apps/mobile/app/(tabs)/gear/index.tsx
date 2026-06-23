@@ -1,20 +1,10 @@
-import { useState } from "react";
-import {
-  Alert,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
-import { useRouter, type Href } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Alert, RefreshControl, ScrollView, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { gearQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
 import { Loading, ErrorState } from "../../../components/states";
-import { Fab } from "../../../components/fab";
+import { FabMenu } from "../../../components/fab-menu";
 import { DeleteButton } from "../../../components/delete-button";
 import { gearCategoryLabels, type GearCategory } from "../../../lib/gear";
 
@@ -48,9 +38,6 @@ const monthYear = (d: Date) =>
 
 export default function Gear() {
   const router = useRouter();
-  // The "+" FAB opens this menu; gear has two add actions, so the FAB can't
-  // route directly. Tap the backdrop or an item to dismiss.
-  const [menuOpen, setMenuOpen] = useState(false);
   const { data, isPending, error, refetch, isRefetching } = useQuery(
     gearQuery<GearResponse>(api),
   );
@@ -69,11 +56,6 @@ export default function Gear() {
   }
 
   const { viewerId, items, reviews } = data;
-
-  function go(href: Href) {
-    setMenuOpen(false);
-    router.push(href);
-  }
 
   return (
     <View className="flex-1 bg-white dark:bg-zinc-950">
@@ -119,57 +101,22 @@ export default function Gear() {
       </ScrollView>
 
       {/* Shared FAB → action menu (gear has two add actions). */}
-      <Fab
+      <FabMenu
         accessibilityLabel="Add gear or review"
-        onPress={() => setMenuOpen(true)}
+        actions={[
+          {
+            icon: "add-circle-outline",
+            label: "Add gear",
+            onPress: () => router.push("/(tabs)/gear/new"),
+          },
+          {
+            icon: "star-outline",
+            label: "Write review",
+            onPress: () => router.push("/(tabs)/gear/review"),
+          },
+        ]}
       />
-      <Modal
-        visible={menuOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setMenuOpen(false)}
-      >
-        <Pressable
-          className="flex-1 bg-black/40"
-          onPress={() => setMenuOpen(false)}
-        />
-        <View className="absolute bottom-24 right-6 w-48 overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
-          <MenuItem
-            icon="add-circle-outline"
-            label="Add gear"
-            onPress={() => go("/(tabs)/gear/new")}
-          />
-          <View className="h-px bg-zinc-100 dark:bg-zinc-800" />
-          <MenuItem
-            icon="star-outline"
-            label="Write review"
-            onPress={() => go("/(tabs)/gear/review")}
-          />
-        </View>
-      </Modal>
     </View>
-  );
-}
-
-function MenuItem({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className="flex-row items-center gap-3 px-4 py-3 active:bg-zinc-100 dark:active:bg-zinc-800"
-    >
-      <Ionicons name={icon} size={20} color="#71717a" />
-      <Text className="text-base font-medium text-zinc-900 dark:text-zinc-50">
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
