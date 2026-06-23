@@ -18,6 +18,7 @@ import { Loading, ErrorState } from "../../../../components/states";
 import { DeleteButton } from "../../../../components/delete-button";
 import { EditButton } from "../../../../components/edit-button";
 import { EntityPhotos } from "../../../../components/entity-photos";
+import { Fab } from "../../../../components/fab";
 import { ReviewForm } from "../../../../components/review-form";
 
 // Minimal local shape of GET /api/routes/:id?cragId= — we render the route, its
@@ -57,6 +58,7 @@ export default function RouteDetailScreen() {
     cragId: string;
   }>();
   const queryClient = useQueryClient();
+  const [logging, setLogging] = useState(false);
   const { data, isPending, error, refetch } = useQuery(
     routeDetailQuery<RouteDetail>(api, Number(cragId), Number(routeId)),
   );
@@ -105,113 +107,125 @@ export default function RouteDetailScreen() {
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-white dark:bg-zinc-950"
-      contentContainerClassName="p-4 gap-4"
-    >
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1 gap-1">
-          <Text className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            {data.route.name}
-          </Text>
-          <Text className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-            {data.displayGrade} · {data.route.style}
-          </Text>
-          {data.route.description ? (
-            <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
-              {data.route.description}
+    <View className="flex-1 bg-white dark:bg-zinc-950">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="p-4 gap-4 pb-24"
+      >
+        <View className="flex-row items-start justify-between gap-3">
+          <View className="flex-1 gap-1">
+            <Text className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+              {data.route.name}
             </Text>
+            <Text className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+              {data.displayGrade} · {data.route.style}
+            </Text>
+            {data.route.description ? (
+              <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
+                {data.route.description}
+              </Text>
+            ) : null}
+          </View>
+          {canModify(data.viewer, data.route.created_by) ? (
+            <View className="flex-row items-center gap-3">
+              <EditButton
+                accessibilityLabel="Edit route"
+                onPress={() =>
+                  router.push(
+                    `/(tabs)/crags/route/new?cragId=${cragId}&editId=${routeId}`,
+                  )
+                }
+              />
+              <DeleteButton
+                accessibilityLabel="Delete route"
+                title="Delete route?"
+                message={`This removes “${data.route.name}” and its ascents.`}
+                size={20}
+                onConfirm={() => removeRoute.mutate()}
+              />
+            </View>
           ) : null}
         </View>
-        {canModify(data.viewer, data.route.created_by) ? (
-          <View className="flex-row items-center gap-3">
-            <EditButton
-              accessibilityLabel="Edit route"
-              onPress={() =>
-                router.push(
-                  `/(tabs)/crags/route/new?cragId=${cragId}&editId=${routeId}`,
-                )
-              }
-            />
-            <DeleteButton
-              accessibilityLabel="Delete route"
-              title="Delete route?"
-              message={`This removes “${data.route.name}” and its ascents.`}
-              size={20}
-              onConfirm={() => removeRoute.mutate()}
-            />
-          </View>
-        ) : null}
-      </View>
 
-      <EntityPhotos
-        entityType="route"
-        entityId={Number(routeId)}
-        photos={data.images}
-        viewer={data.viewer}
-        invalidateKey={["routes", "detail", Number(routeId)]}
-      />
+        <EntityPhotos
+          entityType="route"
+          entityId={Number(routeId)}
+          photos={data.images}
+          viewer={data.viewer}
+          invalidateKey={["routes", "detail", Number(routeId)]}
+        />
 
-      <LogAscent routeId={Number(routeId)} onLogged={refetch} />
+        <LogAscent
+          routeId={Number(routeId)}
+          open={logging}
+          onClose={() => setLogging(false)}
+          onLogged={refetch}
+        />
 
-      <View className="gap-2">
-        <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-          Ascents ({data.ascents.length})
-        </Text>
-        {data.ascents.length === 0 ? (
-          <Text className="text-zinc-500">No ascents logged yet.</Text>
-        ) : (
-          data.ascents.map((a) => (
-            <View
-              key={a.id}
-              className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
-            >
-              <View className="flex-row items-center justify-between gap-2">
-                <Text className="font-medium text-zinc-900 dark:text-zinc-50">
-                  {a.author}
-                </Text>
-                <View className="flex-row items-center gap-3">
-                  <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-                    {TICK_LABELS[a.tick_type] ?? a.tick_type}
+        <View className="gap-2">
+          <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+            Ascents ({data.ascents.length})
+          </Text>
+          {data.ascents.length === 0 ? (
+            <Text className="text-zinc-500">No ascents logged yet.</Text>
+          ) : (
+            data.ascents.map((a) => (
+              <View
+                key={a.id}
+                className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
+              >
+                <View className="flex-row items-center justify-between gap-2">
+                  <Text className="font-medium text-zinc-900 dark:text-zinc-50">
+                    {a.author}
                   </Text>
-                  {data.viewer?.id === a.user_id ? (
-                    <DeleteButton
-                      accessibilityLabel="Delete ascent"
-                      title="Delete ascent?"
-                      message="This removes your logged ascent."
-                      onConfirm={() => removeAscent.mutate(a.id)}
-                    />
-                  ) : null}
+                  <View className="flex-row items-center gap-3">
+                    <Text className="text-sm text-zinc-500 dark:text-zinc-400">
+                      {TICK_LABELS[a.tick_type] ?? a.tick_type}
+                    </Text>
+                    {data.viewer?.id === a.user_id ? (
+                      <DeleteButton
+                        accessibilityLabel="Delete ascent"
+                        title="Delete ascent?"
+                        message="This removes your logged ascent."
+                        onConfirm={() => removeAscent.mutate(a.id)}
+                      />
+                    ) : null}
+                  </View>
                 </View>
+                {a.notes ? (
+                  <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                    {a.notes}
+                  </Text>
+                ) : null}
               </View>
-              {a.notes ? (
-                <Text className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                  {a.notes}
-                </Text>
-              ) : null}
-            </View>
-          ))
-        )}
-      </View>
+            ))
+          )}
+        </View>
 
-      <ReviewForm
-        entityType="route"
-        entityId={Number(routeId)}
-        invalidateKey={["routes", "detail", Number(routeId)]}
-      />
-    </ScrollView>
+        <ReviewForm
+          entityType="route"
+          entityId={Number(routeId)}
+          invalidateKey={["routes", "detail", Number(routeId)]}
+        />
+      </ScrollView>
+
+      <Fab accessibilityLabel="Log ascent" onPress={() => setLogging(true)} />
+    </View>
   );
 }
 
 function LogAscent({
   routeId,
+  open,
+  onClose,
   onLogged,
 }: {
   routeId: number;
+  open: boolean;
+  onClose: () => void;
   onLogged: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
   const [tickType, setTickType] = useState<string>("redpoint");
   const [notes, setNotes] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -226,7 +240,7 @@ function LogAscent({
       queryClient.invalidateQueries({ queryKey: ["feed", "page"] });
       queryClient.invalidateQueries({ queryKey: ["me", "statistics"] });
       setNotes("");
-      setOpen(false);
+      onClose();
       onLogged();
     },
   });
@@ -246,18 +260,7 @@ function LogAscent({
     mutation.mutate(parsed.data);
   }
 
-  if (!open) {
-    return (
-      <Pressable
-        className="items-center rounded-lg bg-zinc-900 py-3 active:opacity-80 dark:bg-zinc-100"
-        onPress={() => setOpen(true)}
-      >
-        <Text className="text-base font-semibold text-white dark:text-zinc-900">
-          Log ascent
-        </Text>
-      </Pressable>
-    );
-  }
+  if (!open) return null;
 
   return (
     <View className="gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
@@ -314,7 +317,7 @@ function LogAscent({
       <View className="flex-row gap-2">
         <Pressable
           className="flex-1 items-center rounded-lg border border-zinc-300 py-3 active:opacity-80 dark:border-zinc-700"
-          onPress={() => setOpen(false)}
+          onPress={onClose}
           disabled={mutation.isPending}
         >
           <Text className="font-semibold text-zinc-700 dark:text-zinc-300">
