@@ -15,9 +15,11 @@ import { forumPostBodySchema } from "@whipperbook/validation";
 import { timeAgo } from "@whipperbook/core";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../../lib/api";
+import { canModify } from "../../../lib/permissions";
 import { Field, Button } from "../../../components/form";
 import { Loading, ErrorState } from "../../../components/states";
 import { Avatar } from "../../../components/avatar";
+import { DeleteButton } from "../../../components/delete-button";
 
 // Minimal local shape of GET /api/forum/topics/:id.
 type Viewer = { id: number; role: string } | null;
@@ -41,11 +43,6 @@ type TopicResponse = {
   topic: ForumTopic;
   posts: ForumPost[];
 };
-
-// owner or admin may edit/delete.
-function canManage(viewer: Viewer, ownerId: number) {
-  return !!viewer && (viewer.id === ownerId || viewer.role === "admin");
-}
 
 export default function TopicDetail() {
   const { topicId: topicIdRaw } = useLocalSearchParams<{ topicId: string }>();
@@ -91,21 +88,6 @@ export default function TopicDetail() {
       return;
     }
     reply.mutate(parsed.data);
-  }
-
-  function confirmDeleteTopic() {
-    Alert.alert(
-      "Delete topic?",
-      "This removes the topic and all its replies.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => deleteTopic.mutate(),
-        },
-      ],
-    );
   }
 
   if (isPending) return <Loading />;
@@ -156,15 +138,14 @@ export default function TopicDetail() {
               · {posts.length} {posts.length === 1 ? "post" : "posts"}
             </Text>
           </View>
-          {canManage(viewer, topic.user_id) ? (
-            <Pressable
+          {canModify(viewer, topic.user_id) ? (
+            <DeleteButton
               accessibilityLabel="Delete topic"
-              hitSlop={8}
-              onPress={confirmDeleteTopic}
-              className="active:opacity-70"
-            >
-              <Ionicons name="trash-outline" size={20} color="#dc2626" />
-            </Pressable>
+              title="Delete topic?"
+              message="This removes the topic and all its replies."
+              size={20}
+              onConfirm={() => deleteTopic.mutate()}
+            />
           ) : null}
         </View>
 
@@ -174,7 +155,7 @@ export default function TopicDetail() {
             post={post}
             topicId={topicId}
             isOp={index === 0}
-            canManage={canManage(viewer, post.user_id)}
+            canManage={canModify(viewer, post.user_id)}
           />
         ))}
 
@@ -249,13 +230,6 @@ function PostCard({
     save.mutate(parsed.data);
   }
 
-  function confirmDelete() {
-    Alert.alert("Delete post?", "This can't be undone.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => remove.mutate() },
-    ]);
-  }
-
   return (
     <View
       className={
@@ -294,13 +268,12 @@ function PostCard({
             >
               <Ionicons name="create-outline" size={18} color="#a1a1aa" />
             </Pressable>
-            <Pressable
+            <DeleteButton
               accessibilityLabel="Delete post"
-              hitSlop={8}
-              onPress={confirmDelete}
-            >
-              <Ionicons name="trash-outline" size={18} color="#dc2626" />
-            </Pressable>
+              title="Delete post?"
+              message="This can't be undone."
+              onConfirm={() => remove.mutate()}
+            />
           </View>
         ) : null}
       </View>

@@ -15,6 +15,7 @@ import { gearQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
 import { Loading, ErrorState } from "../../../components/states";
 import { Fab } from "../../../components/fab";
+import { DeleteButton } from "../../../components/delete-button";
 import { gearCategoryLabels, type GearCategory } from "../../../lib/gear";
 
 // Minimal local shape of GET /api/gear — the caller's items plus community
@@ -203,27 +204,19 @@ function GearItemCard({ item }: { item: GearItem }) {
       ),
   });
 
-  function confirmDelete() {
-    Alert.alert("Remove gear?", `This removes “${item.name}” from your rack.`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => remove.mutate() },
-    ]);
-  }
-
   return (
     <View className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
       <View className="flex-row items-start justify-between gap-3">
         <Text className="flex-1 font-semibold text-zinc-900 dark:text-zinc-50">
           {item.name}
         </Text>
-        <Pressable
+        <DeleteButton
           accessibilityLabel={`Remove ${item.name}`}
-          hitSlop={8}
-          onPress={confirmDelete}
-          className="active:opacity-70"
-        >
-          <Ionicons name="trash-outline" size={18} color="#dc2626" />
-        </Pressable>
+          title="Remove gear?"
+          message={`This removes “${item.name}” from your rack.`}
+          confirmLabel="Remove"
+          onConfirm={() => remove.mutate()}
+        />
       </View>
       <View className="mt-2 flex-row flex-wrap items-center gap-2">
         <Text className="rounded bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
@@ -270,21 +263,6 @@ function GearReviewCard({
       ),
   });
 
-  function confirmDelete() {
-    Alert.alert(
-      "Delete review?",
-      `This deletes your review of “${review.product}”.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => remove.mutate(),
-        },
-      ],
-    );
-  }
-
   return (
     <View className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
       <View className="flex-row items-center gap-2">
@@ -292,14 +270,12 @@ function GearReviewCard({
           {review.product}
         </Text>
         {canDelete ? (
-          <Pressable
+          <DeleteButton
             accessibilityLabel={`Delete review of ${review.product}`}
-            hitSlop={8}
-            onPress={confirmDelete}
-            className="active:opacity-70"
-          >
-            <Ionicons name="trash-outline" size={18} color="#dc2626" />
-          </Pressable>
+            title="Delete review?"
+            message={`This deletes your review of “${review.product}”.`}
+            onConfirm={() => remove.mutate()}
+          />
         ) : null}
       </View>
       <Text className="mt-0.5 text-sm text-amber-500">

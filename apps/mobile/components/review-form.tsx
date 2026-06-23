@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { entityReviewCreateSchema } from "@whipperbook/validation";
-import { ApiError, reviewsQuery } from "@whipperbook/api-client";
+import { ApiError, reviewsQuery, meQuery } from "@whipperbook/api-client";
 import { api } from "../lib/api";
+import { canModify } from "../lib/permissions";
 import { Field, Button, SegmentedPicker } from "./form";
 import { Avatar } from "./avatar";
+import { DeleteButton } from "./delete-button";
 
 type EntityReview = {
   id: number;
@@ -35,6 +37,21 @@ export function ReviewForm({
   const reviews = useQuery(
     reviewsQuery<EntityReview[]>(api, entityType, entityId),
   );
+  const me = useQuery(meQuery<{ id: number; role: string } | null>(api));
+
+  const remove = useMutation({
+    mutationFn: (reviewId: number) =>
+      api.send(`/api/reviews/${reviewId}`, "DELETE"),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["reviews", entityType, entityId],
+      }),
+    onError: (e) =>
+      Alert.alert(
+        "Could not delete",
+        e instanceof ApiError ? e.message : "Please try again.",
+      ),
+  });
 
   const mutation = useMutation({
     mutationFn: (payload: unknown) => api.send("/api/reviews", "POST", payload),
@@ -95,6 +112,14 @@ export function ReviewForm({
                 </Text>
               ) : null}
             </View>
+            {canModify(me.data, r.user_id) ? (
+              <DeleteButton
+                accessibilityLabel="Delete review"
+                title="Delete review?"
+                message="This removes your review."
+                onConfirm={() => remove.mutate(r.id)}
+              />
+            ) : null}
           </View>
         ))
       )}

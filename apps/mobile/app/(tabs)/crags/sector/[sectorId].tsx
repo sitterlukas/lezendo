@@ -1,9 +1,18 @@
-import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
-import { Link, useLocalSearchParams } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { Link, router, useLocalSearchParams } from "expo-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { sectorDetailQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../../lib/api";
+import { canModify } from "../../../../lib/permissions";
 import { Loading, ErrorState } from "../../../../components/states";
+import { DeleteButton } from "../../../../components/delete-button";
 import { RouteRow } from "../../../../components/route-row";
 import { ReviewForm } from "../../../../components/review-form";
 
@@ -17,7 +26,9 @@ type SectorDetail = {
     description: string | null;
     approach_minutes: number | null;
     aspect: string | null;
+    created_by: number | null;
   };
+  viewer: { id: number; role: string } | null;
   routes: { id: number; name: string; grade: string; style: string }[];
 };
 
@@ -27,9 +38,24 @@ export default function SectorDetailScreen() {
     cragId: string;
   }>();
   const crag = Number(cragId);
+  const queryClient = useQueryClient();
   const { data, isPending, error, refetch, isRefetching } = useQuery(
     sectorDetailQuery<SectorDetail>(api, crag, Number(sectorId)),
   );
+
+  const remove = useMutation({
+    mutationFn: () => api.send(`/api/sectors/${sectorId}`, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crags", "detail", crag] });
+      queryClient.invalidateQueries({ queryKey: ["crags"] });
+      router.replace(`/(tabs)/crags/${crag}`);
+    },
+    onError: (e) =>
+      Alert.alert(
+        "Could not delete",
+        e instanceof ApiError ? e.message : "Please try again.",
+      ),
+  });
 
   if (isPending) return <Loading />;
 
@@ -44,7 +70,7 @@ export default function SectorDetailScreen() {
     );
   }
 
-  const { sector, routes } = data;
+  const { sector, viewer, routes } = data;
   const meta = [
     sector.approach_minutes != null
       ? `${sector.approach_minutes} min approach`
@@ -62,19 +88,30 @@ export default function SectorDetailScreen() {
         <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
       }
     >
-      <View className="mb-1 gap-1">
-        <Text className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-          {sector.name}
-        </Text>
-        {meta ? (
-          <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-            {meta}
+      <View className="mb-1 flex-row items-start justify-between gap-3">
+        <View className="flex-1 gap-1">
+          <Text className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+            {sector.name}
           </Text>
-        ) : null}
-        {sector.description ? (
-          <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
-            {sector.description}
-          </Text>
+          {meta ? (
+            <Text className="text-sm text-zinc-500 dark:text-zinc-400">
+              {meta}
+            </Text>
+          ) : null}
+          {sector.description ? (
+            <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
+              {sector.description}
+            </Text>
+          ) : null}
+        </View>
+        {canModify(viewer, sector.created_by) ? (
+          <DeleteButton
+            accessibilityLabel="Delete sector"
+            title="Delete sector?"
+            message={`This removes “${sector.name}” and its routes.`}
+            size={20}
+            onConfirm={() => remove.mutate()}
+          />
         ) : null}
       </View>
 

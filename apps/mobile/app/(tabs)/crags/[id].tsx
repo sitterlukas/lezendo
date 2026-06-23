@@ -1,15 +1,18 @@
 import {
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
   Text,
   View,
 } from "react-native";
-import { Link, useLocalSearchParams } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { Link, router, useLocalSearchParams } from "expo-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cragDetailQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
+import { canModify } from "../../../lib/permissions";
 import { Loading, ErrorState } from "../../../components/states";
+import { DeleteButton } from "../../../components/delete-button";
 import { RouteRow } from "../../../components/route-row";
 import { ReviewForm } from "../../../components/review-form";
 
@@ -35,7 +38,9 @@ type CragDetail = {
     area: string | null;
     country: string | null;
     description: string | null;
+    created_by: number | null;
   };
+  viewer: { id: number; role: string } | null;
   sectors: Sector[];
   routes: CragRoute[];
 };
@@ -43,9 +48,23 @@ type CragDetail = {
 export default function CragDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const cragId = Number(id);
+  const queryClient = useQueryClient();
   const { data, isPending, error, refetch, isRefetching } = useQuery(
     cragDetailQuery<CragDetail>(api, cragId),
   );
+
+  const remove = useMutation({
+    mutationFn: () => api.send(`/api/crags/${cragId}`, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crags"] });
+      router.replace("/(tabs)/crags");
+    },
+    onError: (e) =>
+      Alert.alert(
+        "Could not delete",
+        e instanceof ApiError ? e.message : "Please try again.",
+      ),
+  });
 
   if (isPending) return <Loading />;
 
@@ -60,7 +79,7 @@ export default function CragDetailScreen() {
     );
   }
 
-  const { crag, sectors, routes } = data;
+  const { crag, viewer, sectors, routes } = data;
   const unsectored = routes.filter((r) => r.sector_id === null);
   const sectorRouteCount = (sectorId: number) =>
     routes.filter((r) => r.sector_id === sectorId).length;
@@ -73,17 +92,28 @@ export default function CragDetailScreen() {
         <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
       }
     >
-      <View className="mb-1 gap-1">
-        <Text className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-          {crag.name}
-        </Text>
-        <Text className="text-sm text-zinc-500 dark:text-zinc-400">
-          {[crag.area, crag.country].filter(Boolean).join(", ") || "—"}
-        </Text>
-        {crag.description ? (
-          <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
-            {crag.description}
+      <View className="mb-1 flex-row items-start justify-between gap-3">
+        <View className="flex-1 gap-1">
+          <Text className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+            {crag.name}
           </Text>
+          <Text className="text-sm text-zinc-500 dark:text-zinc-400">
+            {[crag.area, crag.country].filter(Boolean).join(", ") || "—"}
+          </Text>
+          {crag.description ? (
+            <Text className="mt-1 text-zinc-700 dark:text-zinc-300">
+              {crag.description}
+            </Text>
+          ) : null}
+        </View>
+        {canModify(viewer, crag.created_by) ? (
+          <DeleteButton
+            accessibilityLabel="Delete crag"
+            title="Delete crag?"
+            message={`This removes “${crag.name}” and its sectors and routes.`}
+            size={20}
+            onConfirm={() => remove.mutate()}
+          />
         ) : null}
       </View>
 
