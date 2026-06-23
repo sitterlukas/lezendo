@@ -5,7 +5,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { gearReviewCreateSchema } from "@whipperbook/validation";
 import { ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
-import { Field, Button, SegmentedPicker } from "../../../components/form";
+import {
+  Field,
+  Button,
+  SegmentedPicker,
+  FieldHint,
+} from "../../../components/form";
 
 export default function NewGearReview() {
   const queryClient = useQueryClient();
@@ -45,6 +50,8 @@ export default function NewGearReview() {
       />
       <Field
         label="Product"
+        hint
+        required
         value={product}
         onChangeText={setProduct}
         placeholder="e.g. La Sportiva Solution"
@@ -52,6 +59,7 @@ export default function NewGearReview() {
       <View className="gap-1.5">
         <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Rating
+          <FieldHint required />
         </Text>
         <SegmentedPicker<number>
           value={rating}
@@ -64,6 +72,8 @@ export default function NewGearReview() {
       </View>
       <Field
         label="Review"
+        hint
+        required
         value={body}
         onChangeText={setBody}
         placeholder="How does it climb? How has it held up?"

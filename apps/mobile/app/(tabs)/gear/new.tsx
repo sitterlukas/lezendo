@@ -5,7 +5,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { gearCreateSchema } from "@whipperbook/validation";
 import { ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
-import { Field, Button, SegmentedPicker } from "../../../components/form";
+import {
+  Field,
+  Button,
+  SegmentedPicker,
+  FieldHint,
+} from "../../../components/form";
 import { gearCategoryLabels, type GearCategory } from "../../../lib/gear";
 
 const categoryOptions = (Object.keys(gearCategoryLabels) as GearCategory[]).map(
@@ -55,6 +60,8 @@ export default function NewGear() {
       <Stack.Screen options={{ title: "Add gear", presentation: "modal" }} />
       <Field
         label="Name"
+        hint
+        required
         value={name}
         onChangeText={setName}
         placeholder="e.g. 70m Mammut Crag Classic"
@@ -62,6 +69,7 @@ export default function NewGear() {
       <View className="gap-1.5">
         <Text className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Category
+          <FieldHint required />
         </Text>
         <SegmentedPicker
           value={category}
@@ -69,24 +77,21 @@ export default function NewGear() {
           options={categoryOptions}
         />
       </View>
-      <Field
-        label="Brand"
-        value={brand}
-        onChangeText={setBrand}
-        placeholder="optional"
-      />
+      <Field label="Brand" hint value={brand} onChangeText={setBrand} />
       <Field
         label="Purchased on"
+        hint
         value={purchasedOn}
         onChangeText={setPurchasedOn}
-        placeholder="YYYY-MM-DD (optional)"
+        placeholder="YYYY-MM-DD"
         autoCapitalize="none"
       />
       <Field
         label="Notes"
+        hint
         value={notes}
         onChangeText={setNotes}
-        placeholder="Wear, falls taken, retirement plans… (optional)"
+        placeholder="Wear, falls taken, retirement plans…"
         multiline
       />
       {error ? <Text className="text-sm text-red-600">{error}</Text> : null}

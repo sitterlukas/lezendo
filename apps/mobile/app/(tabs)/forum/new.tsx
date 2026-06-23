@@ -42,12 +42,16 @@ export default function NewTopic() {
       <Stack.Screen options={{ title: "New topic", presentation: "modal" }} />
       <Field
         label="Title"
+        hint
+        required
         value={title}
         onChangeText={setTitle}
         placeholder="e.g. Best sport crags in Czechia?"
       />
       <Field
         label="Body"
+        hint
+        required
         value={body}
         onChangeText={setBody}
         placeholder="Write your post here…"
