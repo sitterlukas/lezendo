@@ -21,3 +21,4 @@ export * from "./queries/reviews";
 export * from "./queries/users";
 export * from "./queries/admin";
 export * from "./queries/feed-page";
+export * from "./queries/notifications";

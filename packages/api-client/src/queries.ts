@@ -105,6 +105,13 @@ export function feedPageQuery<T>(api: ApiClient) {
   });
 }
 
+export function notificationsQuery<T>(api: ApiClient) {
+  return queryOptions({
+    queryKey: ["notifications"] as const,
+    queryFn: () => api.get<T>(`/api/notifications`),
+  });
+}
+
 export function userProfileQuery<T>(api: ApiClient, id: number) {
   return queryOptions({
     queryKey: ["users", "detail", id] as const,

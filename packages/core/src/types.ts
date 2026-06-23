@@ -236,6 +236,17 @@ export interface ApiRefreshTokensTable {
   created_at: Generated<Date>;
 }
 
+export interface NotificationsTable {
+  id: Generated<number>;
+  user_id: number; // recipient
+  actor_id: number | null; // who triggered it
+  type: string; // 'follow' | 'like' | 'comment' | 'forum_reply'
+  target_type: string | null; // what it's about, for deep-linking
+  target_id: number | null;
+  read_at: Date | null; // null = unread
+  created_at: Generated<Date>;
+}
+
 export interface Database {
   crags: CragsTable;
   sectors: SectorsTable;
@@ -258,4 +269,5 @@ export interface Database {
   likes: LikesTable;
   comments: CommentsTable;
   api_refresh_tokens: ApiRefreshTokensTable;
+  notifications: NotificationsTable;
 }

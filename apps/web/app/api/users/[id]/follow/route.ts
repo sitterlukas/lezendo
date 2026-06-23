@@ -1,6 +1,6 @@
 import { route, ok, fail } from "@/lib/api/respond";
 import { requireUser } from "@/lib/api/auth";
-import db from "@whipperbook/db";
+import db, { createNotification } from "@whipperbook/db";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -13,11 +13,20 @@ export const POST = route<Ctx>(async (request, { params }) => {
   }
 
   // Idempotent: ignore if the follow already exists.
-  await db
+  const res = await db
     .insertInto("follows")
     .values({ follower_id: user.id, followee_id: followeeId })
     .onConflict((oc) => oc.columns(["follower_id", "followee_id"]).doNothing())
-    .execute();
+    .executeTakeFirst();
+
+  // Only notify on a genuinely new follow (not a repeated POST).
+  if (Number(res.numInsertedOrUpdatedRows ?? 0n) > 0) {
+    await createNotification({
+      recipientId: followeeId,
+      actorId: user.id,
+      type: "follow",
+    });
+  }
 
   return ok({ following: true });
 });

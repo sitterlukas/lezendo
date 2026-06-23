@@ -1,19 +1,23 @@
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import { useQuery } from "@tanstack/react-query";
-import { meQuery } from "@whipperbook/api-client";
+import { meQuery, notificationsQuery } from "@whipperbook/api-client";
 import { api } from "../lib/api";
 import { Avatar } from "./avatar";
 
 type Me = { name: string; avatar_url: string | null } | null;
 
-// Shared top-bar actions (find climbers, a mock notifications bell, your
-// profile) used as `headerRight` across the main tabs.
+// Shared top-bar actions (find climbers, notifications, your profile) used as
+// `headerRight` across the main tabs.
 export function HeaderActions() {
   const { colorScheme } = useColorScheme();
   const me = useQuery(meQuery<Me>(api));
+  const notifications = useQuery(
+    notificationsQuery<{ unreadCount: number }>(api),
+  );
+  const unread = notifications.data?.unreadCount ?? 0;
   const iconColor = colorScheme === "dark" ? "#fafafa" : "#18181b";
 
   return (
@@ -27,10 +31,13 @@ export function HeaderActions() {
       </Pressable>
       <Pressable
         accessibilityLabel="Notifications"
-        onPress={() => Alert.alert("Notifications", "Coming soon.")}
+        onPress={() => router.push("/(tabs)/feed/notifications")}
         hitSlop={8}
       >
         <Ionicons name="notifications-outline" size={24} color={iconColor} />
+        {unread > 0 ? (
+          <View className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border border-white bg-red-500 dark:border-zinc-950" />
+        ) : null}
       </Pressable>
       <Pressable
         accessibilityLabel="Your profile"
