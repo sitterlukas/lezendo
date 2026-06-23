@@ -1,17 +1,20 @@
+import { useState } from "react";
 import {
   Alert,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
   Text,
   View,
 } from "react-native";
-import { Link } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { gearQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
 import { Loading, ErrorState } from "../../../components/states";
+import { Fab } from "../../../components/fab";
 import { gearCategoryLabels, type GearCategory } from "../../../lib/gear";
 
 // Minimal local shape of GET /api/gear — the caller's items plus community
@@ -43,6 +46,10 @@ const monthYear = (d: Date) =>
   d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 
 export default function Gear() {
+  const router = useRouter();
+  // The "+" FAB opens this menu; gear has two add actions, so the FAB can't
+  // route directly. Tap the backdrop or an item to dismiss.
+  const [menuOpen, setMenuOpen] = useState(false);
   const { data, isPending, error, refetch, isRefetching } = useQuery(
     gearQuery<GearResponse>(api),
   );
@@ -62,82 +69,124 @@ export default function Gear() {
 
   const { viewerId, items, reviews } = data;
 
-  return (
-    <ScrollView
-      className="flex-1 bg-white dark:bg-zinc-950"
-      contentContainerClassName="p-4 gap-3 pb-8"
-      refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-      }
-    >
-      <SectionHeader
-        title="Your gear"
-        subtitle={`${items.length} ${items.length === 1 ? "item" : "items"} in your rack`}
-        actionLabel="Add gear"
-        href="/(tabs)/gear/new"
-      />
-      {items.length === 0 ? (
-        <Text className="text-sm text-zinc-500">
-          Your rack is empty — add your rope, draws, and shoes to track their
-          age and wear.
-        </Text>
-      ) : (
-        items.map((item) => <GearItemCard key={item.id} item={item} />)
-      )}
+  function go(href: Href) {
+    setMenuOpen(false);
+    router.push(href);
+  }
 
-      <View className="mt-6">
+  return (
+    <View className="flex-1 bg-white dark:bg-zinc-950">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="p-4 gap-3 pb-24"
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+        }
+      >
         <SectionHeader
-          title="Community reviews"
-          subtitle={`${reviews.length} ${reviews.length === 1 ? "review" : "reviews"} from fellow climbers`}
-          actionLabel="Write"
-          href="/(tabs)/gear/review"
+          title="Your gear"
+          subtitle={`${items.length} ${items.length === 1 ? "item" : "items"} in your rack`}
         />
-      </View>
-      {reviews.length === 0 ? (
-        <Text className="text-sm text-zinc-500">
-          No reviews yet — be the first to say what&apos;s worth the money.
-        </Text>
-      ) : (
-        reviews.map((review) => (
-          <GearReviewCard
-            key={review.id}
-            review={review}
-            canDelete={review.user_id === viewerId}
+        {items.length === 0 ? (
+          <Text className="text-sm text-zinc-500">
+            Your rack is empty — add your rope, draws, and shoes to track their
+            age and wear.
+          </Text>
+        ) : (
+          items.map((item) => <GearItemCard key={item.id} item={item} />)
+        )}
+
+        <View className="mt-6">
+          <SectionHeader
+            title="Community reviews"
+            subtitle={`${reviews.length} ${reviews.length === 1 ? "review" : "reviews"} from fellow climbers`}
           />
-        ))
-      )}
-    </ScrollView>
+        </View>
+        {reviews.length === 0 ? (
+          <Text className="text-sm text-zinc-500">
+            No reviews yet — be the first to say what&apos;s worth the money.
+          </Text>
+        ) : (
+          reviews.map((review) => (
+            <GearReviewCard
+              key={review.id}
+              review={review}
+              canDelete={review.user_id === viewerId}
+            />
+          ))
+        )}
+      </ScrollView>
+
+      {/* Shared FAB → action menu (gear has two add actions). */}
+      <Fab
+        accessibilityLabel="Add gear or review"
+        onPress={() => setMenuOpen(true)}
+      />
+      <Modal
+        visible={menuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuOpen(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/40"
+          onPress={() => setMenuOpen(false)}
+        />
+        <View className="absolute bottom-24 right-6 w-48 overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-zinc-900">
+          <MenuItem
+            icon="add-circle-outline"
+            label="Add gear"
+            onPress={() => go("/(tabs)/gear/new")}
+          />
+          <View className="h-px bg-zinc-100 dark:bg-zinc-800" />
+          <MenuItem
+            icon="star-outline"
+            label="Write review"
+            onPress={() => go("/(tabs)/gear/review")}
+          />
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+function MenuItem({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center gap-3 px-4 py-3 active:bg-zinc-100 dark:active:bg-zinc-800"
+    >
+      <Ionicons name={icon} size={20} color="#71717a" />
+      <Text className="text-base font-medium text-zinc-900 dark:text-zinc-50">
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
 function SectionHeader({
   title,
   subtitle,
-  actionLabel,
-  href,
 }: {
   title: string;
   subtitle: string;
-  actionLabel: string;
-  href: "/(tabs)/gear/new" | "/(tabs)/gear/review";
 }) {
   return (
-    <View className="flex-row items-end justify-between gap-3">
-      <View className="flex-1">
-        <Text className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-          {title}
-        </Text>
-        <Text className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-          {subtitle}
-        </Text>
-      </View>
-      <Link href={href} asChild>
-        <Pressable className="rounded-full border border-zinc-900 bg-zinc-900 px-4 py-1.5 active:opacity-80 dark:border-zinc-100 dark:bg-zinc-100">
-          <Text className="text-sm font-medium text-white dark:text-zinc-900">
-            {actionLabel}
-          </Text>
-        </Pressable>
-      </Link>
+    <View className="flex-1">
+      <Text className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+        {title}
+      </Text>
+      <Text className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
+        {subtitle}
+      </Text>
     </View>
   );
 }

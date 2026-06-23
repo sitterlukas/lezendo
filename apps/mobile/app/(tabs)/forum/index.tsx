@@ -1,13 +1,13 @@
 import { FlatList, Pressable, Text, View } from "react-native";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
 import { useQuery } from "@tanstack/react-query";
 import { forumTopicsQuery, ApiError } from "@whipperbook/api-client";
 import { timeAgo } from "@whipperbook/core";
 import { api } from "../../../lib/api";
 import { Loading, ErrorState } from "../../../components/states";
 import { Avatar } from "../../../components/avatar";
+import { Fab } from "../../../components/fab";
 
 // Minimal local shape of GET /api/forum/topics — the topic list plus the viewer
 // (we only need to know whether anyone is signed in to gate the compose button,
@@ -24,7 +24,7 @@ type ForumTopic = {
 type ForumResponse = { topics: ForumTopic[] };
 
 export default function ForumList() {
-  const { colorScheme } = useColorScheme();
+  const router = useRouter();
   const { data, isPending, error, refetch, isRefetching } = useQuery(
     forumTopicsQuery<ForumResponse>(api),
   );
@@ -88,19 +88,11 @@ export default function ForumList() {
         )}
       />
 
-      {/* Floating "new topic" button — mirrors the feed/crags FABs. */}
-      <Link href="/(tabs)/forum/new" asChild>
-        <Pressable
-          accessibilityLabel="New topic"
-          className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-zinc-900 shadow-lg active:opacity-80 dark:bg-zinc-100"
-        >
-          <Ionicons
-            name="add"
-            size={30}
-            color={colorScheme === "dark" ? "#18181b" : "#ffffff"}
-          />
-        </Pressable>
-      </Link>
+      {/* Floating "new topic" button — the shared app FAB. */}
+      <Fab
+        accessibilityLabel="New topic"
+        onPress={() => router.push("/(tabs)/forum/new")}
+      />
     </View>
   );
 }

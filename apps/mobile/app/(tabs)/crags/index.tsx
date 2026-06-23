@@ -1,11 +1,10 @@
 import { SectionList, Pressable, Text, View } from "react-native";
-import { Link } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
+import { Link, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { cragsListQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
 import { Loading, ErrorState } from "../../../components/states";
+import { Fab } from "../../../components/fab";
 
 // Minimal local shape of GET /api/crags — the web handler returns more (viewer,
 // country tabs, pagination); we only read what this screen renders.
@@ -19,7 +18,7 @@ type Crag = {
 type CragsResponse = { crags: Crag[] };
 
 export default function CragsList() {
-  const { colorScheme } = useColorScheme();
+  const router = useRouter();
   const { data, isPending, error, refetch, isRefetching } = useQuery(
     cragsListQuery<CragsResponse>(api),
   );
@@ -80,19 +79,11 @@ export default function CragsList() {
         )}
       />
 
-      {/* Floating "add crag" button — mirrors the feed's compose FAB. */}
-      <Link href="/(tabs)/crags/new" asChild>
-        <Pressable
-          accessibilityLabel="Add crag"
-          className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-zinc-900 shadow-lg active:opacity-80 dark:bg-zinc-100"
-        >
-          <Ionicons
-            name="add"
-            size={30}
-            color={colorScheme === "dark" ? "#18181b" : "#ffffff"}
-          />
-        </Pressable>
-      </Link>
+      {/* Floating "add crag" button — the shared app FAB. */}
+      <Fab
+        accessibilityLabel="Add crag"
+        onPress={() => router.push("/(tabs)/crags/new")}
+      />
     </View>
   );
 }

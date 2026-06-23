@@ -9,13 +9,12 @@ import {
   Text,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useColorScheme } from "nativewind";
 import { useQuery } from "@tanstack/react-query";
 import { feedPageQuery, meQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
 import { Loading, ErrorState } from "../../../components/states";
+import { Fab } from "../../../components/fab";
 import { FeedCard, type FeedPage } from "../../../components/feed-card";
 import {
   StatusComposer,
@@ -23,8 +22,6 @@ import {
 } from "../../../components/status-composer";
 
 export default function Feed() {
-  const { colorScheme } = useColorScheme();
-  const fabIconColor = colorScheme === "dark" ? "#18181b" : "#ffffff";
   // The "+" lives in the feed screen (above the tab bar); the composer popover
   // lives in a full-screen overlay (over the tab bar). Offset it by the tab bar
   // height so it sits just above the "+".
@@ -91,13 +88,10 @@ export default function Feed() {
       />
 
       {/* Floating compose button — opens the status popover above it. */}
-      <Pressable
+      <Fab
         accessibilityLabel="Post a status"
         onPress={() => setComposer("new")}
-        className="absolute bottom-6 right-6 h-14 w-14 items-center justify-center rounded-full bg-zinc-900 shadow-lg active:opacity-80 dark:bg-zinc-100"
-      >
-        <Ionicons name="add" size={30} color={fabIconColor} />
-      </Pressable>
+      />
 
       {/* Compose / edit popover: a card anchored just above the "+". Tap the
           dimmed backdrop to dismiss. */}
