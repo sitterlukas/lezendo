@@ -165,7 +165,12 @@ export function EntityPhotos({
       </Pressable>
 
       {expanded && photos.length > COLLAPSED ? (
-        <Pressable onPress={() => setExpanded(false)} className="self-start">
+        <Pressable
+          accessibilityLabel="Show fewer photos"
+          onPress={() => setExpanded(false)}
+          className="flex-row items-center justify-center gap-1 py-1 active:opacity-70"
+        >
+          <Ionicons name="chevron-up" size={16} color="#71717a" />
           <Text className="text-sm font-medium text-zinc-500">Show less</Text>
         </Pressable>
       ) : null}
