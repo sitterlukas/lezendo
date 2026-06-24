@@ -12,6 +12,7 @@ import { api } from "../../lib/api";
 import { tokens } from "../../lib/auth";
 import { inputClass } from "../../lib/styles";
 import { GoogleButton } from "../../components/google-button";
+import { AppleButton } from "../../components/apple-button";
 
 type TokenResponse = {
   accessToken: string;
@@ -96,6 +97,7 @@ export default function Login() {
       </Pressable>
 
       <GoogleButton />
+      <AppleButton />
 
       <View className="mt-2 flex-row justify-center gap-1">
         <Text className="text-zinc-500 dark:text-zinc-400">

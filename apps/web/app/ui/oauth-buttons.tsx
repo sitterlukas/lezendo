@@ -24,13 +24,22 @@ function GoogleIcon() {
   );
 }
 
+function AppleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M16.36 12.78c.02 2.5 2.18 3.33 2.2 3.34-.02.06-.34 1.18-1.13 2.34-.69 1-1.4 2-2.52 2.02-1.1.02-1.45-.65-2.71-.65-1.26 0-1.65.63-2.69.67-1.08.04-1.9-1.08-2.6-2.08-1.42-2.06-2.5-5.82-1.05-8.36.72-1.26 2.01-2.06 3.41-2.08 1.06-.02 2.06.71 2.71.71.65 0 1.87-.88 3.15-.75.54.02 2.04.22 3.01 1.64-.08.05-1.8 1.05-1.78 3.13M14.3 5.4c.58-.7.97-1.67.86-2.64-.83.03-1.84.55-2.44 1.25-.53.62-1 1.61-.88 2.56.93.07 1.87-.47 2.46-1.17"
+      />
+    </svg>
+  );
+}
+
 const icons = {
   google: <GoogleIcon />,
 };
 
 export default function OAuthButtons() {
-  if (oauthProviders.length === 0) return null;
-
   return (
     <div className="mt-6">
       <div className="flex items-center gap-3 text-xs text-zinc-400">
@@ -45,6 +54,17 @@ export default function OAuthButtons() {
             Continue with {provider.name}
           </OAuthButton>
         ))}
+        {/* Apple sign-in is implemented on mobile; the web flow is coming soon. */}
+        <button
+          type="button"
+          disabled
+          title="Coming soon"
+          className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-400 dark:border-zinc-700"
+        >
+          <AppleIcon />
+          Sign in with Apple
+          <span className="text-xs font-normal">(coming soon)</span>
+        </button>
       </div>
       <p className="mt-3 text-center text-xs text-zinc-400">
         You can only sign in with a verified email address.
