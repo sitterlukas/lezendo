@@ -102,7 +102,10 @@ export function EntityPhotos({
   // up to 3 per row, but fewer cells stretch to use the whole row.
   const cellCount = shown.length + (showMore ? 1 : 0);
   const cols = expanded ? 3 : Math.max(1, Math.min(3, cellCount));
-  const size = Math.floor((width - SCREEN_PADDING - GAP * (cols - 1)) / cols);
+  const raw = (width - SCREEN_PADDING - GAP * (cols - 1)) / cols;
+  // Cap at a half-width tile so a single photo doesn't blow up to full width.
+  const maxSize = (width - SCREEN_PADDING - GAP) / 2;
+  const size = Math.floor(Math.min(raw, maxSize));
   const tile = { width: size, height: size } as const;
 
   return (
