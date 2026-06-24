@@ -6,6 +6,7 @@ import { api } from "../../../lib/api";
 import { Loading, ErrorState } from "../../../components/states";
 import { FabMenu } from "../../../components/fab-menu";
 import { DeleteButton } from "../../../components/delete-button";
+import { cardClass } from "../../../lib/styles";
 import { gearCategoryLabels, type GearCategory } from "../../../lib/gear";
 
 // Minimal local shape of GET /api/gear — the caller's items plus community
@@ -152,7 +153,7 @@ function GearItemCard({ item }: { item: GearItem }) {
   });
 
   return (
-    <View className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+    <View className={cardClass}>
       <View className="flex-row items-start justify-between gap-3">
         <Text className="flex-1 font-semibold text-zinc-900 dark:text-zinc-50">
           {item.name}
@@ -211,7 +212,7 @@ function GearReviewCard({
   });
 
   return (
-    <View className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+    <View className={cardClass}>
       <View className="flex-row items-center gap-2">
         <Text className="flex-1 font-semibold text-zinc-900 dark:text-zinc-50">
           {review.product}

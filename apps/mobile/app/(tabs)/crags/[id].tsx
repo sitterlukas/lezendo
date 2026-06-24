@@ -18,6 +18,7 @@ import { FabMenu } from "../../../components/fab-menu";
 import { EntityPhotos } from "../../../components/entity-photos";
 import { RouteRow } from "../../../components/route-row";
 import { ReviewForm } from "../../../components/review-form";
+import { cardPressableClass } from "../../../lib/styles";
 
 // Minimal local shape of GET /api/crags/:id — the handler returns more (images,
 // grading systems, viewer, deleted entities); we only read what this renders.
@@ -152,7 +153,7 @@ export default function CragDetailScreen() {
                 href={`/(tabs)/crags/sector/${sector.id}?cragId=${cragId}`}
                 asChild
               >
-                <Pressable className="rounded-xl border border-zinc-200 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900">
+                <Pressable className={cardPressableClass}>
                   <Text className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
                     {sector.name}
                   </Text>

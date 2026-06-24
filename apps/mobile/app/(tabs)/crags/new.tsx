@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cragWriteSchema } from "@whipperbook/validation";
 import { ApiError, cragDetailQuery } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
+import { sectionLabelClass } from "../../../lib/styles";
 import { Field, Button } from "../../../components/form";
 import { Loading } from "../../../components/states";
 
@@ -128,6 +129,7 @@ function CragFields({
           presentation: "modal",
         }}
       />
+      <Text className={sectionLabelClass}>Basics</Text>
       <Field
         label="Name"
         hint
@@ -144,6 +146,7 @@ function CragFields({
         placeholder="Region / area"
       />
       <Field label="Country" hint value={country} onChangeText={setCountry} />
+      <Text className={`mt-2 ${sectionLabelClass}`}>Guidebook</Text>
       <Field
         label="Rock type"
         hint

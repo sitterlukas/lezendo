@@ -15,6 +15,7 @@ import { commentCreateSchema } from "@whipperbook/validation";
 import { timeAgo } from "@whipperbook/core";
 import { api } from "../../../../lib/api";
 import { canModify } from "../../../../lib/permissions";
+import { cardClass } from "../../../../lib/styles";
 import { Field, Button } from "../../../../components/form";
 import { Loading, ErrorState } from "../../../../components/states";
 import { LikeButton } from "../../../../components/like-button";
@@ -123,7 +124,7 @@ export default function FeedItemDetail() {
       }
     >
       <Stack.Screen options={{ title: "Comments" }} />
-      <View className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      <View className={cardClass}>
         <Pressable
           onPress={() => router.push(`/(tabs)/feed/users/${item.author.id}`)}
           className="self-start active:opacity-70"

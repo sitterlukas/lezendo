@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { timeAgo } from "@whipperbook/core";
 import { Avatar } from "./avatar";
 import { LikeButton } from "./like-button";
+import { cardPressableClass } from "../lib/styles";
 import type { StatusEdit } from "./status-composer";
 
 // Minimal local shape of a GET /api/feed/page item — also the shape of the
@@ -82,8 +83,8 @@ export function FeedCard({
       <Pressable
         className={
           isSend
-            ? "rounded-xl border border-l-4 border-zinc-200 border-l-blue-500 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900"
-            : "rounded-xl border border-zinc-200 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900"
+            ? `${cardPressableClass} border-l-4 border-l-blue-500`
+            : cardPressableClass
         }
       >
         <View className="mb-1 flex-row items-center gap-2">

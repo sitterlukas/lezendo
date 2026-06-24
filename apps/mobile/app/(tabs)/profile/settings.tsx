@@ -49,7 +49,7 @@ export default function SettingsScreen() {
   return (
     <ScrollView
       className="flex-1 bg-white dark:bg-zinc-950"
-      contentContainerClassName="p-6 gap-6"
+      contentContainerClassName="p-4 gap-5"
     >
       <Stack.Screen options={{ title: "Settings" }} />
       <NameSection initialName={data.user.name} />

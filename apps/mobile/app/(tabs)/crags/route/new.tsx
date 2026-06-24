@@ -14,6 +14,7 @@ import {
   type GradeEquivalency,
 } from "@whipperbook/core";
 import { api } from "../../../../lib/api";
+import { sectionLabelClass } from "../../../../lib/styles";
 import {
   Field,
   Button,
@@ -236,6 +237,7 @@ function RouteFields({
           presentation: "modal",
         }}
       />
+      <Text className={sectionLabelClass}>Basics</Text>
       <Field
         label="Name"
         hint
@@ -291,6 +293,7 @@ function RouteFields({
         />
       </View>
 
+      <Text className={`mt-2 ${sectionLabelClass}`}>Details</Text>
       <Field
         label="Height (m)"
         hint

@@ -141,7 +141,7 @@ export default function Profile() {
   return (
     <ScrollView
       className="flex-1 bg-white dark:bg-zinc-950"
-      contentContainerClassName="p-6 gap-6"
+      contentContainerClassName="p-4 gap-5"
     >
       <View className="flex-row items-center gap-4">
         <Avatar
@@ -180,7 +180,7 @@ export default function Profile() {
         </View>
       </View>
       {photoError ? (
-        <Text className="-mt-2 text-sm text-red-600">{photoError}</Text>
+        <Text className="text-sm text-red-600">{photoError}</Text>
       ) : null}
 
       <Link href="/(tabs)/profile/settings" asChild>
@@ -195,7 +195,7 @@ export default function Profile() {
         </Pressable>
       </Link>
 
-      <Text className="-mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+      <Text className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
         Your statistics
       </Text>
 
