@@ -7,6 +7,7 @@ import { ThemeProvider } from "@react-navigation/native";
 import { useColorScheme } from "nativewind";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { makeQueryClient } from "../lib/query-client";
+import { ToastProvider } from "../components/toast";
 import {
   loadThemeMode,
   applyThemeMode,
@@ -31,7 +32,9 @@ export default function RootLayout() {
         <ThemeProvider
           value={colorScheme === "dark" ? navDarkTheme : navLightTheme}
         >
-          <Stack screenOptions={{ headerShown: false }} />
+          <ToastProvider>
+            <Stack screenOptions={{ headerShown: false }} />
+          </ToastProvider>
           <StatusBar style="auto" />
         </ThemeProvider>
       </SafeAreaProvider>

@@ -8,6 +8,7 @@ import { canModify } from "../lib/permissions";
 import { Field, Button, SegmentedPicker } from "./form";
 import { Avatar } from "./avatar";
 import { DeleteButton } from "./delete-button";
+import { useToast } from "./toast";
 
 type EntityReview = {
   id: number;
@@ -29,6 +30,7 @@ export function ReviewForm({
   invalidateKey: readonly unknown[];
 }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [body, setBody] = useState("");
@@ -64,6 +66,7 @@ export function ReviewForm({
       setOpen(false);
       setRating(0);
       setBody("");
+      toast.show("Review saved");
     },
     onError: (e) =>
       setError(e instanceof ApiError ? e.message : "Could not save review."),

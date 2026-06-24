@@ -20,6 +20,7 @@ import { EditButton } from "../../../../components/edit-button";
 import { EntityPhotos } from "../../../../components/entity-photos";
 import { Fab } from "../../../../components/fab";
 import { ReviewForm } from "../../../../components/review-form";
+import { useToast } from "../../../../components/toast";
 
 // Minimal local shape of GET /api/routes/:id?cragId= — we render the route, its
 // resolved display grade, and the ascent history.
@@ -226,6 +227,7 @@ function LogAscent({
   onLogged: () => void;
 }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [tickType, setTickType] = useState<string>("redpoint");
   const [notes, setNotes] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -242,6 +244,7 @@ function LogAscent({
       setNotes("");
       onClose();
       onLogged();
+      toast.show("Ascent logged");
     },
   });
 

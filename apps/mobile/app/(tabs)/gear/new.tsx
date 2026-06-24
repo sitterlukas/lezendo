@@ -11,6 +11,7 @@ import {
   SegmentedPicker,
   FieldHint,
 } from "../../../components/form";
+import { useToast } from "../../../components/toast";
 import { gearCategoryLabels, type GearCategory } from "../../../lib/gear";
 
 const categoryOptions = (Object.keys(gearCategoryLabels) as GearCategory[]).map(
@@ -19,6 +20,7 @@ const categoryOptions = (Object.keys(gearCategoryLabels) as GearCategory[]).map(
 
 export default function NewGear() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [name, setName] = useState("");
   const [category, setCategory] = useState<GearCategory>("rope");
   const [brand, setBrand] = useState("");
@@ -30,6 +32,7 @@ export default function NewGear() {
     mutationFn: (payload: unknown) => api.send("/api/gear", "POST", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gear"] });
+      toast.show("Gear added");
       router.back();
     },
     onError: (e) =>

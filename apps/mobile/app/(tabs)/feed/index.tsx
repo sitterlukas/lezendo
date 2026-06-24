@@ -9,11 +9,12 @@ import {
   Text,
   View,
 } from "react-native";
+import { router } from "expo-router";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { feedPageQuery, meQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
-import { Loading, ErrorState } from "../../../components/states";
+import { Loading, ErrorState, EmptyState } from "../../../components/states";
 import { Fab } from "../../../components/fab";
 import { FeedCard, type FeedPage } from "../../../components/feed-card";
 import {
@@ -72,15 +73,13 @@ export default function Feed() {
         refreshing={isRefetching}
         onRefresh={refetch}
         ListEmptyComponent={
-          <View className="mt-8 px-2">
-            <Text className="text-center font-medium text-zinc-900 dark:text-zinc-50">
-              Your feed is empty
-            </Text>
-            <Text className="mt-1 text-center text-sm text-zinc-500">
-              Routes you log and statuses you post will show up here, along with
-              activity from the climbers you follow.
-            </Text>
-          </View>
+          <EmptyState
+            icon="newspaper-outline"
+            title="Your feed is empty"
+            message="Routes you log and statuses you post show up here, along with activity from climbers you follow."
+            actionLabel="Find climbers"
+            onAction={() => router.push("/(tabs)/feed/people")}
+          />
         }
         renderItem={({ item }) => (
           <FeedCard item={item} myId={myId} onEdit={setComposer} />

@@ -3,8 +3,9 @@ import { Link, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { cragsListQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
-import { Loading, ErrorState } from "../../../components/states";
+import { Loading, ErrorState, EmptyState } from "../../../components/states";
 import { Fab } from "../../../components/fab";
+import { cardPressableClass } from "../../../lib/styles";
 
 // Minimal local shape of GET /api/crags — the web handler returns more (viewer,
 // country tabs, pagination); we only read what this screen renders.
@@ -57,7 +58,13 @@ export default function CragsList() {
         onRefresh={refetch}
         stickySectionHeadersEnabled={false}
         ListEmptyComponent={
-          <Text className="mt-8 text-center text-zinc-500">No crags yet.</Text>
+          <EmptyState
+            icon="trail-sign-outline"
+            title="No crags yet"
+            message="Add the first crag to start building the database."
+            actionLabel="Add crag"
+            onAction={() => router.push("/(tabs)/crags/new")}
+          />
         }
         renderSectionHeader={({ section }) => (
           <Text className="mb-1 mt-3 text-xs font-semibold uppercase tracking-wide text-zinc-400">
@@ -66,7 +73,7 @@ export default function CragsList() {
         )}
         renderItem={({ item }) => (
           <Link href={`/(tabs)/crags/${item.id}`} asChild>
-            <Pressable className="rounded-xl border border-zinc-200 bg-white p-4 active:opacity-80 dark:border-zinc-800 dark:bg-zinc-900">
+            <Pressable className={cardPressableClass}>
               <Text className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
                 {item.name}
               </Text>

@@ -11,9 +11,11 @@ import {
   SegmentedPicker,
   FieldHint,
 } from "../../../components/form";
+import { useToast } from "../../../components/toast";
 
 export default function NewGearReview() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [product, setProduct] = useState("");
   const [rating, setRating] = useState(5);
   const [body, setBody] = useState("");
@@ -24,6 +26,7 @@ export default function NewGearReview() {
       api.send("/api/gear-reviews", "POST", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gear"] });
+      toast.show("Review published");
       router.back();
     },
     onError: (e) =>

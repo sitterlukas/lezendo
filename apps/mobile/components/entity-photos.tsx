@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@whipperbook/api-client";
 import { api, uploadImage } from "../lib/api";
 import { canModify } from "../lib/permissions";
+import { useToast } from "./toast";
 
 type Photo = { id: number; url: string; uploaded_by: number | null };
 
@@ -40,6 +41,7 @@ export function EntityPhotos({
   invalidateKey: readonly unknown[];
 }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const { width } = useWindowDimensions();
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -53,7 +55,10 @@ export function EntityPhotos({
         await api.send("/api/images", "POST", { url, entityType, entityId });
       }
     },
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast.show("Photo added");
+    },
     onError: (e) =>
       setError(e instanceof ApiError ? e.message : "Could not add photo."),
   });
@@ -61,7 +66,10 @@ export function EntityPhotos({
   const remove = useMutation({
     mutationFn: (imageId: number) =>
       api.send(`/api/images/${imageId}`, "DELETE"),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast.show("Photo removed");
+    },
     onError: (e) =>
       Alert.alert(
         "Could not delete",

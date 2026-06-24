@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationsQuery, ApiError } from "@whipperbook/api-client";
 import { timeAgo } from "@whipperbook/core";
 import { api } from "../../../lib/api";
-import { Loading, ErrorState } from "../../../components/states";
+import { Loading, ErrorState, EmptyState } from "../../../components/states";
 import { Avatar } from "../../../components/avatar";
 
 type Notification = {
@@ -83,9 +83,11 @@ export default function Notifications() {
         refreshing={isRefetching}
         onRefresh={refetch}
         ListEmptyComponent={
-          <Text className="mt-8 text-center text-zinc-500">
-            No notifications yet.
-          </Text>
+          <EmptyState
+            icon="notifications-outline"
+            title="No notifications yet"
+            message="Likes, comments, follows and replies will show up here."
+          />
         }
         renderItem={({ item }) => {
           const href = hrefFor(item);

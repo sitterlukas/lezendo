@@ -10,7 +10,7 @@ import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { leaderboardQuery, ApiError } from "@whipperbook/api-client";
 import { api } from "../../../lib/api";
-import { ErrorState } from "../../../components/states";
+import { ErrorState, EmptyState } from "../../../components/states";
 import { Avatar } from "../../../components/avatar";
 import { RankCrown } from "../../../components/rank-crown";
 import { SegmentedPicker } from "../../../components/form";
@@ -87,9 +87,11 @@ export default function Leaderboard() {
           refreshing={isRefetching}
           onRefresh={refetch}
           ListEmptyComponent={
-            <Text className="mt-8 text-center text-zinc-500">
-              No climbers ranked yet for this period.
-            </Text>
+            <EmptyState
+              icon="podium-outline"
+              title="No rankings yet"
+              message="No climbers have scored points for this period yet."
+            />
           }
           renderItem={({ item, index }) => (
             <LeaderRow
