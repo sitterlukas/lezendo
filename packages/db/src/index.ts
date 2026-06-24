@@ -5,6 +5,7 @@ export * from "./grade-data";
 export * from "./points";
 export * from "./credentials";
 export * from "./api/tokens";
+export * from "./api/oauth";
 export * from "./deletion-log";
 export * from "./feed-interactions";
 export * from "./feed";

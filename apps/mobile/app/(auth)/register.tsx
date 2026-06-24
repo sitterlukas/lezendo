@@ -10,6 +10,7 @@ import { Link } from "expo-router";
 import { ApiError } from "@whipperbook/api-client";
 import { api } from "../../lib/api";
 import { inputClass } from "../../lib/styles";
+import { GoogleButton } from "../../components/google-button";
 
 // The validation package has no register schema, so mirror the server's checks
 // (name required, basic email shape, password >= 8) client-side; the server
@@ -122,6 +123,8 @@ export default function Register() {
           </Text>
         )}
       </Pressable>
+
+      <GoogleButton />
 
       <View className="mt-2 flex-row justify-center gap-1">
         <Text className="text-zinc-500 dark:text-zinc-400">

@@ -2,9 +2,7 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import type { Provider } from "next-auth/providers";
-import { sql } from "kysely";
-import db from "@whipperbook/db";
-import { verifyCredentials } from "@whipperbook/db";
+import { verifyCredentials, provisionOAuthUser } from "@whipperbook/db";
 
 // Thrown from `authorize` so the login page can tell "wrong password" apart from
 // "correct password, but email not verified yet" (surfaced as `?error=<code>`).
@@ -91,23 +89,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (!email) return false;
 
       try {
-        await db
-          .insertInto("users")
-          .values({
-            email,
-            name: user.name ?? email.split("@")[0],
-            password_hash: null,
-            // Google already verified the email, so the account is good to go.
-            email_verified_at: new Date(),
-          })
-          .onConflict((oc) =>
-            // An existing (possibly unverified) account: Google has now proven
-            // the email belongs to them, so mark it verified if it wasn't.
-            oc.column("email").doUpdateSet({
-              email_verified_at: sql`coalesce(users.email_verified_at, now())`,
-            }),
-          )
-          .execute();
+        await provisionOAuthUser({ email, name: user.name });
       } catch (error) {
         // Without this, any DB failure here is swallowed by NextAuth as a
         // generic "AccessDenied", hiding the real cause (e.g. a NOT NULL or
