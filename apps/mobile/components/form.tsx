@@ -84,12 +84,10 @@ export function Button({
     "items-center rounded-lg py-3 active:opacity-80 disabled:opacity-50";
   const styles =
     variant === "primary"
-      ? "bg-zinc-900 dark:bg-zinc-100"
+      ? "bg-blue-600"
       : "border border-zinc-300 dark:border-zinc-700";
   const text =
-    variant === "primary"
-      ? "text-white dark:text-zinc-900"
-      : "text-zinc-900 dark:text-zinc-100";
+    variant === "primary" ? "text-white" : "text-zinc-900 dark:text-zinc-100";
   return (
     <Pressable
       className={`${base} ${styles}`}
@@ -124,15 +122,13 @@ export function SegmentedPicker<T extends string | number>({
             onPress={() => onChange(opt.value)}
             className={`rounded-full border px-4 py-2 active:opacity-80 ${
               selected
-                ? "border-zinc-900 bg-zinc-900 dark:border-zinc-100 dark:bg-zinc-100"
+                ? "border-blue-600 bg-blue-600"
                 : "border-zinc-300 dark:border-zinc-700"
             }`}
           >
             <Text
               className={`text-sm font-medium ${
-                selected
-                  ? "text-white dark:text-zinc-900"
-                  : "text-zinc-700 dark:text-zinc-300"
+                selected ? "text-white" : "text-zinc-700 dark:text-zinc-300"
               }`}
             >
               {opt.label}

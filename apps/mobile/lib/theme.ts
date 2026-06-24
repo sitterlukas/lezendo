@@ -12,7 +12,7 @@ export const navLightTheme: Theme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#18181b", // zinc-900
+    primary: "#2563eb", // blue-600 — active tab + back chevron tint
     background: "#ffffff",
     card: "#ffffff",
     text: "#18181b", // zinc-900
@@ -24,7 +24,7 @@ export const navDarkTheme: Theme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    primary: "#fafafa", // zinc-50
+    primary: "#3b82f6", // blue-500 — slightly lighter for dark surfaces
     background: "#09090b", // zinc-950
     card: "#18181b", // zinc-900 — header + tab bar surface
     text: "#fafafa", // zinc-50
